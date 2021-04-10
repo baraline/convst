@@ -8,23 +8,23 @@ import numpy as np
 import pandas as pd
 
 from CST.utils.shapelets_utils import compute_distances, generate_strides_2D
-
-
-from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
-from sklearn.base import BaseEstimator, ClassifierMixin
-from numba import njit, prange
 from CST.base_transformers.rocket import ROCKET
 from CST.factories.kernel_factories import Rocket_factory
+from CST.base_transformers.shapelets import Convolutional_shapelet
+from CST.utils.checks_utils import check_array_3D
+
+from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
+from sklearn.base import BaseEstimator, TransformerMixin
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import KBinsDiscretizer
 from itertools import combinations
-from CST.base_transformers.shapelets import Convolutional_shapelet
-from CST.factories.kernel_factories import Rocket_factory
+
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
 
 
-class ConvolutionalShapeletTransformClassifier2(BaseEstimator, ClassifierMixin):
+class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, rkt_object, ft_imps, id_ft=0, verbose=0):
         self.rkt_object = rkt_object
         self.k_factory = Rocket_factory(rkt_object)
@@ -32,59 +32,65 @@ class ConvolutionalShapeletTransformClassifier2(BaseEstimator, ClassifierMixin):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets = []
-
+        
+    def fit(self, X, y, n_shapelet_per_combination=2):
+        self._check_is_init()
+        X = check_array_3D(X)
+        
+        kernels, kernels_dilations, kernels_length, kernels_bias, kernels_padding = self._get_kernels()
+        self._log("Selected {} features out of {}".format(kernels.shape[0],
+                                                          self.ft_imps.shape[0]))
+        
+        groups_id, unique_groups = self._get_kernel_groups(kernels_dilations,
+                                                           kernels_length,
+                                                           kernels_bias, 
+                                                           kernels_padding)
+        
+        n_classes = np.unique(y).shape[0]
+        
+        return self    
+        
+    def transform(self, X):
+        return X
+             
     def _log(self, message):
         if self.verbose > 0:
             print(message)
     
-    def _log2(self, message):
-        if self.verbose > 1:
-            print(message)
-            
-    def fit(self, X, y, n_k=100, percentile=90):
-        k_ids = np.argsort(self.ft_imps)[::-1][0:n_k]
-        n_classes = np.unique(y).shape[0]
-        locs = np.zeros((X.shape[2],n_classes))
-        for k_id in k_ids:
-            k = self.k_factory.create_feature_kernel(k_id)
-            for c in range(n_classes):
-                loc = k.get_locs(X[np.where(y==c)[0]])
-                for l in loc:
-                    locs[l.astype(int),c] += 1
+    def _get_kernels(self):
+        kernel_ids = np.where(self.ft_imps > 0.00001)[0]
+        kernels = np.asarray([self.k_factory.create_feature_kernel(k_id) 
+                              for k_id in kernel_ids])
         
-        candidates = []
-        idxs = []
-        for comb in combinations(range(n_classes),2):
-            diff = np.abs(locs[:,comb[0]] - locs[:,comb[1]])
-            idx_diff = np.where(diff>np.percentile(diff,percentile))[0]
-            plt.plot(diff)
-            plt.show()
-            
-            candidates.append(X[:,0,idx_diff])
-            idxs.append(idx_diff)
-        n_combs = len(candidates)
-        distances = np.zeros((X.shape[0], X.shape[0]*n_combs))
-        print(distances.shape)
-        i_p = 0
-        for i in range(n_combs):
-            for j in range(X.shape[0]):
-                distances[j,i*X.shape[0]:i+1*X.shape[0]] = [euclidean(X[j,0,idxs[i]], candidates[i][l]) for l in range(candidates[i].shape[0])]
-        rdg = RandomForestClassifier(ccp_alpha=0.01, n_estimators=300, max_samples=0.75, max_features=0.25)
-        rdg.fit(distances,y)
-        self.model = rdg
-        self.idxs = idxs
-        self.candidates = candidates
-        return self    
+        kernels_dilations = np.asarray([kernels[k_id].dilation for k_id in range(kernels.shape[0])])
+        kernels_length = np.asarray([kernels[k_id].length for k_id in range(kernels.shape[0])])
+        kernels_bias = np.asarray([kernels[k_id].bias >= 0 for k_id in range(kernels.shape[0])]).astype(int)
+        kernels_padding = np.asarray([kernels[k_id].padding > 0 for k_id in range(kernels.shape[0])]).astype(int)
         
-    def predict(self, X):
-        n_combs = len(list(combinations(range(2),2)))
-        distances = np.zeros((X.shape[0], len(self.candidates[0])*n_combs))
-        for i in range(n_combs):
-            for j in range(X.shape[0]):
-                distances[j,i*len(self.candidates[0]):i+1*len(self.candidates[0])] = [euclidean(X[j,0,self.idxs[i]], self.candidates[i][l]) for l in range(self.candidates[i].shape[0])]
-        return self.model.predict(distances)
-             
-
+        return kernels, kernels_dilations, kernels_length, kernels_bias, kernels_padding
+    
+    #TODO Need to test performance when removing some of the grouping conditions (bias/padding mostly)
+    def _get_kernel_groups(self, kernels_dilations, kernels_length, kernels_bias, kernels_padding):
+        groups_params = np.array([[kernels_dilations[i], 
+                                   kernels_length[i], 
+                                   kernels_bias[i],
+                                   kernels_padding[i]]
+                                  for i in range(kernels_dilations.shape[0])])
+                                 
+        groups_id = np.zeros(kernels_dilations.shape[0])
+        unique_groups = np.unique(groups_params, axis=0)    
+        for i, u_group in enumerate(unique_groups):
+            groups_id[np.where((groups_params == u_group).all(axis=1))[0]] = i
+        return groups_id, unique_groups
+        
+    def _check_is_init(self):
+        if any(self.__dict__[attribute] is None for attribute in ['rkt_object',
+                                                                  'ft_imps',
+                                                                  'id_ft']):
+            raise AttributeError("Kernel attribute not initialised correctly, "
+                                 "at least one attribute was set to None")
+            
+"""
 class ConvolutionalShapeletTransformClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, n_kernels=10000, kernel_sizes=(7, 9, 11),
                  random_state=None, id_ft=0, verbose=0):
@@ -275,4 +281,4 @@ class ConvolutionalShapeletTransformClassifier(BaseEstimator, ClassifierMixin):
             if coerce_to_numpy:
                 X = from_nested_to_3d_numpy(X)
         return X
-    
+"""

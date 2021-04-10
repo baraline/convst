@@ -5,74 +5,11 @@ Created on Thu Apr  1 18:11:14 2021
 @author: Antoine
 """
 import numpy as np
-import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from numba import njit, prange
-from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 
+from CST.utils.kernel_utils import apply_one_kernel_one_sample, apply_one_kernel_all_sample
+from CST.utils.checks_utils import check_array_3D
 
-@njit(fastmath=True)
-def apply_one_kernel_one_sample(x, n_timestamps, weights, length, bias, 
-                                dilation, padding):
-    """
-    Apply one kernel to one time series.
-
-    Parameters
-    ----------
-    x : array, shape = (n_timestamps,)
-        One time series.
-
-    n_timestamps : int
-        Number of timestamps.
-
-    weights : array, shape = (length,)
-        Weights of the kernel. Zero padding values are added.
-
-    length : int
-        Length of the kernel.
-
-    bias : int
-        Bias of the kernel.
-
-    dilation : int
-        Dilation of the kernel.
-
-    padding : int
-        Padding of the kernel.
-
-    Returns
-    -------
-    x_new : array, shape = (2,)
-        Extracted features using the kernel.
-
-    """
-    n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
-    # Compute padded x
-    if padding > 0:
-        x_pad = np.zeros(n_timestamps + 2 * padding)
-        x_pad[padding:-padding] = x
-    else:
-        x_pad = x
-
-    # Compute the convolutions
-    x_conv = np.zeros(n_conv)
-    for i in prange(n_conv):
-        for j in prange(length):
-            x_conv[i] += weights[j] * x_pad[i + (j * dilation)]
-    x_conv += bias
-    return x_conv  
-
-@njit(parallel=True)
-def apply_one_kernel_all_sample(X, id_ft, weights, length, bias,
-                                dilation, padding):
-    n_samples, _, n_timestamps = X.shape
-    n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
-    X_conv = np.zeros((n_samples, 1, n_conv))
-    for i in prange(n_samples):
-        X_conv[i,0,:] = apply_one_kernel_one_sample(X[i,id_ft], n_timestamps,
-                                                    weights, length, bias, 
-                                                    dilation, padding)
-    return X_conv
 
 class kernel(BaseEstimator, TransformerMixin):
     def __init__(self, length=None, bias=None, dilation=None, padding=None, 
@@ -125,7 +62,7 @@ class kernel(BaseEstimator, TransformerMixin):
         """
         
         self._check_is_init()
-        X = self._check_array(X)
+        X = check_array_3D(X)
         if normalise:
             X = (X - X.mean(axis=-1, keepdims=True)) / (
                 X.std(axis=-1, keepdims=True) + 1e-8
@@ -180,23 +117,6 @@ class kernel(BaseEstimator, TransformerMixin):
                                                                   '_weights']):
             raise AttributeError("Kernel attribute not initialised correctly, "
                                  "at least one attribute was set to None")
-    
-    def _check_array(self, X, coerce_to_numpy=True):
-        if X.ndim != 3:
-            raise ValueError(
-                "If passed as a np.array, X must be a 3-dimensional "
-                "array, but found shape: {X.shape}"
-            )
-        if isinstance(X, pd.DataFrame):
-            if not is_nested_dataframe(X):
-                raise ValueError(
-                    "If passed as a pd.DataFrame, X must be a nested "
-                    "pd.DataFrame, with pd.Series or np.arrays inside cells."
-                )
-            # convert pd.DataFrame
-            if coerce_to_numpy:
-                X = from_nested_to_3d_numpy(X)
-        return X
     
     @property            
     def length(self): 
@@ -264,12 +184,12 @@ class Rocket_feature_kernel(kernel):
     
     def get_features(self, X, normalise=True):
         self._check_is_init()
-        X = self._check_array(X)
+        X = check_array_3D(X)
         return self.f_val(self.transform(X, normalise=normalise)[:,self.id_ft])
     
     def get_locs(self, X, normalise=True):
         self._check_is_init()
-        X = self._check_array(X)
+        X = check_array_3D(X)
         X_conv = self.transform(X, normalise=normalise)
         return np.asarray([self.f_loc(x) for x in X_conv[:,self.id_ft]],dtype='object')
     
@@ -342,6 +262,8 @@ class Rocket_kernel(kernel):
         return self
     
     def get_features(self, X, normalise=True):
+        self._check_is_init()
+        X = check_array_3D(X)
         X_conv = self.transform(X, normalise=normalise)
         return np.concatenate((np.mean(X_conv > 0, axis=-1),
                                np.max(X_conv, axis=-1)),axis=1)

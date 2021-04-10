@@ -52,7 +52,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         X = self._check_array(X)
         return self
     
-    def transform(self, X, padding_matching=False):
+    def transform(self, X, padding_matching=True):
         """
         Transform the input into distance to the Shapelet to be used as a 
         single feature. The distance used is the normalised euclidean distance

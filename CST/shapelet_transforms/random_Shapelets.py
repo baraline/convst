@@ -7,18 +7,12 @@ Created on Fri Apr  2 08:52:54 2021
 import numpy as np
 import pandas as pd
 
+from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.utils.shapelets_utils import compute_distances, generate_strides_2D
-
 
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from sklearn.base import BaseEstimator, ClassifierMixin
-from numba import njit, prange
-from CST.base_transformers.rocket import ROCKET
-from CST.factories.kernel_factories import Rocket_factory
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import KBinsDiscretizer
-from CST.base_transformers.shapelets import Convolutional_shapelet
-
 
 class UFShapeletClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, random_state=None, id_ft=0, verbose=0, shp_len=[0.1]):
