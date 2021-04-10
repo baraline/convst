@@ -7,27 +7,11 @@ Created on Thu Apr  1 18:10:58 2021
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from numba import njit, prange
+
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from matplotlib import pyplot as plt
 
-@njit(parallel=True)
-def compute_distances(X_strides, value_matrix):
-    dist_to_X = np.zeros((X_strides.shape[0], value_matrix.shape[0]))
-    for i in prange(X_strides.shape[0]):
-        for j in prange(value_matrix.shape[0]):
-            dist_to_X[i,j] = min_dist_shp(X_strides[i], value_matrix[j])
-    return dist_to_X
-
-@njit(fastmath=True)
-def min_dist_shp(X, v):
-    return np.min(np.array([np.linalg.norm(X[i]-v) for i in prange(X.shape[0])]))
-
-def convolution_values2D(ts, window, dilation):
-    n_rows, n_columns = ts.shape
-    shape = (n_rows, n_columns - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[1], ts.strides[1]*dilation])
-    return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)  
+from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, min_dist_shp
 
 
 class Convolutional_shapelet(BaseEstimator, TransformerMixin):
@@ -100,7 +84,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
             X_pad[:,padding:-padding] = X[:,0,:]
         else:
             X_pad = X[:,0,:]   
-        X_strides = convolution_values2D(X_pad,self.values.shape[0],self.dilation)
+        X_strides = generate_strides_2D(X_pad,self.values.shape[0],self.dilation)
         X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                     X_strides.std(axis=-1, keepdims=True) + 1e-8)
         return compute_distances(X_strides, self.values.reshape(1,-1))

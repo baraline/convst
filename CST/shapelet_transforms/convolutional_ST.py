@@ -6,6 +6,10 @@ Created on Fri Apr  2 08:52:54 2021
 """
 import numpy as np
 import pandas as pd
+
+from CST.utils.shapelets_utils import compute_distances, generate_strides_2D
+
+
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from sklearn.base import BaseEstimator, ClassifierMixin
 from numba import njit, prange
@@ -18,25 +22,6 @@ from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.factories.kernel_factories import Rocket_factory
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
-
-@njit(parallel=True, fastmath=True)
-def compute_distances(X_strides, value_matrix):
-    dist_to_X = np.zeros((X_strides.shape[0], value_matrix.shape[0]))
-    for i in prange(X_strides.shape[0]):
-        for j in prange(value_matrix.shape[0]):
-            dist_to_X[i,j] = np.min(np.array([np.linalg.norm(X_strides[i][k]-value_matrix[j]) for k in prange(X_strides[i].shape[0])]))
-    return dist_to_X
-
-def convolution_values1D(ts, window, dilation):
-    shape = (ts.size - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[0]*dilation])
-    return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)    
-
-def convolution_values2D(ts, window, dilation):
-    n_rows, n_columns = ts.shape
-    shape = (n_rows, n_columns - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[1], ts.strides[1]*dilation])
-    return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)    
 
 
 class ConvolutionalShapeletTransformClassifier2(BaseEstimator, ClassifierMixin):
@@ -228,7 +213,7 @@ class ConvolutionalShapeletTransformClassifier(BaseEstimator, ClassifierMixin):
             X_pad[:,padding:-padding] = X[:,0,:]
         else:
             X_pad = X[:,0,:]
-        X_strides = convolution_values2D(X_pad,length,dilation)
+        X_strides = generate_strides_2D(X_pad,length,dilation)
         X_values = []
         for i_k in range(K.shape[0]):
             idx = np.zeros((n_samples, n_conv))

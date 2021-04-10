@@ -76,22 +76,13 @@ def apply_one_kernel_all_sample(X, id_ft, weights, length, bias,
 
 class kernel(BaseEstimator, TransformerMixin):
     def __init__(self, length=None, bias=None, dilation=None, padding=None, 
-                 weights=None, verbose=0, id_ft=0):
+                 weights=None, id_ft=0):
         self.length = length
         self.bias = bias
         self.dilation = dilation
         self.padding = padding
         self.weights = weights
         self.id_ft = id_ft
-        self.verbose = verbose
-    
-    def _log(self, msg):
-        if self.verbose >= 1:
-            print(msg)
-            
-    def _log2(self, msg):
-        if self.verbose >= 2:
-            print(msg)
     
     def print_info(self):
         """
@@ -230,15 +221,7 @@ class kernel(BaseEstimator, TransformerMixin):
     @bias.setter   
     def bias(self, value):
         self._bias = value
-        
-    @property            
-    def verbose(self): 
-        return self._verbose
-    
-    @verbose.setter   
-    def verbose(self, value):
-        self._verbose = value
-    
+            
     @property            
     def dilation(self): 
         return self._dilation
@@ -265,12 +248,12 @@ class kernel(BaseEstimator, TransformerMixin):
         
 class Rocket_feature_kernel(kernel):
     def __init__(self, length=None, bias=None, dilation=None, padding=None,
-                 weights=None, id_ft=None, verbose=0, feature_id=None):
+                 weights=None, id_ft=None, feature_id=None):
         self.kernel_id = feature_id//2
         self.feature_id = feature_id
         super().__init__(length=length, bias=bias, dilation=dilation,
                                     padding=padding, weights=weights,
-                                    verbose=verbose, id_ft=id_ft)
+                                    id_ft=id_ft)
         f_val , f_loc = self._get_ft_func()
         self.f_val = f_val
         self.f_loc = f_loc
@@ -314,7 +297,6 @@ class Rocket_feature_kernel(kernel):
     def _ft_pnv_loc(self, conv):
         return (conv <= 0).nonzero()[0]
 
-    
     @property            
     def f_val(self): 
         return self._f_val
@@ -349,11 +331,11 @@ class Rocket_feature_kernel(kernel):
         
 class Rocket_kernel(kernel):
     def __init__(self, length=None, bias=None, dilation=None, padding=None,
-                 weights=None, verbose=0, id_ft=None, kernel_id=None):
+                 weights=None, id_ft=None, kernel_id=None):
         self.kernel_id = kernel_id
         super().__init__(length=length, bias=bias, dilation=dilation,
                                     padding=padding, weights=weights,
-                                    verbose=verbose, id_ft=id_ft)
+                                    id_ft=id_ft)
         
     def fit(self, X, y=None, normalise=True):
         self._check_is_init()

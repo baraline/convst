@@ -6,6 +6,10 @@ Created on Fri Apr  2 08:52:54 2021
 """
 import numpy as np
 import pandas as pd
+
+from CST.utils.shapelets_utils import compute_distances, generate_strides_2D
+
+
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from sklearn.base import BaseEstimator, ClassifierMixin
 from numba import njit, prange
@@ -15,24 +19,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import KBinsDiscretizer
 from CST.base_transformers.shapelets import Convolutional_shapelet
 
-@njit(parallel=True, fastmath=True)
-def compute_distances(X_strides, value_matrix):
-    dist_to_X = np.zeros((X_strides.shape[0], value_matrix.shape[0]))
-    for i in prange(X_strides.shape[0]):
-        for j in prange(value_matrix.shape[0]):
-            dist_to_X[i,j] = np.min(np.array([np.linalg.norm(X_strides[i][k]-value_matrix[j]) for k in prange(X_strides[i].shape[0])]))
-    return dist_to_X
-
-def convolution_values1D(ts, window, dilation):
-    shape = (ts.size - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[0]*dilation])
-    return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)    
-
-def convolution_values2D(ts, window, dilation):
-    n_rows, n_columns = ts.shape
-    shape = (n_rows, n_columns - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[1], ts.strides[1]*dilation])
-    return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)    
 
 class UFShapeletClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, random_state=None, id_ft=0, verbose=0, shp_len=[0.1]):
@@ -56,7 +42,7 @@ class UFShapeletClassifier(BaseEstimator, ClassifierMixin):
         all_distances = []
         X = X[:,0,:]
         for shp_l in self.shp_len:
-            X_strides = convolution_values2D(X,int(X.shape[1]*shp_l),1)
+            X_strides = generate_strides_2D(X,int(X.shape[1]*shp_l),1)
             values = np.concatenate(X_strides,axis=0)
             idx = np.random.choice(range(values.shape[0]), int(values.shape[0]*percentage_selected), replace=False)
             distances = compute_distances(X_strides, values[idx])
@@ -84,7 +70,7 @@ class UFShapeletClassifier(BaseEstimator, ClassifierMixin):
         all_distances = []
         for shp_l in self.shp_len:
             s_len = int(X.shape[1]*shp_l)
-            X_strides = convolution_values2D(X,s_len,1)
+            X_strides = generate_strides_2D(X,s_len,1)
             values = np.array([shp.values for shp in self.shapelets if len(shp.values) == s_len])
             distances = compute_distances(X_strides, values)            
             all_distances.append(distances)
@@ -103,7 +89,7 @@ class UFShapeletClassifier(BaseEstimator, ClassifierMixin):
             X_pad[:,padding:-padding] = X[:,0,:]
         else:
             X_pad = X[:,0,:]
-        X_strides = convolution_values2D(X_pad,length,dilation)
+        X_strides = generate_strides_2D(X_pad,length,dilation)
         X_values = []
         for i_k in range(K.shape[0]):
             idx = np.zeros((n_samples, n_conv))
