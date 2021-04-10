@@ -31,7 +31,7 @@ print("F1-Score for ROCKET RF : {}".format(f1_score(y_test, pred, average='macro
     
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
     
-cst = ConvolutionalShapeletTransformer(rkt_object=rkt, ft_imps=rf.feature_importances_).fit(X_train,y_train)
+cst = ConvolutionalShapeletTransformer(rkt_object=rkt, ft_imps=rf.feature_importances_, verbose=1).fit(X_train,y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

@@ -63,6 +63,7 @@ def min_dist_shp(x_strides, subseq):
     return np.min(np.array([np.linalg.norm(x_strides[i]-subseq) 
                             for i in prange(x_strides.shape[0])]))
 
+# TODO could use stides to speed up ROCKET/Kernel convolutional operations
 def generate_strides_2D(ts, window, dilation):
     """
     Generate strides from the input univariate time series with specified 
