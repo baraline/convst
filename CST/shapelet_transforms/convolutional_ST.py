@@ -38,6 +38,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self._log("Selected {} features out of {}".format(kernels.shape[0],
                                                           self.ft_imps.shape[0]))
         
+        
         groups_id, unique_groups = self._get_kernel_groups(kernels_dilations,
                                                            kernels_length,
                                                            kernels_bias, 
@@ -46,6 +47,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         values = {}
         for i_grp in unique_groups.keys():
             dilation, length, bias, padding = unique_groups[i_grp]
+            self._log('-------------------')
             self._log("Extracting Shapelets for kernels with {}".format(str(unique_groups[i_grp])))
             X_strides = self._get_X_strides(X, length ,dilation, padding)
             X_conv_indexes = self._get_idx_strides(X, length, dilation, padding)
@@ -71,24 +73,63 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     id_x = self._select_id_loc(loc_c1,loc_c2,n_shapelet_per_combination, 
                                                percentile_select=percentile_select)
                     for i in id_x:
-                        values_grp.extend((X_strides[id_c1[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))
+                        values_grp.append((X_strides[id_c1[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))
                         
                     id_x = self._select_id_loc(loc_c2,loc_c1,n_shapelet_per_combination,
                                                percentile_select=percentile_select)
                     for i in id_x:
-                        values_grp.extend((X_strides[id_c2[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))    
-            #TODO : Discretisation computation can be done ignoring the bias and padding param
-            values_grp = np.asarray(values_grp)
-            kbd = KBinsDiscretizer(n_bins=n_bins, strategy='uniform').fit(values_grp.reshape(-1,1))
+                        values_grp.append((X_strides[id_c2[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))    
+                    
+            values_grp = np.concatenate(values_grp,axis=0)
+            if values_grp.shape[0] > 0:
+                values.update({i_grp : values_grp})
             self._log("Extracted {} candidates from {} kernels".format(
                 values_grp.shape[0],grp_kernels.shape[0]))     
-            values_grp = np.unique(kbd.inverse_transform(kbd.transform(
-                values_grp.reshape(-1,1))).reshape(-1,length),axis=0)
-            self._log("Adding {} candidates to list".format(
-                values_grp.shape[0]))
-            values.update({i_grp : values_grp})
-        self.shapelets_params = unique_groups    
+        self._log('-------------------')
+        bin_params = np.unique(np.array([[kernels_dilations[i], kernels_length[i]] 
+                                         for i in range(kernels_dilations.shape[0])]),axis=0)
+        for bin_p in bin_params:
+            id_bins = np.array([i_grp for i_grp, grp_params in unique_groups.items() if np.array_equal(grp_params[[0,1]],bin_p)])
+            
+            values_grp = np.array([values[id_grp] for id_grp in id_bins],dtype='object')
+            all_values = np.concatenate(values_grp,axis=0)
+            n_candidates = all_values.shape[0]
+            
+            kbd = KBinsDiscretizer(n_bins=n_bins, strategy='uniform').fit(all_values.reshape(-1,1))
+            
+            all_values = kbd.inverse_transform(kbd.transform(all_values.reshape(-1,1))).reshape(-1,bin_p[1])
+            
+            unique_vals = np.unique(all_values,axis=0)
+            values_grp = np.array([kbd.inverse_transform(kbd.transform(values_grp[id_grp].reshape(-1,1))).reshape(-1,bin_p[1]) for id_grp in range(id_bins.shape[0])],dtype='object')
+
+            self._log("Discretization filtered {}/{} candidates for groups {}".format(n_candidates-unique_vals.shape[0],n_candidates,bin_p))
+            
+            affect_to_id = np.zeros(unique_vals.shape[0]) - 1
+            
+            for i_val in range(affect_to_id.shape[0]):
+                for id_grp in range(id_bins.shape[0]):
+                    if affect_to_id[i_val] == -1 and any(np.equal(values_grp[id_grp],unique_vals[i_val]).all(axis=1)):
+                        affect_to_id[i_val] = id_grp
+            
+            for id_grp in range(id_bins.shape[0]):
+                id_affect = np.where(affect_to_id==id_grp)[0]
+                values[id_bins[id_grp]] = unique_vals[id_affect]
+                if id_affect.shape[0] == 0:
+                    print("Dropped {}".format(id_bins[id_grp]))
+                    values.pop(id_bins[id_grp], None)
+        
+        
+        to_keep = list(values.keys())
+        print(to_keep)
+        g_keys = list(unique_groups.keys())
+        for key in g_keys:
+            if key not in to_keep:
+                unique_groups.pop(key, None)
+        self.shapelets_params = unique_groups
         self.shapelets_values = values
+        #TODO : What is the effect of discretising all shapelets with same bins independently of parameters ?
+        #TODO : Only a fraction of the selected candidates are used in while learning a model could a selection method be used ?
+        
         return self    
     
     def transform(self, X):
@@ -112,12 +153,10 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def _select_id_loc(self, loc_c1, loc_c2, n_shapelet_per_combination,
                        percentile_select = 90):
         diff = loc_c1 - loc_c2
-        id_conv = np.where(diff>np.percentile(diff,percentile_select))[0]
+        id_conv = np.where(diff>=np.percentile(diff,percentile_select))[0]
         n = n_shapelet_per_combination if n_shapelet_per_combination < id_conv.shape[0] else id_conv.shape[0]
-        if n > 0:
-            return np.random.choice(id_conv, n, replace=False)
-        else:
-            return []
+        return np.random.choice(id_conv, n, replace=False)
+        
     
     def _get_X_locs(self, X, kernels):
         X_locs = np.zeros((X.shape[0], X.shape[2]))
@@ -135,6 +174,8 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         else:
             X_pad = X[:,self.id_ft,:]
         X_strides = generate_strides_2D(X_pad,length,dilation)
+        X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
+                        X_strides.std(axis=-1, keepdims=True) + 1e-8)
         return X_strides
     
     def _get_idx_strides(self, X, length, dilation, padding):
@@ -172,7 +213,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         for i in unique_groups.keys():
             groups_id[np.where((groups_params == unique_groups[i]).all(axis=1))[0]] = i
         return groups_id, unique_groups
-        
+    
     def _check_is_init(self):
         if any(self.__dict__[attribute] is None for attribute in ['rkt_object',
                                                                   'ft_imps',
