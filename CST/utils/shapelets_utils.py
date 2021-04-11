@@ -64,14 +64,14 @@ def min_dist_shp(x_strides, subseq):
                             for i in prange(x_strides.shape[0])]))
 
 # TODO could use stides to speed up ROCKET/Kernel convolutional operations
-def generate_strides_2D(ts, window, dilation):
+def generate_strides_2D(X, window, dilation):
     """
-    Generate strides from the input univariate time series with specified 
+    Generate strides from an ensemble of univariate time series with specified 
     length and dilation parameters.
 
     Parameters
     ----------
-    ts : array, shape = (n_samples, n_timestamps)
+    X : array, shape = (n_samples, n_timestamps)
         An ensemble of univariate time series, in a 2 dimensional view.
     window : int
         Length of the strides to generate.
@@ -84,7 +84,31 @@ def generate_strides_2D(ts, window, dilation):
         All possible subsequences of length stride_len for each time series.
 
     """
-    n_rows, n_columns = ts.shape
+    n_rows, n_columns = X.shape
     shape = (n_rows, n_columns - ((window-1)*dilation), window)
-    strides = np.array([ts.strides[0], ts.strides[1], ts.strides[1]*dilation])
+    strides = np.array([X.strides[0], X.strides[1], X.strides[1]*dilation])
+    return np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)  
+
+def generate_strides_1D(ts, window, dilation):
+    """
+    Generate strides from the input univariate time series with specified 
+    length and dilation parameters.
+
+    Parameters
+    ----------
+    ts : array, shape = (n_timestamps)
+        An univariate time series, in a 1 dimensional view.
+    window : int
+        Length of the strides to generate.
+    dilation : int
+        Dilation parameter to apply when generating the strides.
+
+    Returns
+    -------
+    array, shape = (n_samples, n_strides, stride_len)
+        All possible subsequences of length stride_len for each time series.
+
+    """
+    shape = (ts.size - ((window-1)*dilation), window)
+    strides = np.array([ts.strides[0], ts.strides[0]*dilation])
     return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)  

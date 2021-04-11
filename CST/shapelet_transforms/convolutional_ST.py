@@ -6,19 +6,17 @@ Created on Fri Apr  2 08:52:54 2021
 """
 import numpy as np
 
-from CST.utils.shapelets_utils import compute_distances, generate_strides_2D
+from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
 from CST.factories.kernel_factories import Rocket_factory
-from CST.base_transformers.shapelets import Convolutional_shapelet
+
 from CST.utils.checks_utils import check_array_3D
 
 from itertools import combinations
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import shuffle
-
-from matplotlib import pyplot as plt
 
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, rkt_object, ft_imps, id_ft=0, verbose=0):
@@ -27,10 +25,12 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self.ft_imps = ft_imps
         self.id_ft = id_ft
         self.verbose = verbose
-        self.shapelets = []
+        self.shapelets_params = None    
+        self.shapelets_values = None
     
     #TODO : Add a value mapping to handle case where difference is made by value and not location
-    def fit(self, X, y, n_shapelet_per_combination=2, n_iter_per_comb=4, n_bins=8):
+    def fit(self, X, y, n_shapelet_per_combination=2, n_iter_per_comb=4, 
+            n_bins=10, percentile_select=90):
         self._check_is_init()
         X = check_array_3D(X)
         
@@ -42,20 +42,21 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                                            kernels_length,
                                                            kernels_bias, 
                                                            kernels_padding)
-        
         n_classes = np.unique(y).shape[0]
         values = {}
-        distances = []
         for i_grp in unique_groups.keys():
             dilation, length, bias, padding = unique_groups[i_grp]
             self._log("Extracting Shapelets for kernels with {}".format(str(unique_groups[i_grp])))
             X_strides = self._get_X_strides(X, length ,dilation, padding)
+            X_conv_indexes = self._get_idx_strides(X, length, dilation, padding)
             self._log("Strides shape {}".format(X_strides.shape))
+            
             grp_kernels = kernels[np.where(groups_id == i_grp)[0]]
             X_locs = self._get_X_locs(X, grp_kernels)
+            
             values_grp = []
             for c1,c2 in combinations(range(n_classes),2):
-                #Create random partition of each class according to n_sample param
+                #Create random partition of each class according to n_iter_per_comb param
                 id_c1 = np.array_split(shuffle(np.where(y==c1)[0]),n_iter_per_comb)
                 id_c2 = np.array_split(shuffle(np.where(y==c2)[0]),n_iter_per_comb)
                 for i_iter in range(n_iter_per_comb):
@@ -66,22 +67,18 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     loc_c2 = (loc_c2 - loc_c2.min()) / (
                         loc_c2.max() - loc_c2.min())
 
-
-                    #This is wrong, make an extract that, from id x, and params, 
-                    # extract all subsequence of the kernel including this id (0,1,2,3),(1,2,3,4),(2,3,4,5) l=4 dil=1 id = 2
-                    #Those input indexes will be the values of the candidates
-                    """
-                    values_grp.extend(X_strides[id_c1[i_iter][:,None], self._select_id_loc(loc_c1,
-                                                                        loc_c2,
-                                                                        n_shapelet_per_combination)
-                                            ].reshape(-1,length))
-                    values_grp.extend(X_strides[id_c2[i_iter][:,None], self._select_id_loc(loc_c2,
-                                                                        loc_c1,
-                                                                        n_shapelet_per_combination)
-                                            ].reshape(-1,length))
-                    """
+                    
+                    id_x = self._select_id_loc(loc_c1,loc_c2,n_shapelet_per_combination, 
+                                               percentile_select=percentile_select)
+                    for i in id_x:
+                        values_grp.extend((X_strides[id_c1[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))
+                        
+                    id_x = self._select_id_loc(loc_c2,loc_c1,n_shapelet_per_combination,
+                                               percentile_select=percentile_select)
+                    for i in id_x:
+                        values_grp.extend((X_strides[id_c2[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))    
+            #TODO : Discretisation computation can be done ignoring the bias and padding param
             values_grp = np.asarray(values_grp)
-            print(values_grp.shape)
             kbd = KBinsDiscretizer(n_bins=n_bins, strategy='uniform').fit(values_grp.reshape(-1,1))
             self._log("Extracted {} candidates from {} kernels".format(
                 values_grp.shape[0],grp_kernels.shape[0]))     
@@ -90,27 +87,37 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             self._log("Adding {} candidates to list".format(
                 values_grp.shape[0]))
             values.update({i_grp : values_grp})
-            distances.append(compute_distances(X_strides, values_grp))
-        distances = np.concatenate(distances,axis=1)
-        self._log("Transform shape {} ".format(
-                    distances.shape[0]))
-        # RandomForest to select ?
-        # Store Shapelets        
+        self.shapelets_params = unique_groups    
+        self.shapelets_values = values
         return self    
-        
-    def _select_id_loc(self, loc_c1, loc_c2, n_shapelet_per_combination):
-        diff = loc_c1 - loc_c2
-        id_conv = np.where(diff>np.percentile(diff,90))[0]
-        n = n_shapelet_per_combination if n_shapelet_per_combination < id_conv.shape[0] else id_conv.shape[0] - 1
-        id_conv = np.random.choice(id_conv, n, replace=False)
-        return id_conv
     
     def transform(self, X):
-        return X
+        self._check_is_fitted()
+        X = check_array_3D(X)
+        distances = []
+        #TODO : Distance computation can be done ignoring the bias
+        for i, i_grp in enumerate(self.shapelets_params.keys()):
+            self._log("Transforming for grp {} ({}/{}) with {} shapelets".format(self.shapelets_params[i_grp],
+                                                                                 i, len(self.shapelets_params),
+                                                                                 self.shapelets_values[i_grp].shape[0]))
+            dilation, length, _, padding = self.shapelets_params[i_grp]
+            X_strides = self._get_X_strides(X, length ,dilation, padding)
+            distances.append(compute_distances(X_strides, self.shapelets_values[i_grp]))
+        return np.concatenate(distances, axis=1)
              
     def _log(self, message):
         if self.verbose > 0:
             print(message)
+    
+    def _select_id_loc(self, loc_c1, loc_c2, n_shapelet_per_combination,
+                       percentile_select = 90):
+        diff = loc_c1 - loc_c2
+        id_conv = np.where(diff>np.percentile(diff,percentile_select))[0]
+        n = n_shapelet_per_combination if n_shapelet_per_combination < id_conv.shape[0] else id_conv.shape[0]
+        if n > 0:
+            return np.random.choice(id_conv, n, replace=False)
+        else:
+            return []
     
     def _get_X_locs(self, X, kernels):
         X_locs = np.zeros((X.shape[0], X.shape[2]))
@@ -129,6 +136,13 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             X_pad = X[:,self.id_ft,:]
         X_strides = generate_strides_2D(X_pad,length,dilation)
         return X_strides
+    
+    def _get_idx_strides(self, X, length, dilation, padding):
+        _, _, n_timestamps = X.shape
+        n_timestamps += 2*padding
+        x_idx = generate_strides_1D(np.array(range(n_timestamps)),length,dilation) - padding
+        x_idx[np.where((x_idx >= X.shape[2]) | (x_idx < 0))] = -1
+        return x_idx 
     
     
     def _get_kernels(self):
@@ -163,8 +177,14 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         if any(self.__dict__[attribute] is None for attribute in ['rkt_object',
                                                                   'ft_imps',
                                                                   'id_ft']):
-            raise AttributeError("Kernel attribute not initialised correctly, "
+            raise AttributeError("CST attributes not initialised correctly, "
                                  "at least one attribute was set to None")
+    
+    def _check_is_fitted(self):
+        if any(self.__dict__[attribute] is None for attribute in ['shapelets_values',
+                                                                  'shapelets_params']):
+            raise AttributeError("CST is not fitted, call the fit method before"
+                                 "attemping to transform data")
             
 """
 class ConvolutionalShapeletTransformClassifier(BaseEstimator, ClassifierMixin):
