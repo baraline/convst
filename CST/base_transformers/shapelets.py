@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from matplotlib import pyplot as plt
 
-from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, min_dist_shp
+from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, min_dist_shp_loc, generate_strides_1D
 
 
 class Convolutional_shapelet(BaseEstimator, TransformerMixin):
@@ -91,17 +91,11 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         
         
     def _locate(self, x, return_dist=False, return_scale=False, 
-                padding_matching=False):
-        padding = self.padding
-        if not padding_matching:
-            padding = 0
-        
-        min_dist, i_loc = min_dist_shp(x, self.values, padding, 
-                                          self.dilation, self.length, 
-                                          x.shape[0])
+                padding_matching=False):        
+        min_dist, i_loc = min_dist_shp_loc(generate_strides_1D(x,self.values.shape[0],self.dilation), self.values)
         
         # If padding is used, to get matching in original input (not padded) apply -padding
-        loc = np.asarray([i_loc + (j*self.dilation) for j in range(self.length)])
+        loc = np.asarray([i_loc + (j*self.dilation) for j in range(self.values.shape[0])])
         if return_dist and return_scale:
             return loc, min_dist, np.mean(x[loc]), np.std(x[loc])
         elif return_scale:
@@ -176,7 +170,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         else:
             x_pad = x
         
-        loc, mean, std = self._locate(x, return_dist=False, return_scale=True,
+        loc, mean, std = self._locate(x_pad, return_dist=False, return_scale=True,
                                      padding_matching=padding_matching)
         vals = (self.values * std) + mean
         padding = self.padding

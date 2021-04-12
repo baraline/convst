@@ -112,3 +112,28 @@ def generate_strides_1D(ts, window, dilation):
     shape = (ts.size - ((window-1)*dilation), window)
     strides = np.array([ts.strides[0], ts.strides[0]*dilation])
     return np.lib.stride_tricks.as_strided(ts, shape=shape, strides=strides)  
+
+@njit(fastmath=True)
+def min_dist_shp_loc(x_strides, subseq):
+    """
+    Compute the minimum euclidean distance from strides of a times series to a 
+    subsequence of the length of the input strides
+
+    Parameters
+    ----------
+    x_strides : array, shape = (n_strides, stride_len)
+        All possible subsequences of length stride_len of a time series.
+
+    subseq : array, shape = (stride_len)
+        Subsequence on which we want to compute the minimal euclidean distance
+
+    Returns
+    -------
+    (float, int)
+        The minimum euclidean distance between the input strides and 
+        the subsequence and the first location of this minimum
+
+    """
+    d = np.array([np.linalg.norm(x_strides[i]-subseq)
+                  for i in prange(x_strides.shape[0])])
+    return np.min(d), np.argmin(d)

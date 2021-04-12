@@ -47,14 +47,14 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         values = {}
         for i_grp in unique_groups.keys():
             dilation, length, bias, padding = unique_groups[i_grp]
+            
             self._log('-------------------')
             self._log("Extracting Shapelets for kernels with {}".format(str(unique_groups[i_grp])))
-            X_strides = self._get_X_strides(X, length ,dilation, padding)
-            X_conv_indexes = self._get_idx_strides(X, length, dilation, padding)
-            self._log("Strides shape {}".format(X_strides.shape))
-            
             grp_kernels = kernels[np.where(groups_id == i_grp)[0]]
+            X_conv_indexes = self._get_idx_strides(X, length, dilation, padding)
             X_locs = self._get_X_locs(X, grp_kernels)
+            X_strides = self._get_X_strides(X, length ,dilation, padding)
+            self._log("Strides shape {}".format(X_strides.shape))                        
             
             values_grp = []
             for c1,c2 in combinations(range(n_classes),2):
@@ -120,14 +120,13 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         
         
         to_keep = list(values.keys())
-        print(to_keep)
         g_keys = list(unique_groups.keys())
         for key in g_keys:
             if key not in to_keep:
                 unique_groups.pop(key, None)
         self.shapelets_params = unique_groups
         self.shapelets_values = values
-        #TODO : What is the effect of discretising all shapelets with same bins independently of parameters ?
+        
         #TODO : Only a fraction of the selected candidates are used in while learning a model could a selection method be used ?
         
         return self    
