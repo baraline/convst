@@ -29,10 +29,10 @@ print("F1-Score for ROCKET RF : {}".format(f1_score(y_test, pred, average='macro
 
 # In[]:
     
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+#from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 
 cst = ConvolutionalShapeletTransformer(rkt_object=rkt, ft_imps=rf.feature_importances_, verbose=1)
-cst.fit(X_train,y_train, n_shapelet_per_combination=2, n_iter_per_comb=3, n_bins=7, percentile_select=90)
+cst.fit(X_train,y_train, n_shapelet_per_combination=2, n_iter_per_comb=3, n_bins=6, percentile_select=90)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

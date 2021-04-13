@@ -96,6 +96,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         
         # If padding is used, to get matching in original input (not padded) apply -padding
         loc = np.asarray([i_loc + (j*self.dilation) for j in range(self.values.shape[0])])
+        
         if return_dist and return_scale:
             return loc, min_dist, np.mean(x[loc]), np.std(x[loc])
         elif return_scale:
@@ -176,12 +177,11 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         padding = self.padding
         if ax is None:
             plt.plot(x_pad,c=c_x)
-            plt.scatter(loc,vals,alpha=alpha,color=color,s=size)            
+            plt.scatter(loc,vals,alpha=alpha,color=color,s=size)          
             plt.show()
         else:
             ax.plot(x_pad,c=c_x)
             ax.scatter(loc,vals,alpha=alpha,color=color,s=size)
-    
     
     @property            
     def values(self):

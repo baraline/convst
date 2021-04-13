@@ -44,6 +44,16 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                                            kernels_bias, 
                                                            kernels_padding)
         n_classes = np.unique(y).shape[0]
+        dil_to_consider = self.primesfrom2to(np.max(np.array(list(unique_groups.values()))[:,0]))
+        print(dil_to_consider)
+        to_pop = []
+        for i_grp in unique_groups.keys():
+            grp_dilation = unique_groups[i_grp][0]
+            if  grp_dilation != 1 and grp_dilation not in dil_to_consider:
+                to_pop.append(i_grp)
+        self._log("Filtered {}/{} kernel groups based on dilation".format(len(to_pop),len(unique_groups)))
+        for key in to_pop:
+            unique_groups.pop(key, None)
         values = {}
         for i_grp in unique_groups.keys():
             dilation, length, bias, padding = unique_groups[i_grp]
@@ -73,21 +83,30 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     id_x = self._select_id_loc(loc_c1,loc_c2,n_shapelet_per_combination, 
                                                percentile_select=percentile_select)
                     for i in id_x:
-                        values_grp.append((X_strides[id_c1[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))
+                        id_to_get = np.where(X_conv_indexes == i)[0]
+                        id_to_get = np.random.choice(id_to_get, int(np.ceil(id_to_get.shape[0]*0.2)))
+                        id_x_to_get = np.random.choice(id_c1[i_iter], int(np.ceil(id_c1[i_iter].shape[0]*0.2)))
+                        values_grp.append((X_strides[id_x_to_get[:,None], id_to_get]).reshape(-1, length))
                         
                     id_x = self._select_id_loc(loc_c2,loc_c1,n_shapelet_per_combination,
                                                percentile_select=percentile_select)
                     for i in id_x:
-                        values_grp.append((X_strides[id_c2[i_iter][:,None], np.where(X_conv_indexes == i)[0]]).reshape(-1, length))    
-                    
+                        id_to_get = np.where(X_conv_indexes == i)[0]
+                        id_to_get = np.random.choice(id_to_get, int(np.ceil(id_to_get.shape[0]*0.2)))
+                        id_x_to_get = np.random.choice(id_c2[i_iter], int(np.ceil(id_c2[i_iter].shape[0]*0.2)))
+                        values_grp.append((X_strides[id_x_to_get[:,None], id_to_get]).reshape(-1, length))
+            
             values_grp = np.concatenate(values_grp,axis=0)
             if values_grp.shape[0] > 0:
                 values.update({i_grp : values_grp})
             self._log("Extracted {} candidates from {} kernels".format(
                 values_grp.shape[0],grp_kernels.shape[0]))     
         self._log('-------------------')
-        bin_params = np.unique(np.array([[kernels_dilations[i], kernels_length[i]] 
-                                         for i in range(kernels_dilations.shape[0])]),axis=0)
+        
+        k_params = np.array(list(unique_groups.values()))
+        print(k_params.shape)
+        bin_params = np.unique(np.array([[k_params[i,0], k_params[i,1]] 
+                                         for i in range(k_params.shape[0])]),axis=0)
         for bin_p in bin_params:
             id_bins = np.array([i_grp for i_grp, grp_params in unique_groups.items() if np.array_equal(grp_params[[0,1]],bin_p)])
             
@@ -131,11 +150,23 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         
         return self    
     
+    def primesfrom2to(self, n):
+        """ Input n>=6, Returns a array of primes, 2 <= p < n """
+        sieve = np.ones(n//3 + (n%6==2), dtype=np.bool)
+        sieve[0] = False
+        for i in range(int(n**0.5)//3+1):
+            if sieve[i]:
+                k=3*i+1|1
+                sieve[      ((k*k)//3)      ::2*k] = False
+                sieve[(k*k+4*k-2*k*(i&1))//3::2*k] = False
+        return np.r_[2,3,((3*np.nonzero(sieve)[0]+1)|1)]
+    
     def transform(self, X):
         self._check_is_fitted()
         X = check_array_3D(X)
         distances = []
         #TODO : Distance computation can be done ignoring the bias
+        #TODO : Could vectorization speedups / GPU speedups be used for distances computations
         for i, i_grp in enumerate(self.shapelets_params.keys()):
             self._log("Transforming for grp {} ({}/{}) with {} shapelets".format(self.shapelets_params[i_grp],
                                                                                  i, len(self.shapelets_params),
