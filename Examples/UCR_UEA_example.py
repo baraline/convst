@@ -7,32 +7,34 @@ Created on Sat Apr 10 12:14:16 2021
 
 # In[1]:
 from CST.base_transformers.rocket import ROCKET
+from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import f1_score
-
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+
 # Load GunPoint Dataset
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('GunPoint', normalize=True)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('Car', normalize=True)
 
 # Init ROCKET object
-rkt = ROCKET(n_kernels=10000, kernel_sizes=[9])
+rkt = ROCKET()
 
 # Transforming data
 X_rkt_train = rkt.fit_transform(X_train)
 X_rkt_test = rkt.transform(X_test)
 
 # Rocket Performance
-rf = RandomForestClassifier(n_estimators=400, max_features=0.5, max_samples=0.75, ccp_alpha=0.015).fit(X_rkt_train, y_train)
-pred = rf.predict(X_rkt_test)
+rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True).fit(X_rkt_train, y_train)
+pred = rdg.predict(X_rkt_test)
 print("F1-Score for ROCKET RF : {}".format(f1_score(y_test, pred, average='macro')))
 
 
 # In[]:
-    
-#from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+  
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 
-cst = ConvolutionalShapeletTransformer(rkt_object=rkt, ft_imps=rf.feature_importances_, verbose=1)
-cst.fit(X_train,y_train, n_shapelet_per_combination=2, n_iter_per_comb=3, n_bins=6, percentile_select=90)
+cst = ConvolutionalShapeletTransformer(verbose=1)
+cst.fit(X_train, y_train, n_shapelet_per_combination=2, n_iter_per_comb=3, n_bins=5, percentile_select=90)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
@@ -45,7 +47,7 @@ print("Used a total of {} / {} Shapelets in model".format(rf.feature_importances
 # In[]:
 from CST.base_transformers.shapelets import Convolutional_shapelet
 import numpy as np
-#TODO : Adding some ploting to see some of the extracted shapelets
+
 i_shp = np.argsort(rf.feature_importances_)[::-1][0]
 #shp = Convolutional_shapelet()
 grp_id = [0]

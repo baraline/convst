@@ -1,0 +1,39 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 13 15:36:19 2021
+
+@author: A694772
+"""
+import numpy as np
+from numba import njit, prange
+
+@njit(parallel=True, cache=True)
+def compute_distances(X_strides, subsequences):
+    dist_to_X = np.zeros((X_strides.shape[0], subsequences.shape[0]))
+    for i in prange(X_strides.shape[0]):
+        for j in prange(subsequences.shape[0]):
+            dist_to_X[i,j] = min_dist_shp(X_strides[i], subsequences[j])
+    return dist_to_X
+
+@njit(fastmath=True, cache=True)
+def min_dist_shp(x_strides, subseq):
+
+    return np.min(np.array([np.linalg.norm(x_strides[i]-subseq) 
+                            for i in prange(x_strides.shape[0])]))
+
+@njit(parallel=True, cache=True, fastmath=True, boundscheck=False, nogil=True)
+def compute_distances_1(X_strides, subsequences):
+    dist_to_X = np.zeros((X_strides.shape[0], subsequences.shape[0]))
+    for i in prange(X_strides.shape[0]):
+        for j in prange(subsequences.shape[0]):
+            dist_to_X[i,j] = np.min(np.array([np.linalg.norm(X_strides[i][k]-subsequences[j]) for k in prange(X_strides[i].shape[0])]))
+    return dist_to_X
+
+#TODO try implementing a cuda.jit version
+
+#(n_samples, n_strides, stride_len)
+X = np.random.rand(500, 150, 9).astype("float32")
+#(n_subsequences, stride_len)
+v = np.random.rand(100,9).astype("float32")
+
+%timeit compute_distances(X,v)
