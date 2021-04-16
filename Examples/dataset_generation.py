@@ -5,6 +5,14 @@ Created on Thu Apr 15 16:15:29 2021
 @author: A694772
 """
 import numpy as np
+from CST.base_transformers.rocket import ROCKET
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import RidgeClassifierCV
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import f1_score, make_scorer
 from matplotlib import pyplot as plt
 
 """
@@ -60,15 +68,15 @@ def _init_dataset(n_samples, n_timestamps, n_classes):
         y[i*n_sample_per_class:(i+1)*n_sample_per_class] = i
     for i in range(r):
         y[-i] = i
-    return X, y
+    return X, y.astype(int)
 
 
 #To add :
 #Diff timestamps, same value
 #Diff timestamps, diff value
 #Shift
-def make_same_timestamps_diff_values(n_samples=100, n_timestamps=50, n_locs=3,
-                                     n_classes=3, scale_diff=1., noise_coef=0.25):
+def make_same_timestamps_diff_values(n_samples=50, n_timestamps=100, n_locs=3,
+                                     n_classes=3, scale_diff=1, noise_coef=0.25):
     X, y = _init_dataset(n_samples, n_timestamps, n_classes)
     base_data = np.random.rand(n_timestamps)
     locs = np.random.choice(range(n_timestamps), n_locs, replace=False)
@@ -77,14 +85,77 @@ def make_same_timestamps_diff_values(n_samples=100, n_timestamps=50, n_locs=3,
         noise = np.random.normal(0,noise_coef,n_timestamps)
         X[i,0] = base_data + noise    
         X[i,0,locs] += (base_values)*((1+y[i])*scale_diff)
-    print(locs)
     return X, y
 
-X, y = make_same_timestamps_diff_values()
-print(y)
+def make_same_timestamps_diff_pattern(n_samples=50, n_timestamps=100, pattern_len=5, 
+                       n_classes=3, noise_coef=0.25, shape_coef=0.5):
+    X, y = _init_dataset(n_samples, n_timestamps, n_classes)
+    base_data = np.random.rand(n_timestamps)
+    loc = np.random.choice(range(n_timestamps-pattern_len))
+    base_values = [np.random.uniform(low=shape_coef, high=shape_coef*10, size=(pattern_len)) for i in np.unique(y)]
+    for i in range(n_samples):
+        noise = np.random.normal(0,noise_coef,n_timestamps)
+        X[i,0] = base_data + noise    
+        X[i,0,loc:loc+pattern_len] += base_values[y[i]]
+    return X, y
 
+def make_diff_timestamps_diff_pattern(n_samples=50, n_timestamps=100, pattern_len=5, 
+                       n_classes=3, noise_coef=0.25, shape_coef=0.5):
+    X, y = _init_dataset(n_samples, n_timestamps, n_classes)
+    base_data = np.random.rand(n_timestamps)
+    loc = np.random.choice(range(n_timestamps-pattern_len), np.unique(y).shape[0], replace=False)
+    base_values = [np.random.uniform(low=shape_coef, high=shape_coef*6, size=(pattern_len)) for i in np.unique(y)]
+    for i in range(n_samples):
+        noise = np.random.normal(0,noise_coef,n_timestamps)
+        X[i,0] = base_data + noise    
+        X[i,0,loc[y[i]]:loc[y[i]]+pattern_len] += base_values[y[i]]
+    return X, y
+
+def make_diff_timestamps_same_pattern(n_samples=50, n_timestamps=100, pattern_len=5, 
+                       n_classes=3, noise_coef=0.25, shape_coef=0.5):
+    X, y = _init_dataset(n_samples, n_timestamps, n_classes)
+    base_data = np.random.rand(n_timestamps)
+    loc = np.random.choice(range(n_timestamps-pattern_len), np.unique(y).shape[0], replace=False)
+    base_values = np.random.uniform(low=shape_coef, high=shape_coef*6, size=(pattern_len))
+    for i in range(n_samples):
+        noise = np.random.normal(0,noise_coef,n_timestamps)
+        X[i,0] = base_data + noise    
+        X[i,0,loc[y[i]]:loc[y[i]]+pattern_len] += base_values
+    return X, y
+
+def make_shift_different_pattern(n_samples=50, n_timestamps=100, pattern_len=20, 
+                       n_classes=3, noise_coef=0.25, shape_coef=0.75, shift_coef=0.25):
+    X, y = _init_dataset(n_samples, n_timestamps, n_classes)
+    base_data = np.random.rand(n_timestamps)
+    loc = np.random.choice(range(n_timestamps-pattern_len), np.unique(y).shape[0], replace=False)
+    base_values = [np.random.uniform(low=shape_coef, high=shape_coef*6, size=(pattern_len)) for i in np.unique(y)]
+    for i in range(n_samples):
+        noise = np.random.normal(0,noise_coef,n_timestamps)
+        X[i,0] = base_data + noise    
+        l = loc[y[i]]
+        l += np.random.choice(range(int((n_timestamps-(pattern_len+l))*shift_coef)))
+        X[i,0,l:l+pattern_len] += base_values[y[i]]
+    return X, y
+
+
+#make_same_timestamps_diff_values
+#make_same_timestamps_diff_pattern
+#make_diff_timestamps_diff_pattern
+#make_diff_timestamps_same_pattern
+#make_shift_different_pattern
+X, y = make_shift_different_pattern()
 color_dict = {0:'green',1:'red',2:'blue'}
 for i in range(X.shape[0]):
     plt.plot(X[i,0], c=color_dict[y[i]],alpha=0.1)
 plt.show()
-
+# In[]:
+pipe_rkt = make_pipeline(ROCKET(),
+                             RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
+cv = cross_validate(pipe_rkt, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},n_jobs=-1)
+print("F1-Score for ROCKET Ridge : {}".format(np.mean(cv['test_f1'])))
+# In[]:        
+pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(),
+                            RandomForestClassifier(n_estimators=400))
+        
+cv = cross_validate(pipe_cst, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},n_jobs=-1)
+print("F1-Score for CST RF : {}".format(np.mean(cv['test_f1'])))
