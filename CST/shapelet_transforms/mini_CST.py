@@ -32,45 +32,36 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     
     #TODO : Add a value mapping to handle case where difference is made by value and not location
     #TODO : review parameter names
-    def fit(self, X, y, n_shapelet_per_combination=2, n_iter_per_comb=5, 
-            n_bins=8, percentile_select=90):
+    def fit(self, X, y, n_bins=8, percentile_select=90, n_shp_per_comb=4):
         X = check_array_3D(X)
         n_classes = np.unique(y).shape[0]
+        n_comb = len(list(combinations(range(n_classes),2)))
         
         locs, dils, biases = self._init_kernels(X, y)
-        print(locs.shape)
         biases = np.array([b>=0 for b in biases]).astype(int)
         groups_id, unique_groups = self._get_kernel_groups(dils, biases)
-        values = {}
-        #TODO : candidate generation is slower than normal CST, why ?
+        
+        shapelets_values = np.zeros((locs.shape[1],n_comb * n_shp_per_comb,9))
+ 
         for i_grp in unique_groups.keys():
-            dilation, _ = unique_groups[i_grp]
-            grp_locs = locs[:,np.where(groups_id == i_grp)[0]]
-            X_conv_indexes = self._get_idx_strides(X, 9, dilation, 0)
-            X_strides = self._get_X_strides(X, 9 ,dilation, 0)
             values_grp = []
             for c1,c2 in combinations(range(n_classes),2):
-                id_c1 = np.array_split(shuffle(np.where(y==c1)[0]),n_iter_per_comb)
-                id_c2 = np.array_split(shuffle(np.where(y==c2)[0]),n_iter_per_comb)
-                
-                for i_iter in range(n_iter_per_comb):
+                id_c1 = np.array_split(shuffle(np.where(y==c1)[0]),n_shp_per_comb)
+                id_c2 = np.array_split(shuffle(np.where(y==c2)[0]),n_shp_per_comb)
+                for i_iter in range(n_shp_per_comb):
                     loc_c1 = np.sum(locs[id_c1[i_iter]],axis=0)
                     loc_c2 = np.sum(locs[id_c2[i_iter]],axis=0)
                     loc_c1 = (loc_c1 - loc_c1.min()) / (loc_c1.max() - loc_c1.min())
                     loc_c2 = (loc_c2 - loc_c2.min()) / (loc_c2.max() - loc_c2.min())
                     
-                id_1 = self._select_id_loc(loc_c1,loc_c2,n_shapelet_per_combination,
-                                           percentile_select=percentile_select)
-                id_2 = self._select_id_loc(loc_c2,loc_c1,n_shapelet_per_combination,
-                                           percentile_select=percentile_select)
-                
-                for i in np.concatenate([id_1,id_2]):
-                    id_to_get = np.where(X_conv_indexes == i)[0]
-                    #convolution number to get
-                    id_to_get = np.random.choice(id_to_get, int(np.ceil(id_to_get.shape[0]*0.2)))
-                    #from which input sample extract
-                    id_x_to_get = np.random.choice(id_c1[i_iter], int(np.ceil(id_c1[i_iter].shape[0]*0.2)))
-                    values_grp.append((X_strides[id_x_to_get[:,None], id_to_get]).reshape(-1, 9))
+                    id_1 = self._select_id_loc(loc_c1,loc_c2,1,
+                                               percentile_select=percentile_select)
+                    id_2 = self._select_id_loc(loc_c2,loc_c1,1,
+                                               percentile_select=percentile_select)
+                    
+                    for i in np.concatenate([id_1,id_2]):
+                        #Look at loc_c1/c2 values to build candidate, ie take all possible i +/-dil with maximum sum value
+                        values_grp.append()
             
             values_grp = np.concatenate(values_grp,axis=0)
             if values_grp.shape[0] > 0:
