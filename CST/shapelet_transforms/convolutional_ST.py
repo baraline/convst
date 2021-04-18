@@ -278,5 +278,4 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         if any(self.__dict__[attribute] is None for attribute in ['shapelets_values',
                                                                   'shapelets_params']):
             raise AttributeError("CST is not fitted, call the fit method before"
-                                 "attemping to transform data")
-        
+                                 "attemping to transform data")                
