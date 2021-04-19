@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Angus Dempster"
-__all__ = ["MiniRocket"]
 
 import numpy as np
 import pandas as pd
@@ -72,7 +70,7 @@ class MiniRocket(_PanelToTabularTransformer):
         self._is_fitted = True
         return self
 
-    def transform(self, X, y=None, return_locs=True):
+    def transform(self, X, y=None, return_locs=False):
         """Transforms input time series.
         Parameters
         ----------

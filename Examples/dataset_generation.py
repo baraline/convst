@@ -5,11 +5,11 @@ Created on Thu Apr 15 16:15:29 2021
 @author: A694772
 """
 import numpy as np
-from CST.base_transformers.rocket import ROCKET
+from CST.base_transformers.minirocket import MiniRocket
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifierCV
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
@@ -71,10 +71,6 @@ def _init_dataset(n_samples, n_timestamps, n_classes):
     return X, y.astype(int)
 
 
-#To add :
-#Diff timestamps, same value
-#Diff timestamps, diff value
-#Shift
 def make_same_timestamps_diff_values(n_samples=50, n_timestamps=100, n_locs=3,
                                      n_classes=3, scale_diff=1, noise_coef=0.25):
     X, y = _init_dataset(n_samples, n_timestamps, n_classes)
@@ -119,7 +115,7 @@ def make_diff_timestamps_same_pattern(n_samples=50, n_timestamps=100, pattern_le
     base_values = np.random.uniform(low=shape_coef, high=shape_coef*6, size=(pattern_len))
     for i in range(n_samples):
         noise = np.random.normal(0,noise_coef,n_timestamps)
-        X[i,0] = base_data + noise    
+        #X[i,0] = base_data + noise    
         X[i,0,loc[y[i]]:loc[y[i]]+pattern_len] += base_values
     return X, y
 
@@ -133,29 +129,41 @@ def make_shift_different_pattern(n_samples=50, n_timestamps=100, pattern_len=20,
         noise = np.random.normal(0,noise_coef,n_timestamps)
         X[i,0] = base_data + noise    
         l = loc[y[i]]
+        #TODO bug sometimes empty
         l += np.random.choice(range(int((n_timestamps-(pattern_len+l))*shift_coef)))
         X[i,0,l:l+pattern_len] += base_values[y[i]]
     return X, y
 
-
-#make_same_timestamps_diff_values
-#make_same_timestamps_diff_pattern
-#make_diff_timestamps_diff_pattern
-#make_diff_timestamps_same_pattern
-#make_shift_different_pattern
-X, y = make_shift_different_pattern()
-color_dict = {0:'green',1:'red',2:'blue'}
-for i in range(X.shape[0]):
-    plt.plot(X[i,0], c=color_dict[y[i]],alpha=0.1)
-plt.show()
-# In[]:
-pipe_rkt = make_pipeline(ROCKET(),
+for data_func in [make_same_timestamps_diff_values,
+                  make_same_timestamps_diff_pattern,
+                  make_diff_timestamps_diff_pattern,
+                  make_diff_timestamps_same_pattern,
+                  make_shift_different_pattern]:
+    print(data_func.__name__)
+    X, y = data_func()
+    color_dict = {0:'green',1:'red',2:'blue'}
+    for i in range(X.shape[0]):
+        plt.plot(X[i,0], c=color_dict[y[i]],alpha=0.1)
+    plt.show()
+    
+    pipe_rkt = make_pipeline(MiniRocket(),
                              RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
-cv = cross_validate(pipe_rkt, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},n_jobs=-1)
-print("F1-Score for ROCKET Ridge : {}".format(np.mean(cv['test_f1'])))
-# In[]:        
-pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(),
-                            RandomForestClassifier(n_estimators=400))
-        
-cv = cross_validate(pipe_cst, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},n_jobs=-1)
-print("F1-Score for CST RF : {}".format(np.mean(cv['test_f1'])))
+    cv = cross_validate(pipe_rkt, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},n_jobs=None)
+    print("F1-Score for ROCKET Ridge : {}".format(np.mean(cv['test_f1'])))
+    
+    pipe_cst = make_pipeline(MiniConvolutionalShapeletTransformer(),
+                             RandomForestClassifier(n_estimators=400))
+          
+    cv = cross_validate(pipe_cst, X, y, cv=4, scoring={'f1':make_scorer(f1_score, average='macro')},
+                        fit_params={'miniconvolutionalshapelettransformer__n_bins':5,
+                                    'miniconvolutionalshapelettransformer__p':95,
+                                    'miniconvolutionalshapelettransformer__n_splits':1,
+                                    'miniconvolutionalshapelettransformer__p_samples_to_shp_vals':0.1,
+                                    'miniconvolutionalshapelettransformer__n_locs_per_split':1},n_jobs=None)
+    print("F1-Score for CST RF : {}".format(np.mean(cv['test_f1'])))
+    """
+    m=MiniConvolutionalShapeletTransformer().fit(X, y)
+    Xm = m.transform(X)
+    rf = RandomForestClassifier(n_estimators=400).fit(Xm, y)
+    print("F1-Score for CST RF : {}".format(f1_score(rf.predict(Xm), y,average='macro')))
+    """

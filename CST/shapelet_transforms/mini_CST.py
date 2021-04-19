@@ -8,12 +8,10 @@ import numpy as np
 
 from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
 from CST.utils.checks_utils import check_array_3D
-#from CST.base_transformers.minirocket import MiniRocket
+from CST.base_transformers.minirocket import MiniRocket
 from itertools import combinations
-
-from sklearn.linear_model import RidgeClassifierCV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectFromModel, RFECV
+from sklearn.feature_selection import SelectFromModel
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import shuffle
@@ -32,78 +30,87 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     
     #TODO : Add a value mapping to handle case where difference is made by value and not location
     #TODO : review parameter names
-    def fit(self, X, y, n_bins=8, percentile_select=90, n_shp_per_comb=4):
+    def fit(self, X, y, n_bins=5, p=95, n_splits=1,
+            p_samples_to_shp_vals=0.1, n_locs_per_split=1):
         X = check_array_3D(X)
-        n_classes = np.unique(y).shape[0]
-        n_comb = len(list(combinations(range(n_classes),2)))
-        
+        #locs = (n_samples, n_kernels, n_timestamps)
         locs, dils, biases = self._init_kernels(X, y)
-        biases = np.array([b>=0 for b in biases]).astype(int)
         groups_id, unique_groups = self._get_kernel_groups(dils, biases)
         
-        shapelets_values = np.zeros((locs.shape[1],n_comb * n_shp_per_comb,9))
- 
+        
+        n_timestamps = X.shape[2]
+        n_classes = np.unique(y).shape[0]
+        n_classes = np.unique(y).shape[0]
+                
+        n_shapelets = 0
+        values = {}
         for i_grp in unique_groups.keys():
+            dilation = int(unique_groups[i_grp][0])
             values_grp = []
-            for c1,c2 in combinations(range(n_classes),2):
-                id_c1 = np.array_split(shuffle(np.where(y==c1)[0]),n_shp_per_comb)
-                id_c2 = np.array_split(shuffle(np.where(y==c2)[0]),n_shp_per_comb)
-                for i_iter in range(n_shp_per_comb):
-                    loc_c1 = np.sum(locs[id_c1[i_iter]],axis=0)
-                    loc_c2 = np.sum(locs[id_c2[i_iter]],axis=0)
-                    loc_c1 = (loc_c1 - loc_c1.min()) / (loc_c1.max() - loc_c1.min())
-                    loc_c2 = (loc_c2 - loc_c2.min()) / (loc_c2.max() - loc_c2.min())
-                    
-                    id_1 = self._select_id_loc(loc_c1,loc_c2,1,
-                                               percentile_select=percentile_select)
-                    id_2 = self._select_id_loc(loc_c2,loc_c1,1,
-                                               percentile_select=percentile_select)
-                    
-                    for i in np.concatenate([id_1,id_2]):
-                        #Look at loc_c1/c2 values to build candidate, ie take all possible i +/-dil with maximum sum value
-                        values_grp.append()
+            locs_grps = np.zeros((n_classes, n_splits, n_timestamps),dtype=np.float32)
+            id_splits = []
+            #Generate convolution input localisation for each class and split
+            for i_class in np.unique(y):
+                id_splits.append(np.array_split(shuffle(np.where(y==i_class)[0]),n_splits))
+                for i_split in range(n_splits):
+                    vals = np.sum(np.sum(locs[id_splits[i_class][i_split], np.where(groups_id==i_grp)[0][:,None], :],axis=0),axis=0)
+                    if vals.max() != vals.min():
+                        np.divide(vals - vals.min(), vals.max()-vals.min(), out=locs_grps[i_class, i_split])
             
-            values_grp = np.concatenate(values_grp,axis=0)
-            if values_grp.shape[0] > 0:
-                n_candidates = values_grp.shape[0]
+            #Extract for each class combination and split, random candidates locations based on convolution input localisation differences.
+            for i_comb, c in enumerate(combinations(range(n_classes),2)):
+                for i_split in range(n_splits):
+                    if locs_grps[c[0], i_split, :].sum() != 0 and locs_grps[c[1], i_split, :].sum() != 0:
+                        diff = locs_grps[c[0], i_split, :] - locs_grps[c[1], i_split, :]
+                        stride_sums = generate_strides_1D(diff, 9, dilation).sum(axis=1)
+                        id_strides = np.where(stride_sums >= np.percentile(stride_sums,p))[0]
+                        value_locs = np.random.choice(id_strides, n_locs_per_split if n_locs_per_split <= id_strides.shape[0] else id_strides.shape[0], replace=False)
+                        # For each random candidate location, extract 
+                        for i in value_locs:
+                            id_x = np.random.choice(id_splits[c[0]][i_split], int(np.ceil(id_splits[c[0]][i_split].shape[0]*p_samples_to_shp_vals)), replace=False)
+                            
+                            for ix in id_x:
+                                values_grp.append(X[ix,0,np.array([i+j*dilation for j in range(9)])])
+            values_grp = np.asarray(values_grp)
+            
+            if values_grp.shape[0] > 0 and not np.all(values_grp == values_grp[0][0]):
+                values_grp = (values_grp - values_grp.mean(axis=-1, keepdims=True)) / (
+                    values_grp.std(axis=-1, keepdims=True) + 1e-8)
                 kbd = KBinsDiscretizer(n_bins=n_bins, strategy='uniform').fit(values_grp.reshape(-1,1))
                 values_grp = np.unique(kbd.inverse_transform(kbd.transform(values_grp.reshape(-1,1))).reshape(-1,9),axis=0)
-                self._log("Discretization filtered {}/{} candidates".format(n_candidates-values_grp.shape[0],n_candidates))
-                
+                n_shapelets += values_grp.shape[0]
                 values.update({i_grp : values_grp})
-                self._log("Extracted {} candidates from {} kernels".format(
-                    values_grp.shape[0],grp_locs.shape[0]))    
-                
+                self._log("Extracted {} shapelets for grp {}/{}".format(values_grp.shape[0], i_grp, len(unique_groups.keys())))
+        
+        
         self.shapelets_params = {i_grp : unique_groups[i_grp] for i_grp in values.keys()}
         self.shapelets_values = values
+        self._log("Extracted a total of {} shapelets".format(n_shapelets))
+        self.n_shapelets = n_shapelets
         return self
-        
+    
     def transform(self, X):
         self._check_is_fitted()
         X = check_array_3D(X)
-        distances = []
+        distances = np.zeros((X.shape[0], self.n_shapelets))
+        prev = 0
         for i, i_grp in enumerate(self.shapelets_params.keys()):
             self._log("Transforming for grp {} ({}/{}) with {} shapelets".format(self.shapelets_params[i_grp],
                                                                                  i, len(self.shapelets_params),
                                                                                  self.shapelets_values[i_grp].shape[0]))
             dilation, _ = self.shapelets_params[i_grp]
             X_strides = self._get_X_strides(X, 9 ,dilation, 0)
-            distances.append(compute_distances(X_strides, self.shapelets_values[i_grp]))
-        return np.concatenate(distances, axis=1)
-    
-    
-    def _select_id_loc(self, loc_c1, loc_c2, n_shapelet_per_combination,
-                       percentile_select = 90):
-        diff = loc_c1 - loc_c2
-        id_conv = np.where(diff>=np.percentile(diff,percentile_select))[0]
-        n = n_shapelet_per_combination if n_shapelet_per_combination < id_conv.shape[0] else id_conv.shape[0]
-        return np.random.choice(id_conv, n, replace=False)
-    
+            d = compute_distances(X_strides, self.shapelets_values[i_grp])            
+            distances[:, prev:prev+d.shape[1]] = d
+            prev += d.shape[1]
+        return distances
+        
     def _get_kernel_groups(self, kernels_dilations, kernels_bias):
+        kernels_bias = np.array([b>=0 for b in kernels_bias]).astype(int)
         groups_params = np.array([[kernels_dilations[i], 
                                    kernels_bias[i]]
-                                  for i in range(kernels_dilations.shape[0])])
-                                 
+                                  for i in range(kernels_dilations.shape[0])],dtype=np.int32)
+        
         groups_id = np.zeros(kernels_dilations.shape[0])
         unique_groups = np.unique(groups_params, axis=0)
         unique_groups = {i: unique_groups[i] for i in range(unique_groups.shape[0])}
@@ -123,25 +130,18 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                         X_strides.std(axis=-1, keepdims=True) + 1e-8)
         return X_strides
-    
-    def _get_idx_strides(self, X, length, dilation, padding):
-        _, _, n_timestamps = X.shape
-        n_timestamps += 2*padding
-        x_idx = generate_strides_1D(np.array(range(n_timestamps)),length,dilation) - padding
-        x_idx[np.where((x_idx >= X.shape[2]) | (x_idx < 0))] = -1
-        return x_idx 
-    
+        
     def _init_kernels(self, X, y):
-        print("RKT ...")
+        self._log("Performing MiniRocket Transform")
         m = MiniRocket().fit(X)
         ft, locs = m.transform(X, return_locs=True)
-        print("Selection ...")
+        self._log("Performing kernel selection")
         
-        ft_selector = SelectFromModel(RandomForestClassifier(max_features=0.75,
-                                                             max_samples=0.75,
-                                                             ccp_alpha=0.015,
+        ft_selector = SelectFromModel(RandomForestClassifier(max_features=0.85,
+                                                             max_samples=0.85,
+                                                             ccp_alpha=0.02,
                                                              n_jobs=-1)).fit(ft,y)
-        print("Done ...")
+        self._log("Finished kernel selection")
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
@@ -150,26 +150,17 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             n+=84*num_features_per_dilation[i]
             
         i_kernels = np.where(ft_selector.get_support())[0]
-
         return locs[:, i_kernels], dils[i_kernels], biases[i_kernels] 
-        #MINIROCKET, then select by model with RF, extract relevant ft location
     
     def _check_is_fitted(self):
         if any(self.__dict__[attribute] is None for attribute in ['shapelets_values',
                                                                   'shapelets_params']):
             raise AttributeError("CST is not fitted, call the fit method before"
                                  "attemping to transform data")
-            
         
-from CST.utils.dataset_utils import load_sktime_dataset_split
-from sklearn.metrics import f1_score
-
-X_train, X_test, y_train, y_test,_ = load_sktime_dataset_split('ACSF1')
-m = MiniConvolutionalShapeletTransformer(verbose=1).fit(X_train, y_train)
-X_rkt_train = m.transform(X_train)
-X_rkt_test = m.transform(X_test)
-rf = RandomForestClassifier(n_estimators=400).fit(X_rkt_train, y_train)
-preds = rf.predict(X_rkt_test)
-print(f1_score(y_test, preds))
-
-
+                
+    
+    
+        
+        
+    
