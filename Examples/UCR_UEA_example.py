@@ -6,7 +6,8 @@ Created on Sat Apr 10 12:14:16 2021
 """
 
 # In[1]:
-from CST.base_transformers.rocket import ROCKET
+from CST.base_transformers.minirocket import MiniRocket
+#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import f1_score
@@ -14,10 +15,10 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Load GunPoint Dataset
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('Car', normalize=True)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('GunPoint', normalize=True)
 
 # Init ROCKET object
-rkt = ROCKET()
+rkt = MiniRocket()
 
 # Transforming data
 X_rkt_train = rkt.fit_transform(X_train)
@@ -26,15 +27,14 @@ X_rkt_test = rkt.transform(X_test)
 # Rocket Performance
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True).fit(X_rkt_train, y_train)
 pred = rdg.predict(X_rkt_test)
-print("F1-Score for ROCKET RF : {}".format(f1_score(y_test, pred, average='macro')))
+print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macro')))
 
 
 # In[]:
-  
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 
-cst = ConvolutionalShapeletTransformer(verbose=1)
-cst.fit(X_train, y_train, n_shapelet_per_combination=2, n_iter_per_comb=3, n_bins=5, percentile_select=90)
+cst = MiniConvolutionalShapeletTransformer(verbose=1)
+cst.fit(X_train, y_train, n_bins=7, p=90, n_splits=3, 
+        p_samples_to_shp_vals=0.1, n_locs_per_split=1)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

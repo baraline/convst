@@ -195,10 +195,7 @@ class Rocket_feature_kernel(kernel):
     
     def _get_ft_func(self):
         if self.feature_id % 2 == 0:
-            if self.bias >=0:
-                return self._ft_ppv, self._ft_pnv_loc
-            else:
-                return self._ft_ppv, self._ft_ppv_loc
+            return self._ft_ppv, self._ft_pnv_loc
         else:
             return self._ft_max, self._ft_max_loc
         

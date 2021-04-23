@@ -18,6 +18,7 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import shuffle
 from sklearn.ensemble import RandomForestClassifier
 
+#TODO : Update this to adopt the algorithm used in mini_CST
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, id_ft=0, verbose=0):
         self.rkt_object = None

@@ -10,7 +10,7 @@ from numba import prange
 from numba import vectorize
 from itertools import combinations
 
-
+#TODO : debug parralel numba errors
 class MiniRocket(_PanelToTabularTransformer):
     """MINIROCKET
     MINImally RandOm Convolutional KErnel Transform
@@ -92,7 +92,7 @@ class MiniRocket(_PanelToTabularTransformer):
 
 @njit(
     fastmath=True,
-    parallel=False,
+    parallel=True,
     cache=True,
 )
 def _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, seed):
@@ -243,7 +243,7 @@ def _conv_to_input_indexes(convolution_indexes, dilation, padding, length, n_tim
     
 @njit(
     fastmath=True,
-    parallel=False,
+    parallel=True,
     cache=True,
 )
 def _transform(X, indices, parameters):
