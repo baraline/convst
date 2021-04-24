@@ -15,6 +15,7 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import shuffle
+from sklearn.utils.class_weight import compute_class_weight
 
 #TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
 #TODO : try to compare one class vs all rather than one vs one 
@@ -33,7 +34,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         if self.verbose > 1:
             print(message)
     
-    def fit(self, X, y, n_bins=9, p=90, n_splits=3,
+    def fit(self, X, y, n_bins=9, p=90, n_splits=3, use_class_weights=True,
             p_samples_to_shp_vals=0.1, n_locs_per_split=2):
         X = check_array_3D(X)
         #locs = (n_samples, n_kernels, n_timestamps)
@@ -45,6 +46,9 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         n_classes = np.unique(y).shape[0]
                 
         n_shapelets = 0
+        n_shp_raw = 0
+        n_shp_grp = 0
+        n_shp_random = 0
         values = {}
         for i_grp in unique_groups.keys():
             dilation = int(unique_groups[i_grp][0])
@@ -58,10 +62,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 for i_split in range(n_splits):
                     vals = np.sum(np.sum(locs[id_splits[i_class][i_split], np.where(groups_id==i_grp)[0][:,None], :],axis=0),axis=0)
                     locs_grps[i_class, i_split] = vals
-                    #TODO : Test without normalization
-                    #if vals.max() != vals.min():
-                    #    np.divide(vals - vals.min(), vals.max()-vals.min(), out=locs_grps[i_class, i_split])
-            
+                    
             for c in classes:
                 for i_split in range(n_splits):
                     diff_other_class = np.asarray([locs_grps[j, i_split, :] 
@@ -78,8 +79,11 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                         id_x = np.random.choice(id_splits[c][i_split],
                                                 int(np.ceil(id_splits[c][i_split].shape[0]*p_samples_to_shp_vals)),
                                                 replace=False)
+                        n_shp_raw += len(id_splits[c][i_split])*len(np.where(groups_id==i_grp)[0])
+                        n_shp_grp += len(id_splits[c][i_split])
                         for ix in id_x:
                             values_grp.append(X[ix,0,np.array([i+j*dilation for j in range(9)])])
+                            n_shp_random += 1
             values_grp = np.asarray(values_grp)
             self._log2("Got {} candidates for grp {}".format(values_grp.shape[0], i_grp))               
             if values_grp.shape[0] > 0 and not np.all(values_grp == values_grp[0][0]):
@@ -96,6 +100,9 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self.shapelets_values = values
         self._log("Extracted a total of {} shapelets".format(n_shapelets))
         self.n_shapelets = n_shapelets
+        self.n_shp_raw = n_shp_raw
+        self.n_shp_random = n_shp_random
+        self.n_shp_grp = n_shp_grp
         return self
     
     def transform(self, X):
@@ -159,6 +166,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             n+=84*num_features_per_dilation[i]
             
         i_kernels = np.where(ft_selector.get_support())[0]
+        self.n_kernels = i_kernels.shape[0]
         self._log("Finished kernel selection with {} kernels".format(i_kernels.shape[0]))
         return locs[:, i_kernels], dils[i_kernels], biases[i_kernels] 
     
