@@ -8,7 +8,7 @@ from CST.utils.dataset_utils import load_sktime_dataset
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
@@ -16,7 +16,8 @@ ps = []
 for r in range(1,4):
     ps.extend(list(combinations([100,95,90,85],r)))
 n_splits = [1,3,5]
-params = {'miniconvolutionalshapelettransformer__p':ps,'miniconvolutionalshapelettransformer__n_splits':n_splits}
+params = {'CST__p':ps,
+          'CST__n_splits':n_splits}
 print(params)
 
 
@@ -25,8 +26,9 @@ datasets = "Beef,BirdChicken,Car,CricketX,CricketY,CricketZ,DistalPhalanxTW,Fift
 for dataset_name in datasets.split(','):
     X, y, le = load_sktime_dataset(dataset_name,normalize=True)
     print(dataset_name)
-    pipe = make_pipeline(MiniConvolutionalShapeletTransformer(),RandomForestClassifier(n_estimators=400))
-    clf = GridSearchCV(pipe, params, n_jobs=-1)
+    pipe = Pipeline([('CST',MiniConvolutionalShapeletTransformer()),
+                         ('rf',RandomForestClassifier(n_estimators=400))])
+    clf = GridSearchCV(pipe, params)
     clf.fit(X, y)
     p_key = clf.cv_results_['params']
     rank = clf.cv_results_['rank_test_score']
