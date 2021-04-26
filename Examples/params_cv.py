@@ -7,23 +7,25 @@ Created on Mon Apr 26 13:30:45 2021
 from CST.utils.dataset_utils import load_sktime_dataset
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+import pandas as pd
 from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
-ps = []
-for r in range(1,4):
-    ps.extend(list(combinations([100,95,90,85],r)))
-n_splits = [1,3,5]
+ps = [[95]]
+for r in range(1,5):
+    ps.extend(list(combinations([100,95,90,85,80],r)))
+n_splits = [1,3,5,7]
 params = {'CST__p':ps,
           'CST__n_splits':n_splits}
 print(params)
 
+df = pd.DataFrame()
 
-results = {}
-datasets = "Beef,BirdChicken,Car,CricketX,CricketY,CricketZ,DistalPhalanxTW,FiftyWords,Fish,Haptics,Herring,ItalyPowerDemand,Meat,MedicalImages,MiddlePhalanxOutlineAgeGroup,MiddlePhalanxOutlineCorrect,SwedishLeaf,OliveOil,OSULeaf,Yoga,Worms,UWaveGestureLibraryY,Trace,ShapeletSim"
+datasets = "BirdChicken,BeetleFly,Beef,Car,CricketX,CricketY,CricketZ,DistalPhalanxTW,FiftyWords,Fish,Haptics,Herring,ItalyPowerDemand,Meat,MedicalImages,MiddlePhalanxOutlineAgeGroup,MiddlePhalanxOutlineCorrect,SwedishLeaf,OliveOil,OSULeaf,Yoga,Worms,UWaveGestureLibraryY,Trace,ShapeletSim"
 for dataset_name in datasets.split(','):
+    results = {}
     X, y, le = load_sktime_dataset(dataset_name,normalize=True)
     print(dataset_name)
     pipe = Pipeline([('CST',MiniConvolutionalShapeletTransformer()),
@@ -37,7 +39,6 @@ for dataset_name in datasets.split(','):
             results[str(p)].append(rank[i])
         else:
             results.update({str(p):[rank[i]]})
-    for p in results.keys():
-        print("{} : {}".format(str(p), np.mean(results[str(p)])))
     
-    
+    df = pd.concat([df, pd.DataFrame(results, index=[dataset_name])],axis=0)
+    df.to_csv('params_csv.csv',sep=';')
