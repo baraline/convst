@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Load GunPoint Dataset
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('GunPoint', normalize=True)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('ACSF1', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -33,8 +33,7 @@ print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macr
 # In[]:
 
 cst = MiniConvolutionalShapeletTransformer(verbose=1)
-cst.fit(X_train, y_train, n_bins=7, p=90, n_splits=3, 
-        p_samples_to_shp_vals=0.1, n_locs_per_split=1)
+cst.fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

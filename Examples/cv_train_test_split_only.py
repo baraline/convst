@@ -24,7 +24,7 @@ from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransf
 resume=True
 
 print("Imports OK")
-
+#TODO update this script
 if resume:
     df = pd.read_csv("CV_results_all.csv")
 else:

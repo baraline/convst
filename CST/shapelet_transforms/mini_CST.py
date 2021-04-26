@@ -16,15 +16,17 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import shuffle
 from sklearn.utils.class_weight import compute_class_weight
-
+import warnings
 #TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
 #TODO : try to compare one class vs all rather than one vs one 
 class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, id_ft=0, verbose=0):
+    def __init__(self,  p=[100,90,80], n_splits=4, id_ft=0, verbose=0):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets_params = None    
         self.shapelets_values = None
+        self.p=p
+        self.n_splits=n_splits
                  
     def _log(self, message):
         if self.verbose > 0:
@@ -34,11 +36,11 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         if self.verbose > 1:
             print(message)
     
-    def fit(self, X, y, n_bins=9, p=90, n_splits=3, use_class_weights=True,
-            p_samples_to_shp_vals=0.1, n_locs_per_split=2):
+    def fit(self, X, y, use_class_weights=True):
         X = check_array_3D(X)
         #locs = (n_samples, n_kernels, n_timestamps)
         locs, dils, biases = self._init_kernels(X, y)
+        
         groups_id, unique_groups = self._get_kernel_groups(dils, biases)
         self._log("Begining extraction with {} kernel groups".format(len(unique_groups)))
         classes = set(np.unique(y))
@@ -46,50 +48,54 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         n_classes = np.unique(y).shape[0]
                 
         n_shapelets = 0
-        n_shp_raw = 0
-        n_shp_grp = 0
-        n_shp_random = 0
         values = {}
         for i_grp in unique_groups.keys():
             dilation = int(unique_groups[i_grp][0])
             values_grp = []
-            locs_grps = np.zeros((n_classes, n_splits, n_timestamps),dtype=np.float32)
+            locs_grps = np.zeros((n_classes, self.n_splits, n_timestamps),dtype=np.float32)
             id_splits = []
             #Generate convolution input localisation for each class and split
-            #TODO: balanced vals by number of sample per class
             for i_class in np.unique(y):
-                id_splits.append(np.array_split(shuffle(np.where(y==i_class)[0]),n_splits))
-                for i_split in range(n_splits):
+                id_splits.append(np.array_split(shuffle(np.where(y==i_class)[0]),self.n_splits))
+                for i_split in range(self.n_splits):
                     vals = np.sum(np.sum(locs[id_splits[i_class][i_split], np.where(groups_id==i_grp)[0][:,None], :],axis=0),axis=0)
                     locs_grps[i_class, i_split] = vals
                     
+            if use_class_weights:
+                for i_split in range(self.n_splits):
+                    ys = []
+                    for i_class in np.unique(y):
+                        ys.extend(y[id_splits[i_class][i_split]])
+                    c_w = compute_class_weight('balanced',classes=np.unique(y), y=ys)
+                    for i_class in np.unique(y):
+                        locs_grps[i_class,i_split] *= c_w[i_class]
+                         
             for c in classes:
-                for i_split in range(n_splits):
+                for i_split in range(self.n_splits):
+                    
                     diff_other_class = np.asarray([locs_grps[j, i_split, :] 
                                         for j in classes - {c} 
                                         if locs_grps[j, i_split, :].sum() != 0])
-                    diff_other_class = diff_other_class.mean(axis=0)
-                    diff = locs_grps[c, i_split, :] - diff_other_class
-                    stride_sums = generate_strides_1D(diff, 9, dilation).sum(axis=1)
-                    id_strides = np.where(stride_sums >= np.percentile(stride_sums,p))[0]
-                    value_locs = np.random.choice(id_strides, n_locs_per_split if n_locs_per_split <= id_strides.shape[0] else id_strides.shape[0], replace=False)
-                    # For each random candidate location, extract 
-                    for i in value_locs:
+                    if diff_other_class.shape[0] > 0:
+                        diff_other_class = diff_other_class.mean(axis=0)
                         
-                        id_x = np.random.choice(id_splits[c][i_split],
-                                                int(np.ceil(id_splits[c][i_split].shape[0]*p_samples_to_shp_vals)),
-                                                replace=False)
-                        n_shp_raw += len(id_splits[c][i_split])*len(np.where(groups_id==i_grp)[0])
-                        n_shp_grp += len(id_splits[c][i_split])
-                        for ix in id_x:
-                            values_grp.append(X[ix,0,np.array([i+j*dilation for j in range(9)])])
-                            n_shp_random += 1
+                        
+                        diff = locs_grps[c, i_split, :] - diff_other_class
+                        stride_sums = generate_strides_1D(diff, 9, dilation).sum(axis=1)
+                        
+                        idx_strides = np.asarray([np.abs(stride_sums-np.percentile(stride_sums,perc)).argmin() for perc in self.p])
+                        locs_sum = np.sum(locs[id_splits[i_class][i_split]][:,np.where(groups_id==i_grp)[0], :],axis=1)
+                        stride_locs_sums = generate_strides_2D(locs_sum, 9, dilation).sum(axis=-1)
+                        id_x = [np.argmax(stride_locs_sums[:,i]) for i in idx_strides]
+                        for i, ix in enumerate(id_x):
+                            values_grp.append(X[id_splits[i_class][i_split][ix],0,np.array([idx_strides[i]+j*dilation for j in range(9)])])
+                    
             values_grp = np.asarray(values_grp)
             self._log2("Got {} candidates for grp {}".format(values_grp.shape[0], i_grp))               
             if values_grp.shape[0] > 0 and not np.all(values_grp == values_grp[0][0]):
                 values_grp = (values_grp - values_grp.mean(axis=-1, keepdims=True)) / (
                     values_grp.std(axis=-1, keepdims=True) + 1e-8)
-                kbd = KBinsDiscretizer(n_bins=n_bins, strategy='uniform').fit(values_grp.reshape(-1,1))
+                kbd = KBinsDiscretizer(n_bins=9, strategy='uniform').fit(values_grp.reshape(-1,1))
                 values_grp = np.unique(kbd.inverse_transform(kbd.transform(values_grp.reshape(-1,1))).reshape(-1,9),axis=0)
                 n_shapelets += values_grp.shape[0]
                 values.update({i_grp : values_grp})
@@ -100,9 +106,6 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self.shapelets_values = values
         self._log("Extracted a total of {} shapelets".format(n_shapelets))
         self.n_shapelets = n_shapelets
-        self.n_shp_raw = n_shp_raw
-        self.n_shp_random = n_shp_random
-        self.n_shp_grp = n_shp_grp
         return self
     
     def transform(self, X):

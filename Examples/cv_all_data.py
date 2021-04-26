@@ -22,7 +22,10 @@ resume=False
 
 print("Imports OK")
 n_cv = 10
-csv_name = 'CV_10_results_mini_no_norm_no_combv2.csv'
+use_class_weights=True
+n_splits=4
+p=[100,90,80]
+csv_name = 'CV_{}_results_{}_{}_{}.csv'.format(n_cv,int(use_class_weights),n_splits,p)
 
 if resume:
     df = pd.read_csv(csv_name)
@@ -42,9 +45,6 @@ else:
     df['Runtime_MiniCST'] = pd.Series('0', index=df.index)
     df['Runtime_RKT'] = pd.Series('0', index=df.index)
     df['Runtime_MiniRKT'] = pd.Series('0', index=df.index)
-    df['MiniCST_n_shp_raw'] = pd.Series(0, index=df.index)
-    df['MiniCST_n_shp_grp'] = pd.Series(0, index=df.index)
-    df['MiniCST_n_shp_random'] = pd.Series(0, index=df.index)
     df['MiniCST_n_shp'] = pd.Series(0, index=df.index)
     df['MiniCST_n_shp_used'] = pd.Series(0, index=df.index)
     df['MiniCST_n_kernel'] = pd.Series(0, index=df.index)
@@ -74,9 +74,6 @@ for name in df['TESTF1'].values:
         sss = StratifiedShuffleSplit(n_splits=n_cv, test_size=1/n_cv, random_state=0)
         f1 = []
         n_shp = []
-        n_shp_raw = []
-        n_shp_grp = []
-        n_shp_rand = []
         n_shp_used = []
         n_k = []
         time = []
@@ -86,17 +83,14 @@ for name in df['TESTF1'].values:
             rf = RandomForestClassifier(n_estimators=400)
             mCST = MiniConvolutionalShapeletTransformer()
             d0 = datetime.now()
-            mCST.fit(X_train, y_train, use_class_weights=False, n_splits=4,
-                     n_bins=10, n_locs_per_split=2, p=95)
+            mCST.fit(X_train, y_train, use_class_weights=use_class_weights,
+                     n_splits=n_splits, p=p)
             X_train_shp = mCST.transform(X_train)
             X_test_shp = mCST.transform(X_test)
             rf.fit(X_train_shp, y_train)
             pred = rf.predict(X_test_shp)
             d1 = datetime.now()
             n_shp.append(mCST.n_shapelets)
-            n_shp_raw.append(mCST.n_shp_raw)
-            n_shp_grp.append(mCST.n_shp_grp)
-            n_shp_rand.append(mCST.n_shp_random)
             n_k.append(mCST.n_kernels)
             n_shp_used.append(np.where(rf.feature_importances_>0.000001)[0].shape[0])
             f1.append(f1_score(y_test,pred,average='macro'))
@@ -107,9 +101,6 @@ for name in df['TESTF1'].values:
         df.loc[mask,'MiniCST_mean'] = np.mean(f1)
         df.loc[mask,'MiniCST_std'] = np.std(f1)
         df.loc[mask,'Runtime_MiniCST'] = np.mean(time)
-        df.loc[mask,'MiniCST_n_shp_raw'] = np.mean(n_shp_raw)
-        df.loc[mask,'MiniCST_n_shp_grp'] = np.mean(n_shp_grp)
-        df.loc[mask,'MiniCST_n_shp_random'] = np.mean(n_shp_rand)
         df.loc[mask,'MiniCST_n_shp'] = np.mean(n_shp)
         df.loc[mask,'MiniCST_n_shp_used'] = np.mean(n_shp_used)
         df.loc[mask,'MiniCST_n_kernel'] = np.mean(n_k)
