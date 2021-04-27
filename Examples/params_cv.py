@@ -13,6 +13,8 @@ from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
+resume=Falseconvoconv
+
 ps = [[95]]
 for r in range(1,5):
     ps.extend(list(combinations([100,95,90,85,80],r)))
@@ -21,24 +23,28 @@ params = {'CST__p':ps,
           'CST__n_splits':n_splits}
 print(params)
 
-df = pd.DataFrame()
+if resume:
+    df = pd.read_csv('params_csv.csv')
+else:
+    df = pd.DataFrame()
 
 datasets = "BirdChicken,BeetleFly,Beef,Car,CricketX,CricketY,CricketZ,DistalPhalanxTW,FiftyWords,Fish,Haptics,Herring,ItalyPowerDemand,Meat,MedicalImages,MiddlePhalanxOutlineAgeGroup,MiddlePhalanxOutlineCorrect,SwedishLeaf,OliveOil,OSULeaf,Yoga,Worms,UWaveGestureLibraryY,Trace,ShapeletSim"
 for dataset_name in datasets.split(','):
     results = {}
     X, y, le = load_sktime_dataset(dataset_name,normalize=True)
     print(dataset_name)
-    pipe = Pipeline([('CST',MiniConvolutionalShapeletTransformer()),
-                         ('rf',RandomForestClassifier(n_estimators=400))])
-    clf = GridSearchCV(pipe, params)
-    clf.fit(X, y)
-    p_key = clf.cv_results_['params']
-    rank = clf.cv_results_['rank_test_score']
-    for i, p in enumerate(p_key):
-        if str(p) in results.keys():
-            results[str(p)].append(rank[i])
-        else:
-            results.update({str(p):[rank[i]]})
-    
-    df = pd.concat([df, pd.DataFrame(results, index=[dataset_name])],axis=0)
-    df.to_csv('params_csv.csv',sep=';')
+    if dataset_name not in df.index.values():
+        pipe = Pipeline([('CST',MiniConvolutionalShapeletTransformer()),
+                             ('rf',RandomForestClassifier(n_estimators=400))])
+        clf = GridSearchCV(pipe, params)
+        clf.fit(X, y)
+        p_key = clf.cv_results_['params']
+        rank = clf.cv_results_['rank_test_score']
+        for i, p in enumerate(p_key):
+            if str(p) in results.keys():
+                results[str(p)].append(rank[i])
+            else:
+                results.update({str(p):[rank[i]]})
+        
+        df = pd.concat([df, pd.DataFrame(results, index=[dataset_name])],axis=0)
+        df.to_csv('params_csv.csv',sep=';')

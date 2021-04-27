@@ -38,7 +38,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
     ft_kernel_id : int
         Identifier of the feature kernel that generated this shapelet.
         The default is None.
-    """    
+    """
     def __init__(self, values=None, dilation=None, padding=None,
                  input_ft_id=None, ft_kernel_id=None):
         self.values = values
