@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Load GunPoint Dataset
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('ACSF1', normalize=True)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('ItalyPowerDemand', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -37,7 +37,6 @@ cst.fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
-# In[]:
 rf = RandomForestClassifier(n_estimators=400, ccp_alpha=0.00).fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)
 print("F1-Score for CST RF : {}".format(f1_score(y_test, pred, average='macro')))

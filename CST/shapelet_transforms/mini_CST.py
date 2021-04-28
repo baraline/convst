@@ -14,18 +14,19 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle
 from sklearn.utils.class_weight import compute_class_weight
 import warnings
 #TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
 #TODO : try to compare one class vs all rather than one vs one 
 class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self,  p=[100,90,80], n_splits=4, id_ft=0, verbose=0):
+    def __init__(self,  P=[100,90,80], n_splits=4, id_ft=0, verbose=0):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets_params = None    
         self.shapelets_values = None
-        self.p=p
+        self.P=P
         self.n_splits=n_splits
                  
     def _log(self, message):
@@ -42,9 +43,9 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         locs, dils, biases = self._init_kernels(X, y)
         
         groups_id, unique_groups = self._get_kernel_groups(dils, biases)
+        #Maximum Shapelet extracted = |P|*n_splits*n_classes*n_grps
         self._log("Begining extraction with {} kernel groups".format(len(unique_groups)))
         classes = set(np.unique(y))
-        n_timestamps = X.shape[2]
         n_classes = np.unique(y).shape[0]
                 
         n_shapelets = 0
@@ -52,43 +53,43 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         for i_grp in unique_groups.keys():
             dilation = int(unique_groups[i_grp][0])
             values_grp = []
-            locs_grps = np.zeros((n_classes, self.n_splits, n_timestamps),dtype=np.float32)
+            #Sum of L for each kernel in group for all samples
+            locs_conv = np.sum(locs[:,np.where(groups_id==i_grp)[0], :], axis=1)
+            #From input space, go back to convolutional space (n_samples, n_conv, 9), sum it to get a per conv point score
+            locs_conv = generate_strides_2D(locs_conv,9,dilation).sum(axis=-1)
+            #Computing splits indexes, shape (n_classes, n_split, n_idx)
             id_splits = []
-            #Generate convolution input localisation for each class and split
             for i_class in np.unique(y):
                 id_splits.append(np.array_split(shuffle(np.where(y==i_class)[0]),self.n_splits))
+            
+            
+            #Compute class weight of each split
+            c_w = []
+            for i_split in range(self.n_splits):
+                ys = []
+                for i_class in np.unique(y):
+                    ys.extend(y[id_splits[i_class][i_split]])
+                c_w.append(compute_class_weight('balanced',classes=np.unique(y), y=ys))
+            
+            #Compute LC per split
+            per_split_class_loc = np.zeros((n_classes, self.n_splits, locs_conv.shape[1]))
+            for i_class in classes:
                 for i_split in range(self.n_splits):
-                    vals = np.sum(np.sum(locs[id_splits[i_class][i_split], np.where(groups_id==i_grp)[0][:,None], :],axis=0),axis=0)
-                    locs_grps[i_class, i_split] = vals
+                    per_split_class_loc[i_class, i_split, :] = locs_conv[id_splits[i_class][i_split]].sum(axis=0)
+                    if use_class_weights:
+                        per_split_class_loc[i_class, i_split, :] *= c_w[i_split][i_class]
+            
+            for i_class in classes:
+                for i_split in range(self.n_splits):
                     
-            if use_class_weights:
-                for i_split in range(self.n_splits):
-                    ys = []
-                    for i_class in np.unique(y):
-                        ys.extend(y[id_splits[i_class][i_split]])
-                    c_w = compute_class_weight('balanced',classes=np.unique(y), y=ys)
-                    for i_class in np.unique(y):
-                        locs_grps[i_class,i_split] *= c_w[i_class]
-                         
-            for c in classes:
-                for i_split in range(self.n_splits):
-                    
-                    diff_other_class = np.asarray([locs_grps[j, i_split, :] 
-                                        for j in classes - {c} 
-                                        if locs_grps[j, i_split, :].sum() != 0])
-                    if diff_other_class.shape[0] > 0:
-                        diff_other_class = diff_other_class.mean(axis=0)
-                        
-                        
-                        diff = locs_grps[c, i_split, :] - diff_other_class
-                        stride_sums = generate_strides_1D(diff, 9, dilation).sum(axis=1)
-                        
-                        idx_strides = np.asarray([np.abs(stride_sums-np.percentile(stride_sums,perc)).argmin() for perc in self.p])
-                        locs_sum = np.sum(locs[id_splits[i_class][i_split]][:,np.where(groups_id==i_grp)[0], :],axis=1)
-                        stride_locs_sums = generate_strides_2D(locs_sum, 9, dilation).sum(axis=-1)
-                        id_x = [np.argmax(stride_locs_sums[:,i]) for i in idx_strides]
-                        for i, ix in enumerate(id_x):
-                            values_grp.append(X[id_splits[i_class][i_split][ix],0,np.array([idx_strides[i]+j*dilation for j in range(9)])])
+                    diff_other_class = np.asarray([per_split_class_loc[j, i_split, :] 
+                                        for j in classes - {i_class}]).mean(axis=0)
+
+                    D = per_split_class_loc[i_class, i_split, :] - diff_other_class
+                    loc = np.asarray([np.abs(D-np.percentile(D,p)).argmin() for p in self.P])
+                    id_x = [np.argmax(locs_conv[id_splits[i_class][i_split],i]) for i in loc]
+                    for i, ix in enumerate(id_x):
+                        values_grp.append(X[id_splits[i_class][i_split][ix],0,np.array([loc[i]+j*dilation for j in range(9)])])
                     
             values_grp = np.asarray(values_grp)
             self._log2("Got {} candidates for grp {}".format(values_grp.shape[0], i_grp))               
@@ -155,12 +156,13 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         m = MiniRocket().fit(X)
         ft, locs = m.transform(X, return_locs=True)
         self._log("Performing kernel selection with {} kernels".format(locs.shape[1]))
-        
+        """
         ft_selector = SelectFromModel(RandomForestClassifier(max_features=0.85,
                                                              max_samples=0.85,
                                                              ccp_alpha=0.02,
                                                              n_jobs=None)).fit(ft,y)
-        
+        """
+        ft_selector = SelectFromModel(DecisionTreeClassifier(ccp_alpha=0.005)).fit(ft,y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
@@ -171,7 +173,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         i_kernels = np.where(ft_selector.get_support())[0]
         self.n_kernels = i_kernels.shape[0]
         self._log("Finished kernel selection with {} kernels".format(i_kernels.shape[0]))
-        return locs[:, i_kernels], dils[i_kernels], biases[i_kernels] 
+        return locs[:, i_kernels], dils[i_kernels], biases[i_kernels]
     
     def _check_is_fitted(self):
         if any(self.__dict__[attribute] is None for attribute in ['shapelets_values',

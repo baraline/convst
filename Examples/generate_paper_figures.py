@@ -49,7 +49,7 @@ plt.show()
 
 
 # In[]5
-i_kernel = 7
+i_kernel = -1
 print(dils[i_kernel])
 class_locs = np.zeros((np.unique(y_train).shape[0],X_train.shape[2]))
 fig, ax = plt.subplots(ncols=3, sharex=True, sharey=True, figsize=(15,5))
@@ -70,12 +70,13 @@ ax[2].set_title('LC difference')
 plt.legend()
 plt.show()
 
-"""
+
 s = generate_strides_1D(class_locs[0] - class_locs[1], 9, dils[i_kernel]).sum(axis=1)
-plt.plot(generate_strides_1D(X_train[np.random.choice(np.where(y_train==0)[0]),0], 9, dils[i_kernel]).sum(axis=1))
-plt.plot(generate_strides_1D(X_train[np.random.choice(np.where(y_train==1)[0]),0], 9, dils[i_kernel]).sum(axis=1))
-plt.plot(generate_strides_1D(class_locs[0] - class_locs[1], 9, dils[i_kernel]).sum(axis=1))
-"""
+s = (s - s.mean()) / s.std()
+plt.plot(generate_strides_1D(X_train[np.where(y_train==0)[0][0],0], 9, dils[i_kernel]).sum(axis=1))
+plt.plot(generate_strides_1D(X_train[np.where(y_train==1)[0][0],0], 9, dils[i_kernel]).sum(axis=1))
+plt.plot(s)
+
 # In[]:
 i_kernel = 1
 from itertools import combinations
