@@ -13,10 +13,10 @@ from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
-resume=False
+resume=True
 
 available_memory_bytes = 32*1e9
-max_cpu_cores = 32
+max_cpu_cores = 25
 ps = []
 for r in range(1,5):
     ps.extend(list(combinations([100,95,90,85],r)))
@@ -26,7 +26,9 @@ params = {'CST__P':ps,
 print(params)
 
 if resume:
-    df = pd.read_csv('params_csv.csv')
+    df = pd.read_csv('params_csv.csv',sep=';')
+    df = df.set_index('Unnamed: 0')
+    print(df.index.values)
 else:
     df = pd.DataFrame()
 
@@ -35,7 +37,7 @@ dataset_names = datasets.split(',')
 dsizes = []
 for dataset_name in dataset_names:
     X, y, le = load_sktime_dataset(dataset_name,normalize=True)
-    dsizes.append(X.nbytes)
+    dsizes.append(X.nbytes*2)
 dsizes=np.asarray(dsizes)
 print(dsizes)
 
@@ -43,13 +45,12 @@ for i_dataset in np.argsort(dsizes):
     results = {}
     X, y, le = load_sktime_dataset(dataset_names[i_dataset],normalize=True)
     print(dataset_names[i_dataset])
-    print(df.index.values)
     if dataset_names[i_dataset] not in df.index.values:
         pipe = Pipeline([('CST',MiniConvolutionalShapeletTransformer()),
                              ('rf',RandomForestClassifier(n_estimators=400))])
         
         n_jobs = available_memory_bytes // X.nbytes 
-        n_jobs = n_jobs if n_jobs <= max_cpu_cores else max_cpu_cores
+        n_jobs = max(n_jobs if n_jobs <= max_cpu_cores else max_cpu_cores, 1)
         print('Launching {} parallel jobs'.format(n_jobs))
         clf = GridSearchCV(pipe, params, n_jobs=n_jobs, verbose=1)
         clf.fit(X, y)
