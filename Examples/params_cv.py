@@ -57,7 +57,8 @@ for i_dataset in np.argsort(dsizes):
         clf.fit(X, y)
         print('Done')
         p_key = clf.cv_results_['params']
-        rank = clf.cv_results_['rank_test_score']
+        rank = clf.cv_results_['mean_test_score']
+        
         for i, p in enumerate(p_key):
             if str(p) in results.keys():
                 results[str(p)].append(rank[i])
