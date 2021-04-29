@@ -7,7 +7,9 @@ Created on Mon Mar 29 09:46:14 2021
 __all__ = [
 	"compute_distances",
     "min_dist_shp",
-    "generate_strides_2D"
+    "generate_strides_2D",
+    "generate_strides_1D",
+    "shapelet_dist_numpy"
 ]
 
 import numpy as np
@@ -60,10 +62,39 @@ def min_dist_shp(x_strides, subseq):
         the subsequence
 
     """
-    return np.min(np.array([np.linalg.norm(x_strides[i]-subseq) 
-                            for i in prange(x_strides.shape[0])]))
+    d = np.zeros(x_strides.shape[0])
+    for i in prange(x_strides.shape[0]):
+        d[i] = np.linalg.norm(x_strides[i]-subseq) 
+    return np.min(d)
 
-# TODO could use stides to speed up ROCKET/Kernel convolutional operations
+
+def euclidean_pure_numpy(x, y):
+    """Euclidean square distance matrix.
+    
+    Inputs:
+    x: (N,) numpy array
+    y: (N,) numpy array
+    
+    Ouput:
+    (N, N) Euclidean square distance matrix:
+    r_ij = x_ij^2 - y_ij^2
+    """
+
+    x2 = np.einsum('ij,ij->i', x, x)[:, np.newaxis]
+    y2 = np.einsum('ij,ij->i', y, y)[:, np.newaxis].T
+
+    xy = np.dot(x, y.T)
+
+    return np.abs(x2 + y2 - 2. * xy)
+
+
+def shapelet_dist_numpy(X_strides, subsequences):
+    d = np.zeros((X_strides.shape[0],subsequences.shape[0]))
+    for i in range(X_strides.shape[0]):
+        d[i,:] += np.min(euclidean_pure_numpy(X_strides[i],subsequences),axis=0)
+    return d
+    
+
 def generate_strides_2D(X, window, dilation):
     """
     Generate strides from an ensemble of univariate time series with specified 

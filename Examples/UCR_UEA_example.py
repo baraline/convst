@@ -5,9 +5,8 @@ Created on Sat Apr 10 12:14:16 2021
 @author: Antoine
 """
 
-# In[1]:
 from CST.base_transformers.minirocket import MiniRocket
-#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import f1_score
@@ -15,7 +14,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Load GunPoint Dataset
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('ItalyPowerDemand', normalize=True)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split('Car', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -28,12 +27,9 @@ X_rkt_test = rkt.transform(X_test)
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True).fit(X_rkt_train, y_train)
 pred = rdg.predict(X_rkt_test)
 print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macro')))
-
-
 # In[]:
 
-cst = MiniConvolutionalShapeletTransformer(verbose=1)
-cst.fit(X_train, y_train)
+cst = MiniConvolutionalShapeletTransformer(verbose=1, P=[100,95,90,85], n_splits=5).fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
@@ -41,7 +37,6 @@ rf = RandomForestClassifier(n_estimators=400, ccp_alpha=0.00).fit(X_cst_train, y
 pred = rf.predict(X_cst_test)
 print("F1-Score for CST RF : {}".format(f1_score(y_test, pred, average='macro')))
 print("Used a total of {} / {} Shapelets in model".format(rf.feature_importances_[rf.feature_importances_ > 0].size, X_cst_train.shape[1]))
-
 # In[]:
 from CST.base_transformers.shapelets import Convolutional_shapelet
 import numpy as np

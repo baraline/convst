@@ -233,7 +233,7 @@ def _PPV(a, b):
     cache=True,
 )
 def _conv_to_input_indexes(convolution_indexes, dilation, padding, length, n_timepoints):
-    indexes = np.zeros((n_timepoints), dtype=np.int32)
+    indexes = np.zeros((n_timepoints), dtype=np.uint8)
     for i_conv in prange(convolution_indexes.shape[0]):
         for i_x in prange(length): 
             i = convolution_indexes[i_conv] + i_x*dilation - padding
@@ -252,8 +252,6 @@ def _transform(X, indices, parameters):
 
     dilations, num_features_per_dilation, biases = parameters
 
-    # >>> indices = np.array([_ for _ in combinations(np.arange(9), 3)])
-
     num_kernels = len(indices)
     num_dilations = len(dilations)
 
@@ -261,7 +259,7 @@ def _transform(X, indices, parameters):
 
     features = np.zeros((n_instances, num_features), dtype=np.float32)
     #Count how many time an X index is used for a ppv
-    features_location = np.zeros((n_instances, num_features, n_timepoints))
+    features_location = np.zeros((n_instances, num_features, n_timepoints), dtype=np.uint8)
 
     for example_index in prange(n_instances):
 
