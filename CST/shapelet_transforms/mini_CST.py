@@ -66,10 +66,11 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             
             #Computing splits indexes, shape (n_split, n_classes, n_idx)
             
-            if (1/self.n_splits)*X.shape[0] >= n_classes:
+            if all(self.n_splits <= np.bincount(y)):
                 n_splt = self.n_splits
             else:
-                n_splt = int(np.floor(1/(n_classes/X.shape[0])))
+                n_splt = min(np.bincount(y))
+                warnings.warn("Reduced n_split to minimum number of class sample")
             if n_splt > 1:
                 sss = StratifiedShuffleSplit(n_splits=n_splt, test_size=None, train_size=1/n_splt)
                 id_splits = []
@@ -85,7 +86,6 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     ys.extend(id_splits[i_split][i_class])
                 c_w.append(compute_class_weight(
                     'balanced', classes=np.unique(y[ys]), y=y[ys]))
-
             #Compute LC per split
             per_split_class_loc = np.zeros(
                 (n_classes, n_splt, locs_conv.shape[1]))
@@ -96,7 +96,6 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     if use_class_weights:
                         per_split_class_loc[i_class, i_split,
                                             :] *= c_w[i_split][i_class]
-
             for i_class in classes:
                 for i_split in range(n_splt):
 
@@ -116,13 +115,16 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             values_grp = np.asarray(values_grp)
             self._log2("Got {} candidates for grp {}".format(
                 values_grp.shape[0], i_grp))
-            if values_grp.shape[0] > 0 and not np.all(values_grp == values_grp[0][0]):
+            if values_grp.shape[0] > 0:
                 values_grp = (values_grp - values_grp.mean(axis=-1, keepdims=True)) / (
                     values_grp.std(axis=-1, keepdims=True) + 1e-8)
-                kbd = KBinsDiscretizer(n_bins=9, strategy='uniform').fit(
-                    values_grp.reshape(-1, 1))
-                values_grp = np.unique(kbd.inverse_transform(
-                    kbd.transform(values_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
+                if not np.all(values_grp.reshape(-1, 1) == values_grp.reshape(-1, 1)[0]):
+                    kbd = KBinsDiscretizer(n_bins=9, strategy='uniform').fit(
+                        values_grp.reshape(-1, 1))
+                    values_grp = np.unique(kbd.inverse_transform(
+                        kbd.transform(values_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
+                else:
+                    values_grp = np.unique(values_grp, axis=0)
                 n_shapelets += values_grp.shape[0]
                 values.update({i_grp: values_grp})
                 self._log("Extracted {} shapelets for grp {}/{}".format(

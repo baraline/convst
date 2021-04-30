@@ -5,7 +5,6 @@ Created on Thu Apr 29 22:59:18 2021
 @author: Antoine
 """
 import pandas as pd
-import seaborn as sns
 import numpy as np
 from matplotlib import pyplot as plt
 import operator
@@ -15,29 +14,47 @@ from scipy.stats import friedmanchisquare
 import networkx
 from itertools import combinations
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-sns.set()
-sns.set_context("talk")
-
 
 def cv_col_clean_name(s):
+    if s == 'Unnamed: 0':
+        return "dataset_name"
     for char in ["'","{","}","CST", " ",]:
         s = s.replace(char,"")
     s = s.split('__')
     return s[1]+s[2] 
 
 ps = []
-for r in range(1, 5):
+for r in range(1, 6):
     ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
 n_splits = [1, 3, 5, 7, 10]
 
-params_ranking_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\params_csv2.csv"
-df = pd.read_csv(params_ranking_path, sep=';').set_index('Unnamed: 0')
+params_ranking_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\params_csv3.csv"
+df = pd.read_csv(params_ranking_path, sep=';')
 df = df.rename(columns=lambda x: cv_col_clean_name(x))
-df_mean = df.mean(axis=0).reset_index()
-df_mean = df_mean.rename(columns={'index':'name', 0: 'avg_rank'})
+
+df_res = pd.DataFrame()
+print(df.columns.difference(['dataset_name']).shape)
+for col in df.columns.difference(['dataset_name']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col,index=range(0,10))
+    d['accuracy'] = df[col]
+    d['dataset_name'] = df['dataset_name']
+    df_res = pd.concat([df_res,d],axis=0,ignore_index=True)
+    
+df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split("\),").values],'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0':'classifier_name'})
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
 
 
-def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(",n_").values],'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0':'classifier_name'})
+c = df_split.groupby('classifier_name').mean().sort_values(by='accuracy',ascending=False).index.values[0:10]
+df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
+
+#Unknown crash ? image is still saved at C:\Users\Antoine
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
+# In[]:
+def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
     """
     Draws a CD graph, which is used to display  the differences in methods'
@@ -65,6 +82,12 @@ def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
         labels (bool, optional): if set to `True`, the calculated avg rank
         values will be displayed
     """
+    try:
+        import matplotlib
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+    except ImportError:
+        raise ImportError("Function graph_ranks requires matplotlib.")
 
     width = float(width)
     textspace = float(textspace)
@@ -118,11 +141,11 @@ def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
     ssums = sums
 
     if lowv is None:
-        lowv = min(30, int(math.floor(min(ssums))))
+        lowv = min(1, int(math.floor(min(ssums))))
     if highv is None:
         highv = max(len(avranks), int(math.ceil(max(ssums))))
 
-    cline = 0.5
+    cline = 0.4
 
     k = len(sums)
 
@@ -138,7 +161,7 @@ def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
             a = highv - rank
         return textspace + scalewidth / (highv - lowv) * a
 
-    distanceh = 0.3
+    distanceh = 0.25
 
     cline += distanceh
 
@@ -199,7 +222,7 @@ def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
     def filter_names(name):
         return name
 
-    space_between_names = 0.26
+    space_between_names = 0.24
 
     for i in range(math.ceil(k / 2)):
         chei = cline + minnotsignificant + i * space_between_names
@@ -233,26 +256,142 @@ def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
             start += height
             print('drawing: ', l, r)
 
+    # draw_lines(lines)
+    start = cline + 0.2
+    side = -0.02
+    height = 0.1
+
+    # draw no significant lines
+    # get the cliques
+    cliques = form_cliques(p_values, nnames)
+    i = 1
+    achieved_half = False
+    print(nnames)
+    for clq in cliques:
+        if len(clq) == 1:
+            continue
+        print(clq)
+        min_idx = np.array(clq).min()
+        max_idx = np.array(clq).max()
+        if min_idx >= len(nnames) / 2 and achieved_half == False:
+            start = cline + 0.25
+            achieved_half = True
+        line([(rankpos(ssums[min_idx]) - side, start),
+              (rankpos(ssums[max_idx]) + side, start)],
+             linewidth=linewidth_sign)
+        start += height
 
 
+def form_cliques(p_values, nnames):
+    """
+    This method forms the cliques
+    """
+    # first form the numpy matrix data
+    m = len(nnames)
+    g_data = np.zeros((m, m), dtype=np.int64)
+    for p in p_values:
+        if p[3] == False:
+            i = np.where(nnames == p[0])[0][0]
+            j = np.where(nnames == p[1])[0][0]
+            min_i = min(i, j)
+            max_j = max(i, j)
+            g_data[min_i, max_j] = 1
 
-def draw_cd_diagram(df_mean, top=10, alpha=0.05, title=None, labels=False):
+    g = networkx.Graph(g_data)
+    return networkx.find_cliques(g)
+
+
+def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
     """
-    vals = df_mean['avg_rank'].values
-    names = df_mean['name'].values
-    graph_ranks(vals[np.argsort(vals)[0:top]], names[np.argsort(vals)[0:top]],
-                cd=None, reverse=False, width=15, textspace=1, labels=labels)
+    p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
+
+    graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
+                cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
 
     font = {'family': 'sans-serif',
         'color':  'black',
         'weight': 'normal',
-        'size': 20,
+        'size': 22,
         }
     if title:
         plt.title(title,fontdict=font, y=0.9, x=0.5)
     plt.savefig('cd-diagram.png',bbox_inches='tight')
+    return average_ranks
 
-draw_cd_diagram(df_mean, title='Accuracy', labels=True)
+def wilcoxon_holm(alpha=0.05, df_perf=None):
+    """
+    Applies the wilcoxon signed rank test between each pair of algorithm and then use Holm
+    to reject the null's hypothesis
+    """
+    # count the number of tested datasets per classifier
+    df_counts = pd.DataFrame({'count': df_perf.groupby(
+        ['classifier_name']).size()}).reset_index()
+    # get the maximum number of tested datasets
+    max_nb_datasets = df_counts['count'].max()
+    # get the list of classifiers who have been tested on nb_max_datasets
+    classifiers = list(df_counts.loc[df_counts['count'] == max_nb_datasets]
+                       ['classifier_name'])
+    # test the null hypothesis using friedman before doing a post-hoc analysis
+    friedman_p_value = friedmanchisquare(*(
+        np.array(df_perf.loc[df_perf['classifier_name'] == c]['accuracy'])
+        for c in classifiers))[1]
+    if friedman_p_value >= alpha:
+        # then the null hypothesis over the entire classifiers cannot be rejected
+        print('the null hypothesis over the entire classifiers cannot be rejected')
+        exit()
+    # get the number of classifiers
+    m = len(classifiers)
+    # init array that contains the p-values calculated by the Wilcoxon signed rank test
+    p_values = []
+    # loop through the algorithms to compare pairwise
+    for i in range(m - 1):
+        # get the name of classifier one
+        classifier_1 = classifiers[i]
+        # get the performance of classifier one
+        perf_1 = np.array(df_perf.loc[df_perf['classifier_name'] == classifier_1]['accuracy']
+                          , dtype=np.float64)
+        for j in range(i + 1, m):
+            # get the name of the second classifier
+            classifier_2 = classifiers[j]
+            # get the performance of classifier one
+            perf_2 = np.array(df_perf.loc[df_perf['classifier_name'] == classifier_2]
+                              ['accuracy'], dtype=np.float64)
+            # calculate the p_value
+            p_value = wilcoxon(perf_1, perf_2, zero_method='pratt')[1]
+            # appen to the list
+            p_values.append((classifier_1, classifier_2, p_value, False))
+    # get the number of hypothesis
+    k = len(p_values)
+    # sort the list in acsending manner of p-value
+    p_values.sort(key=operator.itemgetter(2))
+
+    # loop through the hypothesis
+    for i in range(k):
+        # correct alpha with holm
+        new_alpha = float(alpha / (k - i))
+        # test if significant after holm's correction of alpha
+        if p_values[i][2] <= new_alpha:
+            p_values[i] = (p_values[i][0], p_values[i][1], p_values[i][2], True)
+        else:
+            # stop
+            break
+    # compute the average ranks to be returned (useful for drawing the cd diagram)
+    # sort the dataframe of performances
+    sorted_df_perf = df_perf.loc[df_perf['classifier_name'].isin(classifiers)]. \
+        sort_values(['classifier_name', 'dataset_name'])
+    # get the rank data
+    rank_data = np.array(sorted_df_perf['accuracy']).reshape(m, max_nb_datasets)
+
+    # create the data frame containg the accuracies
+    df_ranks = pd.DataFrame(data=rank_data, index=np.sort(classifiers), columns=
+    np.unique(sorted_df_perf['dataset_name']))
+
+
+    # average the ranks
+    average_ranks = df_ranks.rank(ascending=False).mean(axis=1).sort_values(ascending=False)
+    # return the p-values and the average ranks
+    return p_values, average_ranks, max_nb_datasets
+

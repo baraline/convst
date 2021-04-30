@@ -78,6 +78,7 @@ plt.plot(generate_strides_1D(X_train[np.where(y_train==1)[0][0],0], 9, dils[i_ke
 plt.plot(s)
 
 # In[]:
+
 i_kernel = 1
 from itertools import combinations
 for w in np.array([_ for _ in combinations(np.arange(9), 3)], dtype=np.int32):
@@ -100,4 +101,50 @@ for w in np.array([_ for _ in combinations(np.arange(9), 3)], dtype=np.int32):
     ax[2].set_title('Rocket Features')
     plt.show()
 
-    
+# In[]:
+from matplotlib import gridspec
+from CST.base_transformers.shapelets import Convolutional_shapelet
+fig, ax = plt.subplots(ncols=3, nrows=2,
+                       sharex=False, sharey=False,
+                       figsize=(15,7))
+
+gs = gridspec.GridSpec(2, 3, width_ratios=[1, 2, 1.5])
+ax00 = plt.subplot(gs[0,0])
+ax01 = plt.subplot(gs[0,1])
+ax10 = plt.subplot(gs[1,0])
+ax11 = plt.subplot(gs[1,1])
+ax21 = plt.subplot(gs[1,2])
+
+sv0 = X_train[2,0,25:50]
+sv0 = (sv0 - sv0.mean())/sv0.std()
+sv1 = X_train[0,0,35:60]
+sv1 = (sv1 - sv1.mean())/sv1.std()
+s0 = Convolutional_shapelet(values=sv0, dilation=1, padding=0, input_ft_id=0)
+s1 = Convolutional_shapelet(values=sv1, dilation=1, padding=0, input_ft_id=0)
+
+ax00.plot(sv0,c='red')
+ax10.plot(sv1,c='black')
+
+s0.plot_loc(X_train[0,0][25:90],ax=ax01,color='red',c_x='orange',x_alpha=0.5)
+s1.plot_loc(X_train[0,0][25:90],ax=ax01,color='black',c_x='orange',x_alpha=0.5)
+
+s0.plot_loc(X_train[2,0][25:90],ax=ax11,color='red',c_x='blue',x_alpha=0.5)
+s1.plot_loc(X_train[2,0][25:90],ax=ax11,color='black',c_x='blue',x_alpha=0.5)
+
+x = s0.transform(X_train)
+y = s1.transform(X_train)
+
+ax00.set_ylabel("S0")
+ax00.set_title("Shapelets")
+ax10.set_ylabel("S1")
+
+ax01.set_title("Closest match on each class")
+ax21.set_title("Shapelet Transform")
+idx = list(set(list(range(X_train.shape[0]))) - {0,2})
+ax21.scatter(x[0],y[0],c='blue')
+ax21.scatter(x[2],y[2],c='orange')
+ax21.scatter(x[idx], y[idx], alpha=0.75,facecolors='none',edgecolors=['orange' if c==1 else 'blue' for c in y_train[idx]])
+ax21.set_xlabel('S0')
+ax21.set_ylabel('S1')
+
+plt.tight_layout()
