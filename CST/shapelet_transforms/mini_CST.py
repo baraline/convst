@@ -18,9 +18,8 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import StratifiedShuffleSplit
 import warnings
 #TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
-#TODO : try to compare one class vs all rather than one vs one
 
-
+#TODO : Implement parallelisation of candidates generation / distance computation + benchmarks
 class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def __init__(self,  P=[100, 90, 80], n_splits=4, id_ft=0, verbose=0, n_threads=3):
         self.id_ft = id_ft
