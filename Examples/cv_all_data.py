@@ -26,7 +26,7 @@ n_splits=10
 p=[100,95,90,85,80]
 
 available_memory_bytes = 62*1e9
-max_cpu_cores = 1
+max_cpu_cores = 86
 numba_n_thread = 3
 size_mult = 3500
 
@@ -63,8 +63,7 @@ def n_kernels(pipelines):
     return np.mean([pipeline['miniconvolutionalshapelettransformer'].n_kernels
                     for pipeline in pipelines])
 
-
-for name in ['Car']:
+for name in dataset_names:
     print(name)
     X, y, le = load_sktime_dataset(name,normalize=True)
     n_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
