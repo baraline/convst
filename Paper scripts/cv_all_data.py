@@ -18,17 +18,17 @@ from pyts.classification import LearningShapelets
 from sktime.classification.shapelet_based import ShapeletTransformClassifier
 from datetime import datetime
 
-resume=False
+resume=True
 
 print("Imports OK")
 n_cv = 10
 n_splits=10
 p=[100,95,90,85,80]
 
-available_memory_bytes = 62*1e9
-max_cpu_cores = 86
+available_memory_bytes = 60*1e9
+max_cpu_cores = 10
 numba_n_thread = 3
-size_mult = 3500
+size_mult = 1500
 
 max_process = max_cpu_cores//numba_n_thread
 
@@ -38,6 +38,7 @@ dataset_names = return_all_dataset_names()
 
 if resume:
     df = pd.read_csv(csv_name)
+    df = df.set_index('Unnamed: 0')
 else:
     df = pd.DataFrame(index=dataset_names)
     df['MiniCST_mean'] = pd.Series(0, index=df.index)
@@ -66,12 +67,11 @@ def n_kernels(pipelines):
 for name in dataset_names:
     print(name)
     X, y, le = load_sktime_dataset(name,normalize=True)
-    n_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
-    n_jobs = max(n_jobs if n_jobs <= max_process else max_process, 1)
-    if df.loc[name,'MiniCST_mean'] == 0 and X.shape[2] > 10:
-        
+    if df.loc[name,'MiniRKT_mean'] == 0 and X.shape[2] > 10:
+        n_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
+        n_jobs = max(n_jobs if n_jobs <= max_process else max_process, 1)
         pipe_rkt = make_pipeline(MiniRKT(),
-                             RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
+                             RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
         cv = cross_validate(pipe_rkt, X, y, cv=n_cv, n_jobs=n_jobs,
                             scoring={'f1':make_scorer(f1_score, average='macro')})
         print("F1-Score for MINI-ROCKET Ridge : {}".format(np.mean(cv['test_f1'])))
@@ -79,13 +79,12 @@ for name in dataset_names:
         df.loc[name,'MiniRKT_std'] = np.std(cv['test_f1'])
         df.loc[name,'Runtime_MiniRKT'] = np.mean(cv['fit_time'] + cv['score_time'])
         
+    if df.loc[name,'MiniCST_mean'] == 0 and X.shape[2] > 10:
         pipe_cst = make_pipeline(MiniConvolutionalShapeletTransformer(n_threads=numba_n_thread),
                                  RandomForestClassifier(n_estimators=400, max_samples=0.75))
-        
         cv = cross_validate(pipe_cst, X, y, cv=n_cv, 
                             scoring={'f1':make_scorer(f1_score, average='macro')},
                             n_jobs=n_jobs, return_estimator=True)
-        
         print("F1-Score for MiniCST RF : {}".format(np.mean(cv['test_f1'])))
         df.loc[name,'MiniCST_mean'] =  np.mean(cv['test_f1'])
         df.loc[name,'MiniCST_std'] = np.std(cv['test_f1'])
@@ -93,6 +92,6 @@ for name in dataset_names:
         df.loc[name,'MiniCST_n_shp'] = n_shp_extracted(cv['estimator'])
         df.loc[name,'MiniCST_n_shp_used'] = n_shp_extracted(cv['estimator'])
         df.loc[name,'MiniCST_n_kernel'] = n_kernels(cv['estimator'])
-            
+        
         df.to_csv(csv_name)
         print('---------------------')

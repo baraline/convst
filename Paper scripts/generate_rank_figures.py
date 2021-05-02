@@ -45,7 +45,7 @@ df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split("\
 df_split = df_split.rename(columns={'level_0':'classifier_name'})
 draw_cd_diagram(df_perf=df_split, title='', labels=False)
 
-
+# In[]
 df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(",n_").values],'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0':'classifier_name'})
 c = df_split.groupby('classifier_name').mean().sort_values(by='accuracy',ascending=False).index.values[0:10]
