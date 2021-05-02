@@ -28,7 +28,7 @@ p=[100,95,90,85,80]
 available_memory_bytes = 60*1e9
 max_cpu_cores = 10
 numba_n_thread = 3
-size_mult = 1500
+size_mult = 3500
 
 max_process = max_cpu_cores//numba_n_thread
 
@@ -67,9 +67,9 @@ def n_kernels(pipelines):
 for name in dataset_names:
     print(name)
     X, y, le = load_sktime_dataset(name,normalize=True)
+    n_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
+    n_jobs = max(n_jobs if n_jobs <= max_process else max_process, 1)
     if df.loc[name,'MiniRKT_mean'] == 0 and X.shape[2] > 10:
-        n_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
-        n_jobs = max(n_jobs if n_jobs <= max_process else max_process, 1)
         pipe_rkt = make_pipeline(MiniRKT(),
                              RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
         cv = cross_validate(pipe_rkt, X, y, cv=n_cv, n_jobs=n_jobs,

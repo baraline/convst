@@ -118,7 +118,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 values_grp = (values_grp - values_grp.mean(axis=-1, keepdims=True)) / (
                     values_grp.std(axis=-1, keepdims=True) + 1e-8)
                 if not np.all(values_grp.reshape(-1, 1) == values_grp.reshape(-1, 1)[0]):
-                    kbd = KBinsDiscretizer(n_bins=9, strategy='uniform').fit(
+                    kbd = KBinsDiscretizer(n_bins=9, strategy='uniform',dtype=np.float32).fit(
                         values_grp.reshape(-1, 1))
                     values_grp = np.unique(kbd.inverse_transform(
                         kbd.transform(values_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
