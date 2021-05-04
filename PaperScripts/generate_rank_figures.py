@@ -15,20 +15,30 @@ import networkx
 from itertools import combinations
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+
 def cv_col_clean_name(s):
     if s == 'Unnamed: 0':
         return "dataset_name"
-    for char in ["'","{","}","CST", " ",]:
-        s = s.replace(char,"")
+    for char in ["'", "{", "}", "CST", " ", ]:
+        s = s.replace(char, "")
     s = s.split('__')
-    return s[1]+s[2] 
+    return s[1]+s[2]
+
+def cv_col_clean_name2(s):
+    if s == 'Unnamed: 0':
+        return "dataset_name"
+    for char in ["'", "{", "}", "CST", " ", ]:
+        s = s.replace(char, "")
+    s = s.split('__')    
+    return s[1]
 
 ps = []
 for r in range(1, 6):
     ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
 n_splits = [1, 3, 5, 7, 10]
-
-params_ranking_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\params_csv3.csv"
+params_ranking_path = r"C:\git_projects\CST\params_csv3.csv"
+params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+#params_ranking_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\params_csv3.csv"
 df = pd.read_csv(params_ranking_path, sep=';')
 df = df.rename(columns=lambda x: cv_col_clean_name(x))
 
@@ -36,24 +46,51 @@ df_res = pd.DataFrame()
 print(df.columns.difference(['dataset_name']).shape)
 for col in df.columns.difference(['dataset_name']):
     d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col,index=range(0,10))
+    d['classifier_name'] = pd.Series(col, index=range(0, 10))
     d['accuracy'] = df[col]
     d['dataset_name'] = df['dataset_name']
-    df_res = pd.concat([df_res,d],axis=0,ignore_index=True)
-    
-df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split("\),").values],'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0':'classifier_name'})
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
+    "\),").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 draw_cd_diagram(df_perf=df_split, title='', labels=False)
 
 # In[]
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(",n_").values],'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0':'classifier_name'})
-c = df_split.groupby('classifier_name').mean().sort_values(by='accuracy',ascending=False).index.values[0:10]
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
+    ",n_").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+c = df_split.groupby('classifier_name').mean().sort_values(
+    by='accuracy', ascending=False).index.values[0:10]
 df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
 
 #Unknown crash ? image is still saved at C:\Users\Antoine
 draw_cd_diagram(df_perf=df_split, title='', labels=False)
+
 # In[]:
+params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+
+df = pd.read_csv(params_ranking_path2, sep=';')
+df = df.rename(columns=lambda x: cv_col_clean_name2(x))
+
+df_res = pd.DataFrame()
+print(df.columns.difference(['dataset_name']).shape)
+for col in df.columns.difference(['dataset_name']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, 10))
+    d['accuracy'] = df[col]
+    d['dataset_name'] = df['dataset_name']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
+    "\),").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+#Unknown crash ? image is still saved at C:\Users\Antoine
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
+
+# In[]:
+
+
 def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
     """
@@ -231,8 +268,10 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
               (textspace - 0.1, chei)],
              linewidth=linewidth)
         if labels:
-            text(textspace + 0.3, chei - 0.075, format(ssums[i], '.4f'), ha="right", va="center", size=10)
-        text(textspace - 0.2, chei, filter_names(nnames[i]), ha="right", va="center", size=16)
+            text(textspace + 0.3, chei - 0.075,
+                 format(ssums[i], '.4f'), ha="right", va="center", size=10)
+        text(textspace - 0.2, chei,
+             filter_names(nnames[i]), ha="right", va="center", size=16)
 
     for i in range(math.ceil(k / 2), k):
         chei = cline + minnotsignificant + (k - i - 1) * space_between_names
@@ -241,7 +280,8 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
               (textspace + scalewidth + 0.1, chei)],
              linewidth=linewidth)
         if labels:
-            text(textspace + scalewidth - 0.3, chei - 0.075, format(ssums[i], '.4f'), ha="left", va="center", size=10)
+            text(textspace + scalewidth - 0.3, chei - 0.075,
+                 format(ssums[i], '.4f'), ha="left", va="center", size=10)
         text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
              ha="left", va="center", size=16)
 
@@ -301,7 +341,7 @@ def form_cliques(p_values, nnames):
     return networkx.find_cliques(g)
 
 
-def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
+def draw_cd_diagram(df_perf=None, alpha=0.025, title=None, labels=False):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
@@ -312,14 +352,15 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
                 cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
 
     font = {'family': 'sans-serif',
-        'color':  'black',
-        'weight': 'normal',
-        'size': 22,
-        }
+            'color':  'black',
+            'weight': 'normal',
+            'size': 22,
+            }
     if title:
-        plt.title(title,fontdict=font, y=0.9, x=0.5)
-    plt.savefig('cd-diagram.png',bbox_inches='tight')
+        plt.title(title, fontdict=font, y=0.9, x=0.5)
+    plt.savefig('cd-diagram.png', bbox_inches='tight')
     return average_ranks
+
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
     """
@@ -351,8 +392,8 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         # get the name of classifier one
         classifier_1 = classifiers[i]
         # get the performance of classifier one
-        perf_1 = np.array(df_perf.loc[df_perf['classifier_name'] == classifier_1]['accuracy']
-                          , dtype=np.float64)
+        perf_1 = np.array(
+            df_perf.loc[df_perf['classifier_name'] == classifier_1]['accuracy'], dtype=np.float64)
         for j in range(i + 1, m):
             # get the name of the second classifier
             classifier_2 = classifiers[j]
@@ -374,7 +415,8 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         new_alpha = float(alpha / (k - i))
         # test if significant after holm's correction of alpha
         if p_values[i][2] <= new_alpha:
-            p_values[i] = (p_values[i][0], p_values[i][1], p_values[i][2], True)
+            p_values[i] = (p_values[i][0], p_values[i]
+                           [1], p_values[i][2], True)
         else:
             # stop
             break
@@ -383,15 +425,15 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     sorted_df_perf = df_perf.loc[df_perf['classifier_name'].isin(classifiers)]. \
         sort_values(['classifier_name', 'dataset_name'])
     # get the rank data
-    rank_data = np.array(sorted_df_perf['accuracy']).reshape(m, max_nb_datasets)
+    rank_data = np.array(sorted_df_perf['accuracy']).reshape(
+        m, max_nb_datasets)
 
     # create the data frame containg the accuracies
-    df_ranks = pd.DataFrame(data=rank_data, index=np.sort(classifiers), columns=
-    np.unique(sorted_df_perf['dataset_name']))
-
+    df_ranks = pd.DataFrame(data=rank_data, index=np.sort(
+        classifiers), columns=np.unique(sorted_df_perf['dataset_name']))
 
     # average the ranks
-    average_ranks = df_ranks.rank(ascending=False).mean(axis=1).sort_values(ascending=False)
+    average_ranks = df_ranks.rank(ascending=False).mean(
+        axis=1).sort_values(ascending=False)
     # return the p-values and the average ranks
     return p_values, average_ranks, max_nb_datasets
-

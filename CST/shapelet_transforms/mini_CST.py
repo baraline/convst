@@ -17,18 +17,23 @@ from sklearn.utils import shuffle
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import StratifiedShuffleSplit
 import warnings
-#TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
 
+#TODO : Add a value mapping to handle case where difference is made by raw conv value density and not location
+#TODO : Docs !
 #TODO : Implement parallelisation of candidates generation / distance computation + benchmarks
+
 class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=[100, 90, 80], n_splits=4, id_ft=0, verbose=0, n_threads=3):
+    def __init__(self,  P=[100, 95, 90, 85, 80], n_splits=10, id_ft=0,
+                 verbose=0, n_bins=9, n_threads=3, random_state=None):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets_params = None
         self.shapelets_values = None
         self.P = P
         self.n_splits = n_splits
+        self.n_bins = n_bins
         self.n_threads = n_threads
+        self.random_state = random_state
 
     def _log(self, message):
         if self.verbose > 0:
@@ -62,21 +67,25 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             #From input space, go back to convolutional space (n_samples, n_conv, 9), sum it to get a per conv point score
             locs_conv = generate_strides_2D(
                 locs_conv, 9, dilation).sum(axis=-1)
-            
+
             #Computing splits indexes, shape (n_split, n_classes, n_idx)
-            
+
             if all(self.n_splits <= np.bincount(y)):
                 n_splt = self.n_splits
             else:
                 n_splt = min(np.bincount(y))
-                warnings.warn("Reduced n_split to minimum number of class sample")
+                warnings.warn(
+                    "Reduced n_split to minimum number of class sample")
             if n_splt > 1:
-                sss = StratifiedShuffleSplit(n_splits=n_splt, test_size=None, train_size=1/n_splt)
+                sss = StratifiedShuffleSplit(
+                    n_splits=n_splt, test_size=None, train_size=1/n_splt)
                 id_splits = []
                 for train_index, _ in sss.split(X, y):
-                    id_splits.append([train_index[np.where(y[train_index] == i_class)[0]] for i_class in np.unique(y)])
+                    id_splits.append([train_index[np.where(y[train_index] == i_class)[
+                                     0]] for i_class in np.unique(y)])
             else:
-                id_splits = [[np.where(y==i_class)[0] for i_class in np.unique(y)]]
+                id_splits = [[np.where(y == i_class)[0]
+                              for i_class in np.unique(y)]]
             #Compute class weight of each split
             c_w = []
             for i_split in range(n_splt):
@@ -118,7 +127,7 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 values_grp = (values_grp - values_grp.mean(axis=-1, keepdims=True)) / (
                     values_grp.std(axis=-1, keepdims=True) + 1e-8)
                 if not np.all(values_grp.reshape(-1, 1) == values_grp.reshape(-1, 1)[0]):
-                    kbd = KBinsDiscretizer(n_bins=9, strategy='uniform',dtype=np.float32).fit(
+                    kbd = KBinsDiscretizer(n_bins=self.n_bins, strategy='uniform', dtype=np.float32).fit(
                         values_grp.reshape(-1, 1))
                     values_grp = np.unique(kbd.inverse_transform(
                         kbd.transform(values_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
@@ -183,18 +192,12 @@ class MiniConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
     def _init_kernels(self, X, y):
         self._log("Performing MiniRocket Transform")
-        m = MiniRocket().fit(X)
+        m = MiniRocket(random_state=self.random_state).fit(X)
         ft, locs = m.transform(X, return_locs=True)
         self._log(
             "Performing kernel selection with {} kernels".format(locs.shape[1]))
-        """
-        ft_selector = SelectFromModel(RandomForestClassifier(max_features=0.85,
-                                                             max_samples=0.85,
-                                                             ccp_alpha=0.02,
-                                                             n_jobs=None)).fit(ft,y)
-        """
         ft_selector = SelectFromModel(
-            DecisionTreeClassifier(ccp_alpha=0.005)).fit(ft, y)
+            DecisionTreeClassifier()).fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0

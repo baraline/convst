@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
-resume = True
+resume = False
 
 available_memory_bytes = 62*1e9
 max_cpu_cores = 86
@@ -21,14 +21,18 @@ numba_n_thread = 3
 size_mult = 3500
 
 max_process = max_cpu_cores//numba_n_thread
-file_name = 'params_csv3.csv'
-
+file_name = 'params_csv_bins.csv'
+"""
 ps = []
 for r in range(1, 6):
     ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
 n_splits = [1, 3, 5, 7, 10]
+
 params = {'CST__P': ps,
           'CST__n_splits': n_splits}
+"""
+n_bins = [5, 7, 9, 11, 13, 15, 17, 20]
+params = {'CST__n_bins': n_bins}
 print(params)
 
 if resume:
@@ -51,13 +55,14 @@ for d_name in dataset_names:
             if n_jobs >= 15:
                 print('Launching {} parallel jobs'.format(n_jobs))
                 pipe = Pipeline([('CST', MiniConvolutionalShapeletTransformer()),
-                             ('rf', RandomForestClassifier(n_estimators=400))])
-                clf = GridSearchCV(pipe, params, n_jobs=n_jobs, cv=10, verbose=1)
+                                 ('rf', RandomForestClassifier(n_estimators=400))])
+                clf = GridSearchCV(
+                    pipe, params, n_jobs=n_jobs, cv=10, verbose=1)
                 clf.fit(X, y)
                 print('Done')
                 p_key = clf.cv_results_['params']
                 rank = clf.cv_results_['mean_test_score']
-                
+
                 for i, p in enumerate(p_key):
                     if str(p) in results.keys():
                         results[str(p)].append(rank[i])
