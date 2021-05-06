@@ -14,10 +14,10 @@ from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransforme
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
-from pyts.classification import LearningShapelets
-from pyts.transformation import ShapeletTransform
+from wildboar.ensemble import ShapeletForestClassifier
 
 import warnings
+#Can use this to resume to last dataset if a problem occured
 resume = False
 
 print("Imports OK")
@@ -27,8 +27,7 @@ p = [100, 95, 90, 85, 80]
 
 run_RKT = True
 run_CST = True
-run_LTS = False
-run_STC = False
+run_SFC = True
 
 available_memory_bytes = 60*1e9
 max_cpu_cores = 30
@@ -56,12 +55,9 @@ else:
     df['MiniCST_n_shp'] = pd.Series(0, index=df.index)
     df['MiniCST_n_shp_used'] = pd.Series(0, index=df.index)
     df['MiniCST_n_kernel'] = pd.Series(0, index=df.index)
-    df['LTS_mean'] = pd.Series(0,index=df.index)
-    df['LTS_std'] = pd.Series(0,index=df.index)
-    df['Runtime_LTS'] = pd.Series('0', index=df.index)
-    df['ST_mean'] = pd.Series(0,index=df.index)
-    df['ST_std'] = pd.Series(0,index=df.index)
-    df['Runtime_ST'] = pd.Series('0', index=df.index)
+    df['SFC_mean'] = pd.Series(0,index=df.index)
+    df['SFC_std'] = pd.Series(0,index=df.index)
+    df['Runtime_SFC'] = pd.Series('0', index=df.index)
 
 
 def n_shp_extracted(pipelines):
@@ -89,7 +85,7 @@ for name in dataset_names:
         warnings.warn("Not enought estimated memory to run current dataset")
     else:
         if run_RKT and df.loc[name, 'MiniRKT_mean'] == 0 and X.shape[2] > 10:
-            pipe_rkt = make_pipeline(MiniRKT(),
+            pipe_rkt = make_pipeline(MiniRKT(random_state=random_state),
                                      RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
             cv = cross_validate(pipe_rkt, X, y, cv=n_cv, n_jobs=n_jobs,
                                 scoring={'f1': make_scorer(f1_score, average='macro')})
@@ -101,8 +97,10 @@ for name in dataset_names:
                 cv['fit_time'] + cv['score_time'])
 
         if run_CST and df.loc[name, 'MiniCST_mean'] == 0 and X.shape[2] > 10:
-            pipe_cst = make_pipeline(MiniConvolutionalShapeletTransformer(n_threads=numba_n_thread),
-                                     RandomForestClassifier(n_estimators=400))
+            pipe_cst = make_pipeline(MiniConvolutionalShapeletTransformer(n_threads=numba_n_thread,
+                                                                          random_state=random_state),
+                                     RandomForestClassifier(n_estimators=400,
+                                                            random_state=random_state))
             cv = cross_validate(pipe_cst, X, y, cv=n_cv,
                                 scoring={'f1': make_scorer(
                                     f1_score, average='macro')},
@@ -120,30 +118,18 @@ for name in dataset_names:
 
             df.to_csv(csv_name)
         
-        if run_LTS and df.loc[name, 'LTS_mean'] == 0 and X.shape[2] > 10:
-            cv = cross_validate(LearningShapelets(n_jobs=numba_n_thread), X[:,0,:], y, cv=n_cv,
+        if run_SFC and df.loc[name, 'SFC_mean'] == 0 and X.shape[2] > 10:
+            cv = cross_validate(ShapeletForestClassifier(n_estimators=400, 
+                                                         random_state=random_state),
+                                X[:,0,:], y, cv=n_cv,
                                 scoring={'f1': make_scorer(
                                     f1_score, average='macro')},
-                                n_jobs=n_jobs, return_estimator=True)
+                                n_jobs=n_jobs)
             print(
-                "F1-Score for LTS : {}".format(np.mean(cv['test_f1'])))
-            df.loc[name, 'LTS_mean'] = np.mean(cv['test_f1'])
-            df.loc[name, 'LTS_std'] = np.std(cv['test_f1'])
-            df.loc[name, 'Runtime_LTS'] = np.mean(
-                cv['fit_time'] + cv['score_time'])
-            
-        if run_STC and df.loc[name, 'ST_mean'] == 0 and X.shape[2] > 10:
-            pipe_rkt = make_pipeline(ShapeletTransform(n_jobs=numba_n_thread),
-                                     RandomForestClassifier(n_estimators=400, max_samples=0.75))
-            cv = cross_validate(LearningShapelets(n_jobs=numba_n_thread), X[:,0,:], y, cv=n_cv,
-                                scoring={'f1': make_scorer(
-                                    f1_score, average='macro')},
-                                n_jobs=n_jobs, return_estimator=True)
-            print(
-                "F1-Score for ST : {}".format(np.mean(cv['test_f1'])))
-            df.loc[name, 'ST_mean'] = np.mean(cv['test_f1'])
-            df.loc[name, 'ST_std'] = np.std(cv['test_f1'])
-            df.loc[name, 'Runtime_ST'] = np.mean(
+                "F1-Score for SFC : {}".format(np.mean(cv['test_f1'])))
+            df.loc[name, 'SFC_mean'] = np.mean(cv['test_f1'])
+            df.loc[name, 'SFC_std'] = np.std(cv['test_f1'])
+            df.loc[name, 'Runtime_SFC'] = np.mean(
                 cv['fit_time'] + cv['score_time'])
         
     print('---------------------')

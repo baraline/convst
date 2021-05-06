@@ -13,6 +13,8 @@ from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
 
+
+#Can use this to resume to last dataset if a problem occured
 resume = False
 
 available_memory_bytes = 62*1e9
@@ -21,18 +23,16 @@ numba_n_thread = 3
 size_mult = 3500
 
 max_process = max_cpu_cores//numba_n_thread
-file_name = 'params_csv_bins.csv'
-"""
+file_name = 'params_csv.csv'
+
 ps = []
 for r in range(1, 6):
     ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
 n_splits = [1, 3, 5, 7, 10]
-
-params = {'CST__P': ps,
-          'CST__n_splits': n_splits}
-"""
 n_bins = [5, 7, 9, 11, 13, 15, 17, 20]
-params = {'CST__n_bins': n_bins}
+params = {'CST__P': ps,
+          'CST__n_splits': n_splits,
+          'CST__n_bins':n_bins}
 print(params)
 
 if resume:

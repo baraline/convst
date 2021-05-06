@@ -7,16 +7,16 @@ Created on Sat Apr 10 12:14:16 2021
 
 from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.base_transformers.minirocket import MiniRocket
-#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import f1_score
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
-# Load GunPoint Dataset
+# Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'BirdChicken', normalize=True)
+    'GunPoint', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
