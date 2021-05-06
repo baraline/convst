@@ -1,4 +1,4 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, an fast algorithm that search for a set of shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a fast algorithm that search for a set of shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
 
@@ -31,7 +31,8 @@ pred = rf.predict(X_cst_test)
 print("F1-Score for CST RF : {}".format(f1_score(y_test, pred)))
 ```
 
-We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yeat extend the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform
+We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yet extended the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform.
+
 In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results.
 
 ## Reproducing the paper results and figures
@@ -41,7 +42,7 @@ Multiple scripts are available under the `PaperScripts` folder. It contains the 
 ## Contributing, Citing and Contact
 
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
-For other question or to take contact with me, you can email me at antoine(dot)guillaume45(at)gmail(dot)com (institutional email might change soon so i provide this as a temporary address)
+For other question or to take contact with me, you can email me at antoine.guillaume45@gmail.com (institutional email might change soon so i provide this as a temporary address)
 
 If you use our algorithm in a publication, please cite the following paper :
 ```bibtex

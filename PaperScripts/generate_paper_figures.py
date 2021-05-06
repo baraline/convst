@@ -127,9 +127,13 @@ ax10.plot(sv1,c='black')
 
 s0.plot_loc(X_train[0,0][25:90],ax=ax01,color='red',c_x='orange',x_alpha=0.5)
 s1.plot_loc(X_train[0,0][25:90],ax=ax01,color='black',c_x='orange',x_alpha=0.5)
-
 s0.plot_loc(X_train[2,0][25:90],ax=ax11,color='red',c_x='blue',x_alpha=0.5)
 s1.plot_loc(X_train[2,0][25:90],ax=ax11,color='black',c_x='blue',x_alpha=0.5)
+
+ax01.set_xticks(ticks=[0,20,40,60])
+ax01.set_xticklabels(labels=[25,45,65,85])
+ax11.set_xticks(ticks=[0,20,40,60])
+ax11.set_xticklabels(labels=[25,45,65,85])
 
 x = s0.transform(X_train)
 y = s1.transform(X_train)
@@ -144,7 +148,7 @@ idx = list(set(list(range(X_train.shape[0]))) - {0,2})
 ax21.scatter(x[0],y[0],c='blue')
 ax21.scatter(x[2],y[2],c='orange')
 ax21.scatter(x[idx], y[idx], alpha=0.75,facecolors='none',edgecolors=['orange' if c==1 else 'blue' for c in y_train[idx]])
-ax21.set_xlabel('S0')
-ax21.set_ylabel('S1')
+ax21.set_xlabel('D(S0,X)')
+ax21.set_ylabel('D(S1,X)')
 
 plt.tight_layout()

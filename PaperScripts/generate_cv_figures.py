@@ -5,7 +5,7 @@ import seaborn as sns
 import pandas as pd
 
 sns.set()
-sns.set_context("talk",font_scale=0.9))
+sns.set_context("talk",font_scale=0.9)
 
 base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
 cv_path = base_path + r"CV_10_results_10_[100, 95, 90, 85, 80]_noccp.csv"

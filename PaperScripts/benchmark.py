@@ -49,7 +49,7 @@ for l in lengths:
     for i_cv in range(n_cv):
         print(i_cv)
         p = make_pipeline(MiniConvolutionalShapeletTransformer(),
-                          RandomForestClassifier(n_estimators=400))
+                          RandomForestClassifier())
         t0 = datetime.now()
         p.fit(x1, y_train)
         p.predict(x2)
@@ -74,7 +74,7 @@ for l in lengths:
     timing = []
     for i_cv in range(n_cv):
         print(i_cv)
-        p = ShapeletForestClassifier(n_estimators=400)
+        p = ShapeletForestClassifier()
         t0 = datetime.now()
         p.fit(x1[:,0,:], y_train)
         p.predict(x2[:,0,:])
@@ -82,7 +82,7 @@ for l in lengths:
         timing.append((t1-t0).total_seconds())
     df.loc[l,'sfc'] = np.mean(timing)
 
-df.to_csv('tslength_Benchmark.csv')
+    df.to_csv('tslength_Benchmark.csv')
 
 # In[]:
     
@@ -139,4 +139,4 @@ for n in n_per_class:
         timing.append((t1-t0).total_seconds())
     df.loc[n*n_classes,'sfc'] = np.mean(timing)
     
-df.to_csv('n_samples_Benchmark.csv')
+    df.to_csv('n_samples_Benchmark.csv')

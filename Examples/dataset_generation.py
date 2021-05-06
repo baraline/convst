@@ -109,7 +109,7 @@ make_shift_different_pattern
      pas de probleme
   ]
 """
-from CST.base_transformers.shapelets import Convolutional_shapelet
+
 for data_func in [
                   make_diff_timestamps_same_pattern
 ]:

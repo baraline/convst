@@ -15,79 +15,6 @@ import networkx
 from itertools import combinations
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-
-def cv_col_clean_name(s):
-    if s == 'Unnamed: 0':
-        return "dataset_name"
-    for char in ["'", "{", "}", "CST", " ", ]:
-        s = s.replace(char, "")
-    s = s.split('__')
-    return s[1]+s[2]
-
-def cv_col_clean_name2(s):
-    if s == 'Unnamed: 0':
-        return "dataset_name"
-    for char in ["'", "{", "}", "CST", " ", ]:
-        s = s.replace(char, "")
-    s = s.split('__')    
-    return s[1]
-
-ps = []
-for r in range(1, 6):
-    ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
-n_splits = [1, 3, 5, 7, 10]
-params_ranking_path = r"C:\git_projects\CST\params_csv3.csv"
-params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
-#params_ranking_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\params_csv3.csv"
-df = pd.read_csv(params_ranking_path, sep=';')
-df = df.rename(columns=lambda x: cv_col_clean_name(x))
-
-df_res = pd.DataFrame()
-print(df.columns.difference(['dataset_name']).shape)
-for col in df.columns.difference(['dataset_name']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, 10))
-    d['accuracy'] = df[col]
-    d['dataset_name'] = df['dataset_name']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
-    "\),").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
-
-# In[]
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
-    ",n_").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-c = df_split.groupby('classifier_name').mean().sort_values(
-    by='accuracy', ascending=False).index.values[0:10]
-df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
-
-#Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
-
-# In[]:
-params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
-
-df = pd.read_csv(params_ranking_path2, sep=';')
-df = df.rename(columns=lambda x: cv_col_clean_name2(x))
-
-df_res = pd.DataFrame()
-print(df.columns.difference(['dataset_name']).shape)
-for col in df.columns.difference(['dataset_name']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, 10))
-    d['accuracy'] = df[col]
-    d['dataset_name'] = df['dataset_name']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
-    "\),").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-#Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
-
 # In[]:
 
 
@@ -437,3 +364,77 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         axis=1).sort_values(ascending=False)
     # return the p-values and the average ranks
     return p_values, average_ranks, max_nb_datasets
+
+def cv_col_clean_name(s):
+    if s == 'Unnamed: 0':
+        return "dataset_name"
+    for char in ["'", "{", "}", "CST", " ", ]:
+        s = s.replace(char, "")
+    s = s.split('__')
+    return s[1]+s[2]
+
+def cv_col_clean_name2(s):
+    if s == 'Unnamed: 0':
+        return "dataset_name"
+    for char in ["'", "{", "}", "CST", " ", ]:
+        s = s.replace(char, "")
+    s = s.split('__')    
+    return s[1]
+# In[]:
+
+ps = []
+for r in range(1, 6):
+    ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
+n_splits = [1, 3, 5, 7, 10]
+params_ranking_path = r"C:\git_projects\CST\params_csv3.csv"
+params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+
+df = pd.read_csv(params_ranking_path, sep=';')
+df = df.rename(columns=lambda x: cv_col_clean_name(x))
+
+df_res = pd.DataFrame()
+print(df.columns.difference(['dataset_name']).shape)
+for col in df.columns.difference(['dataset_name']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, 10))
+    d['accuracy'] = df[col]
+    d['dataset_name'] = df['dataset_name']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
+    "\),").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
+
+# In[]
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
+    ",n_").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+c = df_split.groupby('classifier_name').mean().sort_values(
+    by='accuracy', ascending=False).index.values[0:10]
+df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
+
+#Unknown crash ? image is still saved at C:\Users\Antoine
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
+
+# In[]:
+params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+
+df = pd.read_csv(params_ranking_path2, sep=';')
+df = df.rename(columns=lambda x: cv_col_clean_name2(x))
+
+df_res = pd.DataFrame()
+print(df.columns.difference(['dataset_name']).shape)
+for col in df.columns.difference(['dataset_name']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, 10))
+    d['accuracy'] = df[col]
+    d['dataset_name'] = df['dataset_name']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
+    "\),").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+#Unknown crash ? image is still saved at C:\Users\Antoine
+draw_cd_diagram(df_perf=df_split, title='', labels=False)
+
