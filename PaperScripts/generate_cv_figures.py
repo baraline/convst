@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
 
-
-from CST.utils.dataset_utils import load_sktime_dataset
 from matplotlib import pyplot as plt
 import seaborn as sns
-import numpy as np
 import pandas as pd
 
 sns.set()
-sns.set_context("talk")
+sns.set_context("talk",font_scale=0.9))
 
 base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
 cv_path = base_path + r"CV_10_results_10_[100, 95, 90, 85, 80]_noccp.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
-cv_train = base_path +  r"TRAINTrainTimes_MEDIANS.csv"
-cv_test =  base_path + r"TESTAvgPredTimes_MEDIANS.csv"
 
 df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})

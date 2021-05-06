@@ -14,9 +14,24 @@ from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransforme
 from sklearn.pipeline import make_pipeline
 from datetime import datetime
 from wildboar.ensemble import ShapeletForestClassifier
-#Link to full archive http://www.timeseriesclassification.com/Downloads/DucksAndGeese.zip
 
-X_train, X_test, y_train, y_test, le = load_sktime_arff_file(r"/home/prof/guillaume/Shapelets/ts_datasets/DucksAndGeese")
+"""
+I did this "dummy" script to have more control over what was included in the 
+time measurments.
+
+The datasets we use here are not directly available via the sktime interface.
+You must download them from the timeserieclassifcation website :
+    
+Link to full archive http://www.timeseriesclassification.com/Downloads/DucksAndGeese.zip
+
+By placing the _TRAIN.arff and _TEST.arff in the folder specified by the path variable,
+ you can simply change the name of the dataset in the functions bellow if you wish to 
+ try it on other datasets, be sure in this case to change the lengths that are considered.
+"""
+
+path = r"/home/prof/guillaume/Shapelets/ts_datasets/"
+
+X_train, X_test, y_train, y_test, le = load_sktime_arff_file(path+"DucksAndGeese")
 
 lengths = np.asarray([1e+1,1e+2,1e+3,1e+4,1e+5]).astype(int)
 df = pd.DataFrame(index=lengths)
@@ -71,7 +86,7 @@ df.to_csv('tslength_Benchmark.csv')
 
 # In[]:
     
-X_train, X_test, y_train, y_test, le = load_sktime_arff_file(r"/home/prof/guillaume/Shapelets/ts_datasets/InsectSound")
+X_train, X_test, y_train, y_test, le = load_sktime_arff_file(path+"InsectSound")
 n_classes = np.bincount(y_train).shape[0]
 
 n_per_class = np.asarray([150,300,625,1250,2500]).astype(int)

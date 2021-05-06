@@ -1,14 +1,16 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, an algorithm that search for a set of shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, an fast algorithm that search for a set of shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
 
 The repository was developped under Python 3.8. We will extend support to Python 3.7 in future version, although the modifications might be minors. 
 To install the package and run the example you must :
 
+0. If you are making a new installation, first install python, pip and setuptools.
 1. Clone the repository https://github.com/baraline/CST.git
-2. run `(python3 -m) pip -r install requirements.txt`
+3. run `python3 setup.py install`
 
-This will install the package and the dependencies.
+This will install the package and the dependencies. We do not yet support installation via `pip` in the initial release.
+If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file
 
 ## Tutorial
 We give here a minimal example to run the `CST` algorithm on any dataset of the UCR/UEA archive:
@@ -16,6 +18,7 @@ We give here a minimal example to run the `CST` algorithm on any dataset of the 
 ```python
 from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from CST.utils.dataset_utils import load_sktime_dataset_split
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
 # Load Dataset by name, here we use 'GunPoint'
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
@@ -28,11 +31,12 @@ pred = rf.predict(X_cst_test)
 print("F1-Score for CST RF : {}".format(f1_score(y_test, pred)))
 ```
 
-We expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yeat extend the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform
+We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yeat extend the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform
+In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results.
 
 ## Reproducing the paper results and figures
 
-Multiple scripts are available under `/PaperScripts/`, it contains the scripts used to build figures and LaTeX tables we use in our paper.
+Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to build figures and LaTeX tables we use in our paper.
 
 ## Contributing, Citing and Contact
 
@@ -52,3 +56,7 @@ If you use our algorithm in a publication, please cite the following paper :
   publisher={}
 }
 ```
+
+## Licence
+
+## Citations
