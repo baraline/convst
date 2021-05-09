@@ -7,7 +7,7 @@ Created on Sat Apr 10 12:14:16 2021
 
 from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.base_transformers.minirocket import MiniRocket
-from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import f1_score
@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
+    'ACSF1', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -33,7 +33,7 @@ print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macr
 # In[]:
 
 cst = MiniConvolutionalShapeletTransformer(
-    verbose=1, P=[100, 95, 90, 85], n_splits=10).fit(X_train, y_train)
+    verbose=1).fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

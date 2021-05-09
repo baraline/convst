@@ -49,13 +49,13 @@ def apply_one_kernel_one_sample(x, n_timestamps, weights, length, bias,
     n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
     # Compute padded x
     if padding > 0:
-        x_pad = np.zeros(n_timestamps + 2 * padding)
+        x_pad = np.zeros(n_timestamps + 2 * padding,dtype=np.float32)
         x_pad[padding:-padding] = x
     else:
         x_pad = x
 
     # Compute the convolutions
-    x_conv = np.zeros(n_conv)
+    x_conv = np.zeros(n_conv,dtype=np.float32)
     for i in prange(n_conv):
         for j in prange(length):
             x_conv[i] += weights[j] * x_pad[i + (j * dilation)]
@@ -67,7 +67,7 @@ def apply_one_kernel_all_sample(X, id_ft, weights, length, bias,
                                 dilation, padding):
     n_samples, _, n_timestamps = X.shape
     n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
-    X_conv = np.zeros((n_samples, 1, n_conv))
+    X_conv = np.zeros((n_samples, 1, n_conv),dtype=np.float32)
     for i in prange(n_samples):
         X_conv[i,0,:] = apply_one_kernel_one_sample(X[i,id_ft], n_timestamps,
                                                     weights, length, bias, 

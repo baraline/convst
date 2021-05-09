@@ -27,29 +27,35 @@ for i in range(X_train.shape[0]):
 ax[0].set_title("Class 0 of GunPoint")
 ax[1].set_title("Class 1 of GunPoint")
 plt.show()
+
 # In[]:
-i_kernel = 1
+i_kernel = 0
+print(dils[i_kernel])
 
-k = Rocket_kernel(length=5, bias=biases[i_kernel], dilation=dils[i_kernel], padding=0, weights=[1,-2,1,-1,1], id_ft=0)
-plt.figure(figsize=(10,5))
-#plt.plot(X_train[2,0], c='blue')
-conv_points = set([0 + j*dils[i_kernel] for j in range(5)])
-other_points = set(list(range(150)))
-plt.scatter(list(other_points-conv_points),X_train[2,0][list(other_points-conv_points)], c='blue',s=25)
-plt.scatter(list(conv_points),X_train[2,0][list(conv_points)], c='red',s=50)
-plt.show()
-plt.figure(figsize=(10,5))
-conv = k._convolve_one_sample(X_train[2,0])
-plt.scatter(range(1,conv.shape[0]),conv[1:],c='blue',s=25)
-plt.scatter([0],conv[0:1],c='red',s=50)
-plt.show()
-plt.scatter(range(5),[1,-2,1,-1,1],c='green')
+wt = np.array([-2,1,1,1,1,-2,-2,1,1],dtype=np.float32)
+fig, ax = plt.subplots(ncols=3,figsize=(15,5))
+
+ax[0].plot(X_train[2,0],c='blue',label='class 0')
+ax[0].plot(X_train[0,0],c='orange',label='class 1')
+k1 = Rocket_kernel(length=9, bias=biases[i_kernel], dilation=dils[i_kernel], padding=0, weights=wt, id_ft=0)
+ax[1].plot(k1._convolve_one_sample(X_train[2,0])>0,c='blue')
+ax[1].plot(k1._convolve_one_sample(X_train[0,0])>0,c='orange')
+x1 = k1.get_features(X_train)
+
+k2 = Rocket_kernel(length=9, bias=biases[i_kernel]-0.25, dilation=dils[i_kernel], padding=0, weights=wt, id_ft=0)
+ax[2].plot(k2._convolve_one_sample(X_train[2,0])>0,c='blue')
+ax[2].plot(k2._convolve_one_sample(X_train[0,0])>0,c='orange')
+x2 = k2.get_features(X_train)
+plt.legend()
 plt.show()
 
+fig, ax = plt.subplots(ncols=2,figsize=(15,5))
+ax[0].scatter(x1[:,0],x1[:,1],edgecolors=['blue' if c==0 else 'orange' for c in y_train])
+ax[1].scatter(x2[:,0],x2[:,1],edgecolors=['blue' if c==0 else 'orange' for c in y_train])
 
 
 # In[]5
-i_kernel = -1
+i_kernel = 0
 print(dils[i_kernel])
 class_locs = np.zeros((np.unique(y_train).shape[0],X_train.shape[2]))
 fig, ax = plt.subplots(ncols=3, sharex=True, sharey=True, figsize=(15,5))
@@ -79,27 +85,25 @@ plt.plot(s)
 
 # In[]:
 
-i_kernel = 1
-from itertools import combinations
-for w in np.array([_ for _ in combinations(np.arange(9), 3)], dtype=np.int32):
-    wt = np.zeros(9) + 1
-    wt[w] = -2    
-    k = Rocket_kernel(length=9, bias=biases[i_kernel], dilation=dils[i_kernel], padding=0, weights=wt, id_ft=0)
-    ft = k.get_features(X_train)
-    fig, ax = plt.subplots(ncols=3, sharex=False, sharey=False, figsize=(15,5))
-    ax[0].plot(X_train[0,0],c='orange')
-    ax[0].plot(X_train[2,0],c='blue')
-    ax[0].set_title('Inputs')
-    ax[1].plot(k._convolve_one_sample(X_train[0,0]),c='orange')
-    ax[1].plot(k._convolve_one_sample(X_train[2,0]),c='blue')
-    ax[1].set_title('Convolved Inputs')
-    ax[2].scatter(ft[:,0],ft[:,1],facecolors='none',edgecolors=['blue' if c==0 else 'orange' for c in y_train],alpha=0.5)
-    ax[2].scatter(ft[0,0],ft[0,1],c='orange')
-    ax[2].scatter(ft[2,0],ft[2,1],c='blue')
-    ax[2].set_xlabel('PPV')
-    ax[2].set_ylabel('Max')
-    ax[2].set_title('Rocket Features')
-    plt.show()
+i_kernel = 0
+
+k = Rocket_kernel(length=9, bias=biases[i_kernel], dilation=dils[i_kernel], padding=0, weights=wt, id_ft=0)
+ft = k.get_features(X_train)
+fig, ax = plt.subplots(ncols=3, sharex=False, sharey=False, figsize=(15,5))
+ax[0].plot(X_train[0,0],c='orange')
+ax[0].plot(X_train[2,0],c='blue')
+ax[0].set_title('Inputs')
+ax[1].plot(k._convolve_one_sample(X_train[0,0]),c='orange')
+ax[1].plot(k._convolve_one_sample(X_train[2,0]),c='blue')
+ax[1].set_title('Convolved Inputs')
+ax[2].scatter(ft[:,0],ft[:,1],facecolors='none',edgecolors=['blue' if c==0 else 'orange' for c in y_train],alpha=0.5)
+ax[2].scatter(ft[0,0],ft[0,1],c='orange')
+ax[2].scatter(ft[2,0],ft[2,1],c='blue')
+ax[2].set_xlabel('PPV')
+ax[2].set_ylabel('Max')
+ax[2].set_title('Rocket Features')
+plt.show()
+    
 
 # In[]:
 from matplotlib import gridspec
