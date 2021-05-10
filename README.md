@@ -1,8 +1,9 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a fast algorithm that search for a set of shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, one of the fastest and more accurate shapelet algorithm.
+It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
 
-The repository was developped under Python 3.8. We will extend support to Python 3.7 in future version, although the modifications might be minors. 
+The repository was developped under Python 3.8. We will guarantee the support of Python 3.7 in future version, although the modifications might be minors or inexistant. 
 To install the package and run the example you must :
 
 0. If you are making a new installation, first install python, pip and setuptools.
@@ -44,7 +45,7 @@ Multiple scripts are available under the `PaperScripts` folder. It contains the 
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
 For other question or to take contact with me, you can email me at antoine.guillaume45@gmail.com (institutional email might change soon so i provide this as a temporary address)
 
-If you use our algorithm in a publication, please cite the following paper :
+If you use our algorithm or publication in any work, please cite the following paper :
 ```bibtex
 @article{CST,
   title={Convolutional Shapelet Transform: A new approach for time series shapelets},
@@ -53,7 +54,7 @@ If you use our algorithm in a publication, please cite the following paper :
   volume={},
   number={},
   pages={},
-  year={}
+  year={2021}
   publisher={}
 }
 ```

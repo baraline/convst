@@ -24,8 +24,8 @@ for i in range(X_train.shape[0]):
         ax[1].plot(X_train[i,0], c='orange', alpha=0.2)
     else:
         ax[0].plot(X_train[i,0], c='blue', alpha=0.2)
-ax[0].set_title("Class 0 of GunPoint")
-ax[1].set_title("Class 1 of GunPoint")
+ax[0].set_title("Class 0 of GunPoint (Gun)")
+ax[1].set_title("Class 1 of GunPoint (NoGun)")
 plt.show()
 
 # In[]:
@@ -152,7 +152,7 @@ idx = list(set(list(range(X_train.shape[0]))) - {0,2})
 ax21.scatter(x[0],y[0],c='blue')
 ax21.scatter(x[2],y[2],c='orange')
 ax21.scatter(x[idx], y[idx], alpha=0.75,facecolors='none',edgecolors=['orange' if c==1 else 'blue' for c in y_train[idx]])
-ax21.set_xlabel('D(S0,X)')
-ax21.set_ylabel('D(S1,X)')
+ax21.set_xlabel('D( S0, X )')
+ax21.set_ylabel('D( S1, X )')
 
 plt.tight_layout()

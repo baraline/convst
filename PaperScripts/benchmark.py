@@ -98,7 +98,7 @@ for l in lengths:
 resume=False
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(path+"InsectSound")
 n_classes = np.bincount(y_train).shape[0]
-n_per_class = np.asarray([150,300,625,1250,2500]).astype(int)
+n_per_class = np.asarray([10,50,100,500,1000]).astype(int)
 csv_name = 'n_samples_Benchmark.csv'
 
 if resume:
@@ -112,10 +112,9 @@ else:
 
 n_cv = 10
 for n in n_per_class:
-    
-    x1 = X_train[np.asarray([np.random.choice(np.where(y_train==i)[0],n,replace=False) for i in np.unique(y_train)]).reshape(-1)]
-    x2 = X_test[np.asarray([np.random.choice(np.where(y_test==i)[0],n,replace=False) for i in np.unique(y_train)]).reshape(-1)]
-
+    x1 = np.asarray([np.random.choice(np.where(y_train==i)[0],n,replace=False) for i in np.unique(y_train)]).reshape(-1)
+    x2 = np.asarray([np.random.choice(np.where(y_test==i)[0],n,replace=False) for i in np.unique(y_train)]).reshape(-1)
+    print(X_train[x1,0,:].shape)
     #CST
     if df.loc[n*n_classes, 'cst'] == 0:
         timing = []
@@ -124,8 +123,8 @@ for n in n_per_class:
             p = make_pipeline(MiniConvolutionalShapeletTransformer(),
                               RandomForestClassifier(n_estimators=400))
             t0 = datetime.now()
-            p.fit(x1, y_train)
-            p.predict(x2)
+            p.fit(X_train[x1], y_train[x1])
+            p.predict(X_test[x2])
             t1 = datetime.now()
             timing.append((t1-t0).total_seconds())
         df.loc[n*n_classes,'cst'] = np.mean(timing)
@@ -139,8 +138,8 @@ for n in n_per_class:
             p = make_pipeline(MiniRKT(),
                         RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
             t0 = datetime.now()
-            p.fit(x1, y_train)
-            p.predict(x2)
+            p.fit(X_train[x1], y_train[x1])
+            p.predict(X_test[x2])
             t1 = datetime.now()
             timing.append((t1-t0).total_seconds())
         df.loc[n*n_classes,'rkt'] = np.mean(timing)
@@ -153,8 +152,8 @@ for n in n_per_class:
             print("{}/{}/n_cv:{}".format('sfc',n,i_cv))
             p = ShapeletForestClassifier(n_estimators=400)
             t0 = datetime.now()
-            p.fit(x1[:,0,:], y_train)
-            p.predict(x2[:,0,:])
+            p.fit(X_train[x1,0], y_train[x1])
+            p.predict(X_test[x2,0])
             t1 = datetime.now()
             timing.append((t1-t0).total_seconds())
         df.loc[n*n_classes,'sfc'] = np.mean(timing)

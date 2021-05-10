@@ -15,9 +15,6 @@ import networkx
 from itertools import combinations
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-# In[]:
-
-
 def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
     """
@@ -268,7 +265,7 @@ def form_cliques(p_values, nnames):
     return networkx.find_cliques(g)
 
 
-def draw_cd_diagram(df_perf=None, alpha=0.025, title=None, labels=False):
+def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
@@ -287,7 +284,6 @@ def draw_cd_diagram(df_perf=None, alpha=0.025, title=None, labels=False):
         plt.title(title, fontdict=font, y=0.9, x=0.5)
     plt.savefig('cd-diagram.png', bbox_inches='tight')
     return average_ranks
-
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
     """
@@ -380,7 +376,6 @@ def cv_col_clean_name2(s):
         s = s.replace(char, "")
     s = s.split('__')    
     return s[1]
-# In[]:
 
 ps = []
 for r in range(1, 6):
@@ -404,7 +399,7 @@ for col in df.columns.difference(['dataset_name']):
 df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
     "\),").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
 
 # In[]
 df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
@@ -415,7 +410,7 @@ c = df_split.groupby('classifier_name').mean().sort_values(
 df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
 
 #Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
 
 # In[]:
 params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
@@ -436,5 +431,5 @@ df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
     "\),").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 #Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, title='', labels=False)
+draw_cd_diagram(df_perf=df_split, alpha=0.1, title='', labels=False)
 
