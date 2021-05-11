@@ -377,6 +377,34 @@ def cv_col_clean_name2(s):
     s = s.split('__')    
     return s[1]
 
+# In[]:
+    
+base_path = r"C:\git_projects\CST\\"
+
+cv_path = base_path + r"CV_10_results_10_[100, 95, 90, 85, 80]_final.csv"
+cv_f1 = base_path + r"ucr_accuracy_LRS_versus_baselines.csv"
+
+df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'dataset': 'Dataset'})
+
+df = df[df['SFC_mean'] > 0]
+df2 = df2[df2['Dataset'].isin(df['Dataset'])]
+
+df_means = pd.concat([df[['Dataset','MiniCST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'MiniCST_mean':'CST',
+                                                                                                            'MiniRKT_mean':'MiniRKT',
+                                                                                                            'SFC_mean':'SFC'})
+
+df_res = pd.DataFrame()
+for col in df_means.columns.difference(['Dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
+    d['accuracy'] = df_means[col]
+    d['dataset_name'] = df_means['Dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+draw_cd_diagram(df_perf=df_res, alpha=0.15, title='', labels=False)
+
+# In[]:
 ps = []
 for r in range(1, 6):
     ps.extend(list(combinations([100, 95, 90, 85, 80], r)))

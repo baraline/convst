@@ -18,7 +18,7 @@ from wildboar.ensemble import ShapeletForestClassifier
 
 import warnings
 #Can use this to resume to last dataset if a problem occured
-resume = False
+resume = True
 
 print("Imports OK")
 n_cv = 10
@@ -29,21 +29,23 @@ run_RKT = True
 run_CST = True
 run_SFC = True
 
-available_memory_bytes = 60*1e9
+available_memory_bytes = 60 *1e9
 max_cpu_cores = 30
 numba_n_thread = 3
-size_mult = 3500
-random_state = 0
+size_mult = 4000
+random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
 
-csv_name = 'CV_{}_results_{}_{}.csv'.format(n_cv, n_splits, p)
+csv_name = 'CV_{}_results_{}_{}_final.csv'.format(n_cv, n_splits, p)
 
 dataset_names = return_all_dataset_names()
 
 if resume:
     df = pd.read_csv(csv_name)
     df = df.set_index('Unnamed: 0')
+    df = df.drop(df.index[np.where(~df.index.isin(dataset_names))[0]],axis=0)
+    df.to_csv(csv_name)
 else:
     df = pd.DataFrame(index=dataset_names)
     df['MiniCST_mean'] = pd.Series(0, index=df.index)
@@ -58,6 +60,7 @@ else:
     df['SFC_mean'] = pd.Series(0,index=df.index)
     df['SFC_std'] = pd.Series(0,index=df.index)
     df['Runtime_SFC'] = pd.Series('0', index=df.index)
+    df.to_csv(csv_name)
 
 
 def n_shp_extracted(pipelines):
@@ -95,6 +98,7 @@ for name in dataset_names:
             df.loc[name, 'MiniRKT_std'] = np.std(cv['test_f1'])
             df.loc[name, 'Runtime_MiniRKT'] = np.mean(
                 cv['fit_time'] + cv['score_time'])
+            df.to_csv(csv_name)
 
         if run_CST and df.loc[name, 'MiniCST_mean'] == 0 and X.shape[2] > 10:
             pipe_cst = make_pipeline(MiniConvolutionalShapeletTransformer(n_threads=numba_n_thread,
@@ -131,5 +135,6 @@ for name in dataset_names:
             df.loc[name, 'SFC_std'] = np.std(cv['test_f1'])
             df.loc[name, 'Runtime_SFC'] = np.mean(
                 cv['fit_time'] + cv['score_time'])
+            df.to_csv(csv_name)
         
     print('---------------------')

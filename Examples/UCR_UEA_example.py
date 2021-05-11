@@ -32,8 +32,7 @@ pred = rdg.predict(X_rkt_test)
 print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macro')))
 # In[]:
 
-cst = MiniConvolutionalShapeletTransformer(
-    verbose=1).fit(X_train, y_train)
+cst = ConvolutionalShapeletTransformer(use_kernel_grouping=False, verbose=1).fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
