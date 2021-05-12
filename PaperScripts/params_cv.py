@@ -8,7 +8,7 @@ from CST.utils.dataset_utils import load_sktime_dataset, return_all_dataset_name
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import pandas as pd
-from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.pipeline import Pipeline
 from itertools import combinations
 from sklearn.model_selection import GridSearchCV
@@ -24,6 +24,8 @@ size_mult = 3500
 
 max_process = max_cpu_cores//numba_n_thread
 file_name = 'params_csv.csv'
+n_cv = 10
+
 
 ps = []
 for r in range(1, 6):
@@ -54,10 +56,10 @@ for d_name in dataset_names:
             n_jobs = max(n_jobs if n_jobs <= max_process else max_process, 1)
             if n_jobs >= 15:
                 print('Launching {} parallel jobs'.format(n_jobs))
-                pipe = Pipeline([('CST', MiniConvolutionalShapeletTransformer()),
-                                 ('rf', RandomForestClassifier(n_estimators=400))])
+                pipe = Pipeline([('CST', ConvolutionalShapeletTransformer()),
+                                 ('rf', RandomForestClassifier(n_estimators=400, ccp_alpha=0.05))])
                 clf = GridSearchCV(
-                    pipe, params, n_jobs=n_jobs, cv=10, verbose=1)
+                    pipe, params, n_jobs=n_jobs, cv=n_cv, verbose=1)
                 clf.fit(X, y)
                 print('Done')
                 p_key = clf.cv_results_['params']

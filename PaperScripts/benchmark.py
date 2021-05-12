@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifierCV
 import pandas as pd
 import numpy as np
-from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.pipeline import make_pipeline
 from datetime import datetime
 from wildboar.ensemble import ShapeletForestClassifier
@@ -55,7 +55,7 @@ for l in lengths:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('cst',l,i_cv))
-            p = make_pipeline(MiniConvolutionalShapeletTransformer(),
+            p = make_pipeline(ConvolutionalShapeletTransformer(),
                               RandomForestClassifier())
             t0 = datetime.now()
             p.fit(x1, y_train)
@@ -120,8 +120,8 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('cst',n,i_cv))
-            p = make_pipeline(MiniConvolutionalShapeletTransformer(),
-                              RandomForestClassifier(n_estimators=400))
+            p = make_pipeline(ConvolutionalShapeletTransformer(),
+                              RandomForestClassifier())
             t0 = datetime.now()
             p.fit(X_train[x1], y_train[x1])
             p.predict(X_test[x2])
@@ -150,7 +150,7 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('sfc',n,i_cv))
-            p = ShapeletForestClassifier(n_estimators=400)
+            p = ShapeletForestClassifier()
             t0 = datetime.now()
             p.fit(X_train[x1,0], y_train[x1])
             p.predict(X_test[x2,0])

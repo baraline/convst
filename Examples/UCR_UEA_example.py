@@ -7,16 +7,16 @@ Created on Sat Apr 10 12:14:16 2021
 
 from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.base_transformers.minirocket import MiniRocket
-#from CST.shapelet_transforms.mini_CST import MiniConvolutionalShapeletTransformer
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'ACSF1', normalize=True)
+    'Beef', normalize=True)
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -29,19 +29,17 @@ X_rkt_test = rkt.transform(X_test)
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                         normalize=True).fit(X_rkt_train, y_train)
 pred = rdg.predict(X_rkt_test)
-print("F1-Score for MINI-ROCKET: {}".format(f1_score(y_test, pred, average='macro')))
+print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 # In[]:
 
-cst = ConvolutionalShapeletTransformer(use_kernel_grouping=False, verbose=1).fit(X_train, y_train)
+cst = ConvolutionalShapeletTransformer(verbose=1).fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
 rf = RandomForestClassifier(
-    n_estimators=400, ccp_alpha=0.00).fit(X_cst_train, y_train)
+    n_estimators=400, ccp_alpha=0.05).fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)
-print("F1-Score for CST RF : {}".format(f1_score(y_test, pred, average='macro')))
-print("Used a total of {} / {} Shapelets in model".format(
-    rf.feature_importances_[rf.feature_importances_ > 0].size, X_cst_train.shape[1]))
+print("Accuracy Score for CST RF : {}".format(accuracy_score(y_test, pred)))
 # In[]:
 
 i_shp = np.argsort(rf.feature_importances_)[::-1][0]

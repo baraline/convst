@@ -402,7 +402,7 @@ for col in df_means.columns.difference(['Dataset']):
     d['dataset_name'] = df_means['Dataset']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
 
-draw_cd_diagram(df_perf=df_res, alpha=0.15, title='', labels=False)
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
 
 # In[]:
 ps = []
@@ -427,6 +427,7 @@ for col in df.columns.difference(['dataset_name']):
 df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
     "\),").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+plt.figure(figsize=(5,2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
 
 # In[]
@@ -436,7 +437,7 @@ df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 c = df_split.groupby('classifier_name').mean().sort_values(
     by='accuracy', ascending=False).index.values[0:10]
 df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
-
+plt.figure(figsize=(5,2))
 #Unknown crash ? image is still saved at C:\Users\Antoine
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
 
