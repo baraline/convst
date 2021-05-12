@@ -16,17 +16,17 @@ from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score, make_scorer
+from sklearn.metrics import f1_score, make_scorer
 from wildboar.ensemble import ShapeletForestClassifier
 
 import warnings
 #Can use this to resume to last dataset if a problem occured
-resume = False
+resume = True
 
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
-n_cv = 30
-
+n_cv = 1
+splitter=None
 n_splits = 10
 P = [100, 95, 90, 85, 80]
 n_bins = 9
@@ -65,6 +65,7 @@ else:
     df['SFC_runtime'] = pd.Series(0, index=df.index)
     df.to_csv(csv_name)
     
+"""
 from sklearn.utils import resample
 class stratified_resample:
     def __init__(self, n_splits=30, n_test_samples=0.1):
@@ -80,19 +81,20 @@ class stratified_resample:
         
     def get_n_splits(self, X=None, y=None, groups=None):
         return self.n_splits
+"""
     
 
 def run_pipeline(pipeline, data, n_cv, splitter):
     if n_cv > 1:
         cv = cross_validate(pipeline, data[0][0], data[0][1], cv=splitter, n_jobs=n_jobs,
-                            scoring={'acc': make_scorer(accuracy_score)})
+                            scoring={'acc': make_scorer(f1_score(average='macro'))})
         return np.mean(cv['test_acc']),  np.std(cv['test_acc']), np.mean(cv['fit_time'] + cv['score_time'])
     elif n_cv == 1:
         t0 = datetime.now()
         pipeline = pipeline.fit(data[0][0], data[0][1])
         pred = pipeline.predict(data[1][0])
         t1 = datetime.now()
-        return [accuracy_score(data[1][1],pred)], [0], [(t1-t0).total_seconds]
+        return [f1_score(data[1][1],pred, average='macro')], [0], [(t1-t0).total_seconds()]
         
 
 
@@ -104,7 +106,7 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(n_threads=numba_n_thre
                                                           n_splits=n_splits,
                                                           n_bins=n_bins,
                                                           random_state=random_state),
-                         RandomForestClassifier(n_estimators=300, ccp_alpha=0.05,
+                         RandomForestClassifier(n_estimators=400,
                                                 random_state=random_state))
 
 pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state))
@@ -113,11 +115,11 @@ for name in dataset_names:
     print(name)
     if n_cv == 1:
         X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(name, normalize=True)
-        n_possible_jobs = int(available_memory_bytes // ((X_train.nbytes + X_test.nbytes)  * size_mult))
+        n_possible_jobs = 1
         data = [[X_train,y_train],[X_test,y_test]]
     elif n_cv >1:
         X, y, _ = load_sktime_dataset(name, normalize=True)
-        n_possible_jobs = int(available_memory_bytes // (X.nbytes * size_mult))
+        n_possible_jobs = min(int(available_memory_bytes // (X.nbytes * size_mult)),n_cv)
         data = [[X,y]]
     
     n_jobs = max(n_possible_jobs if n_possible_jobs <=
@@ -126,21 +128,24 @@ for name in dataset_names:
         warnings.warn("Not enought estimated memory to run current dataset")
     else:
         if run_RKT and df.loc[name, 'MiniRKT_mean'] == 0:
-            mean, std = run_pipeline(pipe_rkt, data, n_cv, splitter)
+            mean, std, time = run_pipeline(pipe_rkt, data, n_cv, splitter)
             df.loc[name, 'MiniRKT_mean'] = mean
             df.loc[name, 'MiniRKT_std'] = std
+            df.loc[name, 'MiniRKT_runtime'] = time
             df.to_csv(csv_name)
 
-        if run_CST and df.loc[name, 'MiniCST_mean'] == 0:
-            mean, std = run_pipeline(pipe_cst, data, n_cv, splitter)
+        if run_CST and df.loc[name, 'CST_mean'] == 0:
+            mean, std, time = run_pipeline(pipe_cst, data, n_cv, splitter)
             df.loc[name, 'CST_mean'] = mean
             df.loc[name, 'CST_std'] = std
+            df.loc[name, 'CST_runtime'] = time
             df.to_csv(csv_name)
         
         if run_SFC and df.loc[name, 'SFC_mean'] == 0:
-            mean, std = run_pipeline(pipe_sfc, data, n_cv, splitter)
+            mean, std, time = run_pipeline(pipe_sfc, data, n_cv, splitter)
             df.loc[name, 'SFC_mean'] = mean
             df.loc[name, 'SFC_std'] = std
+            df.loc[name, 'SFC_runtime'] = time
             df.to_csv(csv_name)
         
     print('---------------------')

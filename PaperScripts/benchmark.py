@@ -98,7 +98,7 @@ for l in lengths:
 resume=False
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(path+"InsectSound")
 n_classes = np.bincount(y_train).shape[0]
-n_per_class = np.asarray([10,50,100,500,1000]).astype(int)
+n_per_class = np.asarray([10,50,100,250,500]).astype(int)
 csv_name = 'n_samples_Benchmark.csv'
 
 if resume:

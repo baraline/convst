@@ -16,7 +16,9 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'Beef', normalize=True)
+    'DiatomSizeReduction', normalize=True)
+
+# In[]:
 
 # Init ROCKET object
 rkt = MiniRocket()
@@ -31,13 +33,12 @@ rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
 pred = rdg.predict(X_rkt_test)
 print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 # In[]:
-
 cst = ConvolutionalShapeletTransformer(verbose=1).fit(X_train, y_train)
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
 rf = RandomForestClassifier(
-    n_estimators=400, ccp_alpha=0.05).fit(X_cst_train, y_train)
+    n_estimators=400).fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)
 print("Accuracy Score for CST RF : {}".format(accuracy_score(y_test, pred)))
 # In[]:
