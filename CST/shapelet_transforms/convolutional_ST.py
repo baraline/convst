@@ -21,6 +21,7 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedShuffleSplit
+from sklearn.utils import resample
 import warnings
 
 #TODO : Docs !
@@ -128,7 +129,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             Lp = generate_strides_2D(Lp, 9, dilation).sum(axis=-1)
 
             #Computing splits indexes, shape (n_split, n_classes, n_idx)
-            id_splits = self._stratifiedShuffleSpliter(X, y)
+            id_splits = self._resample_splitter(X, y)
             #Compute class weight of each split
             c_w = self._split_classweights(y, id_splits)
             #Compute LC for all splits
@@ -248,14 +249,15 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             for i_split in range(self.n_splits):
                 #Mean of other classes
                 if per_split_LC[i_class,i_split, :].sum()>0:
-                    D = np.asarray([per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]).mean(axis=0)
-                    D = per_split_LC[i_class,i_split, :] - D
-                    
-                    loc = np.asarray([np.abs(D-np.percentile(D, p)).argmin() for p in self.P])
-                    x_index = [np.argmax(Lp[id_splits[i_split][i_class], i]) for i in loc]
-                    for i, ix in enumerate(x_index):
-                        candidates_grp.append(X[id_splits[i_split][i_class][ix], 0, np.array(
-                            [loc[i]+j*dilation for j in range(9)])])
+                    D = [per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]
+                    if len(D>0):
+                        D = np.asarray(D).mean(axis=0)
+                        D = per_split_LC[i_class,i_split, :] - D
+                        loc = np.asarray([np.abs(D-np.percentile(D, p)).argmin() for p in self.P])
+                        x_index = [np.argmax(Lp[id_splits[i_split][i_class], i]) for i in loc]
+                        for i, ix in enumerate(x_index):
+                            candidates_grp.append(X[id_splits[i_split][i_class][ix], 0, np.array(
+                                [loc[i]+j*dilation for j in range(9)])])
         return np.asarray(candidates_grp)
 
     def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w, use_class_weights):
@@ -341,13 +343,37 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             self.n_splits = max(min(np.bincount(y)),2)
             s="number of split reduced to {} due to insuficent data".format(self.n_splits)
             warnings.warn(s)
-        sss = RepeatedStratifiedKFold(n_splits=self.n_splits, n_repeats=5)
+        sss = RepeatedStratifiedKFold(n_splits=self.n_splits, n_repeats=10)
         id_splits = []
         for train_index, _ in sss.split(X, y):
             id_splits.append([train_index[np.where(y[train_index] == i_class)[0]]
                               for i_class in np.unique(y)])
         return id_splits
             
+    
+    def _resample_splitter(self, X, y):
+        n_classes = np.bincount(y).shape[0]
+        n_samples = X.shape[0]
+        mult = 5
+        while n_samples > max(X.shape[0]*0.25,n_classes):
+            n_samples = n_classes * mult
+            mult -= 1
+        id_splits = []
+        X_idx = np.asarray(range(X.shape[0]))
+        self.n_splits = max(self.n_splits,(X.shape[0]//n_samples)*4)
+        for i_split in range(self.n_splits):
+            idx = resample(X_idx, n_samples=n_samples, replace=False, stratify=y)
+            id_splits.append([idx[np.where(y[idx] == i_class)[0]]
+                              for i_class in np.unique(y)])
+        return id_splits
+            
+            
+            
+        
+        
+                
+        
+        
     
     def _group_kernels(self, kernels_dilations, kernels_bias):
         """

@@ -7,8 +7,8 @@ from datetime import timedelta
 sns.set()
 sns.set_context('talk',font_scale=1.0)
 
-#base_path = "C:\Users\Antoine\Documents\git_projects\CST\CST\\"
-base_path = "C:\git_projects\CST\\"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
+#base_path = "C:\git_projects\CST\\"
 n_samples = base_path + "n_samples_Benchmark.csv"
 n_timepoints = base_path + "tslength_Benchmark.csv"
 

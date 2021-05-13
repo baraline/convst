@@ -378,19 +378,20 @@ def cv_col_clean_name2(s):
     return s[1]
 
 # In[]:
-    
-base_path = r"C:\git_projects\CST\\"
 
-cv_path = base_path + r"CV_10_results_10_[100, 95, 90, 85, 80]_final.csv"
-cv_f1 = base_path + r"ucr_accuracy_LRS_versus_baselines.csv"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
+#base_path = r"C:\git_projects\CST\\"
+
+cv_path = base_path + r"CV_30_results_25_9_[100, 95, 90, 85, 80]_resample.csv"
+cv_f1 = base_path + r"TESTF1_MEANS.csv"
 
 df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'dataset': 'Dataset'})
+df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
 df = df[df['SFC_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
-df_means = pd.concat([df[['Dataset','MiniCST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'MiniCST_mean':'CST',
+df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
 
