@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'DiatomSizeReduction', normalize=True)
+    'Coffee', normalize=True)
 
 # In[]:
 

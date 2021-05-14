@@ -18,13 +18,13 @@ df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 df3 = pd.read_csv(cv_f1_std, sep=',').rename(columns={'TESTF1STDDEVS': 'Dataset'})
 
-df = df[df['SFC_mean'] > 0]
+df = df[df['CST_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 df3 = df3[df3['Dataset'].isin(df['Dataset'])]
 
 # In[]:
     
-df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
+df_means = pd.concat([df[['Dataset','MiniRKT_mean','CST_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
 competitors = ['MiniRKT', 'SFC', 'STC']   
@@ -35,8 +35,8 @@ fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15,5),sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
 for i, comp in enumerate(competitors):    
     ax[i%ncols].plot([0, 1], [0, 1], color='r')
-    ax[i%ncols].plot([0.0, 0.95], [0.05, 1.0], color='orange', linestyle='--', alpha=0.75)
-    ax[i%ncols].plot([0.05, 1.0], [0.0, 0.95], color='orange', linestyle='--', alpha=0.75)
+    #ax[i%ncols].plot([0.0, 0.95], [0.05, 1.0], color='orange', linestyle='--', alpha=0.75)
+    #ax[i%ncols].plot([0.05, 1.0], [0.0, 0.95], color='orange', linestyle='--', alpha=0.75)
     x = df_means[comp].values
     y = df_means['CST'].values
     ax[i%ncols].scatter(x, y, s=25, alpha=0.75)
@@ -55,3 +55,5 @@ df_latex['Mini-ROCKET'] = df_latex['MiniRKT_mean'].str[0:5] + ' (+/- '+  df_late
 df_latex['SFC'] = df_latex['SFC_mean'].str[0:5] + ' (+/- '+  df_latex['SFC_std'].str[0:5]+')'
 df_latex['STC'] = df2['STC'].astype(str).str[0:5] + ' (+/- '+  df3['STC'].astype(str).str[0:5]+')'
 df_latex[['Dataset','CST','Mini-ROCKET', 'SFC','STC']].to_latex(base_path+'CV_table.tex',index=False)
+
+

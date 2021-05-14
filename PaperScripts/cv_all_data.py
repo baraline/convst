@@ -31,17 +31,17 @@ n_bins = 9
 
 run_RKT = False
 run_CST = True
-run_SFC = True
+run_SFC = False
 
 available_memory_bytes = 60 * 1e9
-max_cpu_cores = 86
+max_cpu_cores = 90
 numba_n_thread = 3
 size_mult = 3750
 random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
 
-csv_name = 'CV_{}_results_{}_{}_{}_resample.csv'.format(n_cv, n_splits, n_bins, P)
+csv_name = 'CV_{}_results_{}_{}_{}_resample_rf.csv'.format(n_cv, n_splits, n_bins, P)
 
 dataset_names = return_all_dataset_names()
 

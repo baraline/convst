@@ -19,9 +19,12 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedShuffleSplit
 from sklearn.utils import resample
+from sklearn.linear_model import RidgeClassifierCV
+from sklearn.inspection import permutation_importance
 import warnings
 
 #TODO : Docs !
@@ -180,11 +183,12 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                                                                  i, len(
                                                                                      self.shapelets_params),
                                                                                  self.shapelets_values[i_grp].shape[0]))
-            dilation, _ = self.shapelets_params[i_grp]
-            X_strides = self._get_X_strides(X, 9, dilation, 0)
-            d = shapelet_dist_numpy(X_strides, self.shapelets_values[i_grp])
-            distances[:, prev:prev+d.shape[1]] = d
-            prev += d.shape[1]
+            if len(self.shapelets_values[i_grp]) > 0:
+                dilation, _ = self.shapelets_params[i_grp]
+                X_strides = self._get_X_strides(X, 9, dilation, 0)
+                d = shapelet_dist_numpy(X_strides, self.shapelets_values[i_grp])
+                distances[:, prev:prev+d.shape[1]] = d
+                prev += d.shape[1]
         return distances
 
 
@@ -250,14 +254,63 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 #Mean of other classes
                 if per_split_LC[i_class,i_split, :].sum()>0:
                     D = [per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]
-                    if len(D>0):
+                    if len(D)>0:
                         D = np.asarray(D).mean(axis=0)
                         D = per_split_LC[i_class,i_split, :] - D
                         loc = np.asarray([np.abs(D-np.percentile(D, p)).argmin() for p in self.P])
-                        x_index = [np.argmax(Lp[id_splits[i_split][i_class], i]) for i in loc]
+                        x_index = [np.argmax(Lp[id_splits[i_split][i_class], i] ) for i in loc]
                         for i, ix in enumerate(x_index):
                             candidates_grp.append(X[id_splits[i_split][i_class][ix], 0, np.array(
                                 [loc[i]+j*dilation for j in range(9)])])
+        return np.asarray(candidates_grp)
+
+    def _extract_candidates2(self, X, Lp, per_split_LC, id_splits, classes, dilation):
+        """
+        
+
+        Parameters
+        ----------
+        X : TYPE
+            DESCRIPTION.
+        Lp : TYPE
+            DESCRIPTION.
+        per_split_LC : TYPE
+            DESCRIPTION.
+        id_splits : TYPE
+            DESCRIPTION.
+        classes : TYPE
+            DESCRIPTION.
+        dilation : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        candidates_grp = []
+        for i_class in classes:
+            for i_split in range(self.n_splits):
+                #Mean of other classes
+                if per_split_LC[i_class,i_split, :].sum()>0:
+                    D = [per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]
+                    if len(D)>0:
+                        D = np.asarray(D).mean(axis=0)
+                        D = per_split_LC[i_class,i_split, :] - D
+                        for p in self.P:
+                            loc = np.abs(D-np.percentile(D, p)).argmin()
+                            vloc = per_split_LC[i_class, i_split, loc] / len(id_splits[i_split][i_class])
+                            vs = np.zeros((Lp[id_splits[i_split][i_class]].shape[0], 6))
+                            for w in range(5):
+                                if 0 <= loc-2+w < Lp.shape[1]:
+                                    vs[:,w] = np.abs(Lp[id_splits[i_split][i_class], loc-2+w] - vloc)
+                                else:
+                                    vs[:,w] = np.inf
+                            ws = np.argmin(vs,axis=1)
+                            x_index = np.argmin(vs[:,ws])
+                            candidates_grp.append(X[id_splits[i_split][i_class][x_index], 0, np.array(
+                                [loc+j*dilation for j in range(9)])])
         return np.asarray(candidates_grp)
 
     def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w, use_class_weights):
@@ -367,14 +420,6 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                               for i_class in np.unique(y)])
         return id_splits
             
-            
-            
-        
-        
-                
-        
-        
-    
     def _group_kernels(self, kernels_dilations, kernels_bias):
         """
         Depending on attribute use_kernel_grouping, this will either produce
@@ -452,8 +497,8 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         ft, locs = m.transform(X, return_locs=True)
         self._log(
             "Performing kernel selection with {} kernels".format(locs.shape[1]))
-        ft_selector = SelectFromModel(
-            DecisionTreeClassifier()).fit(ft, y)
+        
+        ft_selector = RandomForestClassifier(n_estimators=300).fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
@@ -461,7 +506,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             dils[n:84*(num_features_per_dilation[i])+n] = dilations[i]
             n += 84*num_features_per_dilation[i]
 
-        i_kernels = np.where(ft_selector.get_support())[0]
+        i_kernels = np.where(ft_selector.feature_importances_ > ft_selector.feature_importances_.max()*0.33)[0]
         self.n_kernels = i_kernels.shape[0]
         self._log("Finished kernel selection with {} kernels".format(
             i_kernels.shape[0]))

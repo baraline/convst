@@ -388,13 +388,17 @@ cv_f1 = base_path + r"TESTF1_MEANS.csv"
 df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
-df = df[df['SFC_mean'] > 0]
+df = df[df['CST_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
+"""
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
-
+"""
+df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2['STC']],axis=1).rename(columns={'CST_mean':'CST',
+                                                                                                            'MiniRKT_mean':'MiniRKT',
+                                                                                                            'SFC_mean':'SFC'})
 df_res = pd.DataFrame()
 for col in df_means.columns.difference(['Dataset']):
     d = pd.DataFrame()
