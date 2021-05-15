@@ -32,8 +32,8 @@ import warnings
 #TODO : Implement parameter to change length of kernel/shapelet 
 #TODO : Make all argument non positional
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=[100, 95, 90, 85, 80], n_splits=10, split_size=0.25, id_ft=0,
-                 verbose=0, n_bins=9, n_threads=3, use_kernel_grouping=True,
+    def __init__(self,  P=80, max_samples=0.1, id_ft=0,
+                 verbose=0, n_bins=9, n_threads=3, use_kernel_grouping=False,
                  random_state=None):
         """
         Initialize the Convolutional Shapelet Transform (CST)
@@ -41,13 +41,11 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         P : array of int, optional
-            Percentiles used in the shapelet extraction process.
-            The default is [100, 95, 90, 85, 80].
-        n_splits : int, optional
-            Number of stratified shuffle split performed for each extraction round.
+            Percentile used in the shapelet extraction process.
+            The default is 80.
+        max_samples : int or float, optional
+            Number or percenatge of samples in each stratified resampling for extraction step.
             The default is 10.
-        split_size: float, optional
-            Size of the splits used as percentage of the training set
         id_ft : int, optional
             Identifier of the feature on which the transform will be performed.
             The default is 0.
@@ -73,8 +71,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self.shapelets_params = None
         self.shapelets_values = None
         self.P = P
-        self.n_splits = n_splits
-        self.split_size = split_size
+        self.max_samples = max_samples
         self.n_bins = n_bins
         self.n_threads = n_threads
         self.use_kernel_grouping = use_kernel_grouping
@@ -134,14 +131,17 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             #Computing splits indexes, shape (n_split, n_classes, n_idx)
             id_splits = self._resample_splitter(X, y)
             #Compute class weight of each split
-            c_w = self._split_classweights(y, id_splits)
+            if use_class_weights:
+                c_w = self._split_classweights(y, id_splits)
+            else:
+                c_w = np.ones((len(id_splits),n_classes))
             #Compute LC for all splits
             per_split_LC = self._compute_LC_per_split(Lp, id_splits,
                                                       n_classes, classes,
-                                                      c_w, use_class_weights)
+                                                      c_w)
             #Extract candidates for all splits
             candidates_grp = self._extract_candidates(X, Lp, per_split_LC, 
-                                                      id_splits, 
+                                                      id_splits, c_w,
                                                       classes, dilation)
             self._log2("Got {} candidates for kernel {}".format(candidates_grp.shape[0], i_grp))
             
@@ -222,8 +222,20 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             else:
                 candidates_grp = np.unique(candidates_grp, axis=0)
         return candidates_grp
-
-    def _extract_candidates(self, X, Lp, per_split_LC, id_splits, classes, dilation):
+    
+    def _get_regions(self, indexes):
+        regions = []
+        region = []
+        for i in range(indexes.shape[0]-1):
+            region.append(indexes[i])
+            if indexes[i] != indexes[i+1]-1:
+                regions.append(region)
+                region = []
+        if len(region)>0:
+            regions.append(region)
+        return regions
+    
+    def _extract_candidates(self, X, Lp, per_split_LC, id_splits, c_w, classes, dilation):
         """
         
 
@@ -250,70 +262,29 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         """
         candidates_grp = []
         for i_class in classes:
-            for i_split in range(self.n_splits):
+            for i_split in range(len(id_splits)):
                 #Mean of other classes
                 if per_split_LC[i_class,i_split, :].sum()>0:
                     D = [per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]
                     if len(D)>0:
                         D = np.asarray(D).mean(axis=0)
                         D = per_split_LC[i_class,i_split, :] - D
-                        loc = np.asarray([np.abs(D-np.percentile(D, p)).argmin() for p in self.P])
-                        x_index = [np.argmax(Lp[id_splits[i_split][i_class], i] ) for i in loc]
-                        for i, ix in enumerate(x_index):
-                            candidates_grp.append(X[id_splits[i_split][i_class][ix], 0, np.array(
-                                [loc[i]+j*dilation for j in range(9)])])
+                        id_D = np.where(D>=np.percentile(D,self.P))[0]
+                        #A region is a set of following indexes
+                        regions = self._get_regions(id_D)
+                        for i_r in range(len(regions)):
+                            #Reverse class weight and get mean 
+                            region = regions[i_r]
+                            LC_region = (per_split_LC[i_class, i_split] / c_w[i_split][i_class]) / len(id_splits[i_split][i_class])
+                            if len(region)>5:
+                                region = [region[0], region[int(np.round(len(region)*0.25))], region[int(np.round(len(region)*0.5))], region[int(np.round(len(region)*0.75))], region[-1]]                                
+                            for i in range(len(region)):
+                                x_index = np.argmin(np.abs(Lp[id_splits[i_split][i_class], region[i]] - LC_region[region[i]]))
+                                candidates_grp.append(X[id_splits[i_split][i_class][x_index], 0, np.array(
+                                    [region[i]+j*dilation for j in range(9)])])
         return np.asarray(candidates_grp)
 
-    def _extract_candidates2(self, X, Lp, per_split_LC, id_splits, classes, dilation):
-        """
-        
-
-        Parameters
-        ----------
-        X : TYPE
-            DESCRIPTION.
-        Lp : TYPE
-            DESCRIPTION.
-        per_split_LC : TYPE
-            DESCRIPTION.
-        id_splits : TYPE
-            DESCRIPTION.
-        classes : TYPE
-            DESCRIPTION.
-        dilation : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
-        """
-        candidates_grp = []
-        for i_class in classes:
-            for i_split in range(self.n_splits):
-                #Mean of other classes
-                if per_split_LC[i_class,i_split, :].sum()>0:
-                    D = [per_split_LC[j, i_split, :] for j in classes - {i_class} if per_split_LC[j, i_split, :].sum()>0]
-                    if len(D)>0:
-                        D = np.asarray(D).mean(axis=0)
-                        D = per_split_LC[i_class,i_split, :] - D
-                        for p in self.P:
-                            loc = np.abs(D-np.percentile(D, p)).argmin()
-                            vloc = per_split_LC[i_class, i_split, loc] / len(id_splits[i_split][i_class])
-                            vs = np.zeros((Lp[id_splits[i_split][i_class]].shape[0], 6))
-                            for w in range(5):
-                                if 0 <= loc-2+w < Lp.shape[1]:
-                                    vs[:,w] = np.abs(Lp[id_splits[i_split][i_class], loc-2+w] - vloc)
-                                else:
-                                    vs[:,w] = np.inf
-                            ws = np.argmin(vs,axis=1)
-                            x_index = np.argmin(vs[:,ws])
-                            candidates_grp.append(X[id_splits[i_split][i_class][x_index], 0, np.array(
-                                [loc+j*dilation for j in range(9)])])
-        return np.asarray(candidates_grp)
-
-    def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w, use_class_weights):
+    def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w):
         """
         
 
@@ -338,13 +309,11 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             DESCRIPTION.
 
         """
-        per_split_LC = np.zeros((n_classes,  self.n_splits, Lp.shape[1]))
+        per_split_LC = np.zeros((n_classes,  len(id_splits), Lp.shape[1]))
         for i_class in classes:
-            for i_split in range(self.n_splits):
+            for i_split in range(len(id_splits)):
                 if len(id_splits[i_split][i_class])>0:
-                    per_split_LC[i_class, i_split, :] = Lp[id_splits[i_split][i_class]].sum(axis=0)
-                if use_class_weights:
-                    per_split_LC[i_class, i_split, :] *= c_w[i_split][i_class]
+                    per_split_LC[i_class, i_split, :] =  c_w[i_split][i_class] * Lp[id_splits[i_split][i_class]].sum(axis=0)
         return per_split_LC
         
 
@@ -376,46 +345,18 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 c_w[i_split, yi] = cw[i]
         return c_w 
     
-    def _stratifiedShuffleSpliter(self, X, y):
-        """
-        
-
-        Parameters
-        ----------
-        X : TYPE
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
-        if any(np.bincount(y)//self.n_splits == 0):
-            self.n_splits = max(min(np.bincount(y)),2)
-            s="number of split reduced to {} due to insuficent data".format(self.n_splits)
-            warnings.warn(s)
-        sss = RepeatedStratifiedKFold(n_splits=self.n_splits, n_repeats=10)
-        id_splits = []
-        for train_index, _ in sss.split(X, y):
-            id_splits.append([train_index[np.where(y[train_index] == i_class)[0]]
-                              for i_class in np.unique(y)])
-        return id_splits
-            
-    
     def _resample_splitter(self, X, y):
-        n_classes = np.bincount(y).shape[0]
-        n_samples = X.shape[0]
-        mult = 5
-        while n_samples > max(X.shape[0]*0.25,n_classes):
-            n_samples = n_classes * mult
-            mult -= 1
-        id_splits = []
         X_idx = np.asarray(range(X.shape[0]))
-        self.n_splits = max(self.n_splits,(X.shape[0]//n_samples)*4)
-        for i_split in range(self.n_splits):
-            idx = resample(X_idx, n_samples=n_samples, replace=False, stratify=y)
+        n_classes = np.bincount(y).shape[0]
+        size_rs = int(self.max_samples*X.shape[0])
+        if size_rs < n_classes:
+            size_rs = n_classes
+
+        id_splits = []        
+        n_splits = max(n_classes,(X.shape[0]//size_rs)*3)
+
+        for i_split in range(n_splits):
+            idx = resample(X_idx, n_samples=size_rs, replace=False, stratify=y)
             id_splits.append([idx[np.where(y[idx] == i_class)[0]]
                               for i_class in np.unique(y)])
         return id_splits
@@ -492,13 +433,13 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         """
         self._log("Performing MiniRocket Transform")
         m = MiniRocket(random_state=self.random_state,
-                       num_features=10_000,
-                       max_dilations_per_kernel=32).fit(X)
+                       max_dilations_per_kernel=96,
+                       num_features=20000).fit(X)
         ft, locs = m.transform(X, return_locs=True)
         self._log(
             "Performing kernel selection with {} kernels".format(locs.shape[1]))
         
-        ft_selector = RandomForestClassifier(n_estimators=300).fit(ft, y)
+        ft_selector = RandomForestClassifier(n_estimators=400, max_samples=0.75).fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
@@ -506,7 +447,15 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             dils[n:84*(num_features_per_dilation[i])+n] = dilations[i]
             n += 84*num_features_per_dilation[i]
 
-        i_kernels = np.where(ft_selector.feature_importances_ > ft_selector.feature_importances_.max()*0.33)[0]
+        i_sort = np.argsort(ft_selector.feature_importances_)
+        n_kernels = (ft_selector.feature_importances_ > ft_selector.feature_importances_.max()*0.75).sum()
+        if n_kernels > 50:
+            i_kernels = i_sort[0:50]
+        elif n_kernels < 5:
+            i_kernels = i_sort[0:5]
+        else:
+            i_kernels = i_sort[0:n_kernels]
+            
         self.n_kernels = i_kernels.shape[0]
         self._log("Finished kernel selection with {} kernels".format(
             i_kernels.shape[0]))

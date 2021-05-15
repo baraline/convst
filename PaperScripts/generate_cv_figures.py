@@ -43,8 +43,8 @@ for i, comp in enumerate(competitors):
     if i%ncols == 0:
         ax[i%ncols].set_ylabel('CST')
     ax[i%ncols].set_xlabel(comp)
-    #textstr = 'W - D - L (+/- 5%)\n {} - {} - {}'.format(sum(x*1.05 < y), sum((x*0.95<= y) & (y <= x*1.05)), sum(x > y*1.05))
-    textstr = 'W - D - L\n {} - {} - {}'.format(sum(x < y), sum((x <= y) & (y <= x)), sum(x > y))
+    #textstr = 'W - D - L (+/- 5%)\n{} - {} - {}'.format(sum(x*1.05 < y), sum((x*0.95<= y) & (y <= x*1.05)), sum(x > y*1.05))
+    textstr = 'W - D - L\n{} - {} - {}'.format(sum(x < y), sum((x <= y) & (y <= x)), sum(x > y))
     ax[i%ncols].text(0.05, 0.95, textstr, transform=ax[i%ncols].transAxes, fontsize=14,
             verticalalignment='top', bbox=props)
 

@@ -9,7 +9,7 @@ import numpy as np
 
 from datetime import datetime
 from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
-from CST.utils.dataset_utils import load_sktime_dataset_split, return_all_dataset_names
+from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifierCV
@@ -25,25 +25,27 @@ resume = False
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
 n_cv = 30
-n_splits = 25
-P = [100, 95, 90, 85, 80]
+max_samples = 0.2
+P = 80
 n_bins = 9
 
-run_RKT = False
-run_CST = True
-run_SFC = False
+run_RKT = True
+run_CST = False
+run_SFC = True
 
 available_memory_bytes = 60 * 1e9
 max_cpu_cores = 90
 numba_n_thread = 3
-size_mult = 3750
+size_mult = 1500
 random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
 
-csv_name = 'CV_{}_results_{}_{}_{}_resample_rf.csv'.format(n_cv, n_splits, n_bins, P)
+csv_name = 'CV_{}_results_{}_{}_{}.csv'.format(n_cv, max_samples, n_bins, P)
+base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
 dataset_names = return_all_dataset_names()
+
 
 if resume:
     df = pd.read_csv(csv_name)
@@ -63,27 +65,7 @@ else:
     df['SFC_runtime'] = pd.Series(0, index=df.index)
     df.to_csv(csv_name)
     
-
-from sklearn.utils import resample
-class UCR_stratified_resample:
-    def __init__(self, n_splits, n_samples_train):
-        self.n_splits=n_splits
-        self.n_samples_train=n_samples_train
         
-    def split(self, X, y=None, groups=None):
-        idx_X = np.asarray(range(X.shape[0]))
-        for i in range(self.n_splits):
-            if i == 0:
-                idx_train = np.asarray(range(self.n_samples_train))
-            else:
-                idx_train = resample(idx_X, n_samples=self.n_samples_train, replace=False, random_state=i, stratify=y)
-            idx_test = np.asarray(list(set(idx_X) - set(idx_train)))
-            yield idx_train, idx_test
-            
-    def get_n_splits(self, X=None, y=None, groups=None):
-        return self.n_splits
-
-
 def run_pipeline(pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs):
     if splitter.n_splits > 1:
         X = np.concatenate([X_train, X_test],axis=0)
@@ -104,7 +86,7 @@ pipe_rkt = make_pipeline(MiniRKT(random_state=random_state),
                                            normalize=True))
 pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(n_threads=numba_n_thread,
                                                           P=P,
-                                                          n_splits=n_splits,
+                                                          max_samples=max_samples,
                                                           n_bins=n_bins,
                                                           random_state=random_state),
                          RandomForestClassifier(n_estimators=400,
@@ -114,12 +96,13 @@ pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state))
 
 for name in dataset_names:
     print(name)
-    X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(name, normalize=True)
+    ds_path = base_UCR_resamples_path+"{}/{}".format(name,name)
+    X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(ds_path, 0, normalize=True)
     n_possible_jobs = min(int(available_memory_bytes // ((X_train.nbytes + X_test.nbytes) * size_mult)), n_cv)
     n_jobs = max(n_possible_jobs if n_possible_jobs <=
                  max_process else max_process, 1)
     
-    splitter = UCR_stratified_resample(n_cv, X_train.shape[0])
+    splitter = UCR_stratified_resample(n_cv, ds_path)
     
     if n_possible_jobs == 0:
         warnings.warn("Not enought estimated memory to run current dataset")
