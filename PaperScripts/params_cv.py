@@ -36,7 +36,7 @@ params = {'CST__P': P,
 print(params)
 
 if resume:
-    df = pd.read_csv(file_name, sep=';')
+    df = pd.read_csv(file_name)
     df = df.set_index('Unnamed: 0')
 else:
     df = pd.DataFrame()
@@ -53,7 +53,7 @@ for name in dataset_names:
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                  max_process else max_process, 1)  
         print(n_jobs)
-        if n_jobs >= 30:
+        if n_jobs >= 20:
             X = np.concatenate([X_train, X_test],axis=0)
             y = np.concatenate([y_train, y_test],axis=0)
             splitter = UCR_stratified_resample(n_cv, ds_path)

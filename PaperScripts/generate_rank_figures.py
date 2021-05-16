@@ -6,14 +6,14 @@ Created on Thu Apr 29 22:59:18 2021
 """
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
 import operator
 import math
+import networkx
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib import pyplot as plt
 from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare
-import networkx
-from itertools import combinations
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+
 
 def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
@@ -43,13 +43,6 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
         labels (bool, optional): if set to `True`, the calculated avg rank
         values will be displayed
     """
-    try:
-        import matplotlib
-        import matplotlib.pyplot as plt
-        from matplotlib.backends.backend_agg import FigureCanvasAgg
-    except ImportError:
-        raise ImportError("Function graph_ranks requires matplotlib.")
-
     width = float(width)
     textspace = float(textspace)
 
@@ -265,7 +258,7 @@ def form_cliques(p_values, nnames):
     return networkx.find_cliques(g)
 
 
-def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
+def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, path=None):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
@@ -282,7 +275,10 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False):
             }
     if title:
         plt.title(title, fontdict=font, y=0.9, x=0.5)
-    plt.savefig('cd-diagram.png', bbox_inches='tight')
+    if path is None:
+        plt.savefig('cd-diagram.png', bbox_inches='tight')
+    else:
+        plt.savefig(path, bbox_inches='tight')
     return average_ranks
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
@@ -367,7 +363,7 @@ def cv_col_clean_name(s):
     for char in ["'", "{", "}", "CST", " ", ]:
         s = s.replace(char, "")
     s = s.split('__')
-    return s[1]+s[2]
+    return s[1]+s[2]+s[3]
 
 def cv_col_clean_name2(s):
     if s == 'Unnamed: 0':
@@ -377,10 +373,10 @@ def cv_col_clean_name2(s):
     s = s.split('__')    
     return s[1]
 
-# In[]:
 
-base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
 #base_path = r"C:\git_projects\CST\\"
+# In[]:
 
 cv_path = base_path + r"CV_30_results_25_9_[100, 95, 90, 85, 80]_resample.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
@@ -391,7 +387,7 @@ df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 df = df[df['CST_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
-"""
+
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
@@ -399,7 +395,9 @@ df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[d
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2['STC']],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
+"""
 df_res = pd.DataFrame()
+
 for col in df_means.columns.difference(['Dataset']):
     d = pd.DataFrame()
     d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
@@ -410,14 +408,13 @@ for col in df_means.columns.difference(['Dataset']):
 draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
 
 # In[]:
-ps = []
-for r in range(1, 6):
-    ps.extend(list(combinations([100, 95, 90, 85, 80], r)))
-n_splits = [1, 3, 5, 7, 10]
-params_ranking_path = r"C:\git_projects\CST\params_csv3.csv"
-params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+P = [95,90,85,80]
+max_samples = [0.1,0.15,0.2,0.25,0.3]
+n_bins = [5, 7, 9, 11, 13, 15]
+ranking_path = r"params_csv.csv"
 
-df = pd.read_csv(params_ranking_path, sep=';')
+
+df = pd.read_csv(base_path+ranking_path)
 df = df.rename(columns=lambda x: cv_col_clean_name(x))
 
 df_res = pd.DataFrame()
@@ -429,41 +426,32 @@ for col in df.columns.difference(['dataset_name']):
     d['dataset_name'] = df['dataset_name']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
 
-df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
-    "\),").values], 'dataset_name']).mean().reset_index()
+# In[]
+
+df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
+    ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+
 plt.figure(figsize=(5,2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
+                labels=False, path=base_path+'P.png')
 
 # In[]
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
-    ",n_").values], 'dataset_name']).mean().reset_index()
+
+df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
+    ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-c = df_split.groupby('classifier_name').mean().sort_values(
-    by='accuracy', ascending=False).index.values[0:10]
-df_split = df_split[df_split['classifier_name'].isin(c)].reset_index(drop=True)
+
 plt.figure(figsize=(5,2))
-#Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False)
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
+                path=base_path+'max_samples.png')
 
-# In[]:
-params_ranking_path2 = r"C:\git_projects\CST\params_csv_bins.csv"
+# In[]
 
-df = pd.read_csv(params_ranking_path2, sep=';')
-df = df.rename(columns=lambda x: cv_col_clean_name2(x))
-
-df_res = pd.DataFrame()
-print(df.columns.difference(['dataset_name']).shape)
-for col in df.columns.difference(['dataset_name']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, 10))
-    d['accuracy'] = df[col]
-    d['dataset_name'] = df['dataset_name']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
-    "\),").values], 'dataset_name']).mean().reset_index()
+df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
+    ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-#Unknown crash ? image is still saved at C:\Users\Antoine
-draw_cd_diagram(df_perf=df_split, alpha=0.1, title='', labels=False)
 
+plt.figure(figsize=(5,2))
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
+                path=base_path+'n_bins.png')

@@ -15,22 +15,17 @@ from numba import set_num_threads
 from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy
 from CST.utils.checks_utils import check_array_3D
 from CST.base_transformers.minirocket import MiniRocket
-from sklearn.feature_selection import SelectFromModel
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedShuffleSplit
 from sklearn.utils import resample
-from sklearn.linear_model import RidgeClassifierCV
-from sklearn.inspection import permutation_importance
-import warnings
 
+#TODO : refactor as a classifier 
 #TODO : Docs !
 #TODO : Implement parallelisation of candidates generation / distance computation + benchmarks
 #TODO : Implement parameter to change length of kernel/shapelet 
-#TODO : Make all argument non positional
+
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def __init__(self,  P=80, max_samples=0.1, id_ft=0,
                  verbose=0, n_bins=9, n_threads=3, use_kernel_grouping=False,
@@ -109,7 +104,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         set_num_threads(self.n_threads)
         #L = (n_samples, n_kernels, n_timestamps)
         #Kernel selection is performed in this function
-        L, dils, biases = self._generate_inputs(X, y)
+        L, dils, biases, _ = self._generate_inputs(X, y)
         
         #Grouping kernel, use_kernel_grouping attribute is used here
         groups_id, groups_param = self._group_kernels(dils, biases)
@@ -119,6 +114,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         n_classes = np.unique(y).shape[0]
         n_shapelets = 0
         shapelets = {}
+        shapelets_class = {}
         for i_grp in groups_param.keys():
             dilation = int(groups_param[i_grp][0])
             candidates_grp = []
@@ -140,20 +136,21 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                                       n_classes, classes,
                                                       c_w)
             #Extract candidates for all splits
-            candidates_grp = self._extract_candidates(X, Lp, per_split_LC, 
-                                                      id_splits, c_w,
-                                                      classes, dilation)
+            candidates_grp, candidates_class = self._extract_candidates(X, Lp, per_split_LC, 
+                                                                        id_splits, c_w,
+                                                                        classes, dilation)
             self._log2("Got {} candidates for kernel {}".format(candidates_grp.shape[0], i_grp))
             
-            candidates_grp = self._remove_similar(candidates_grp)
+            candidates_grp, candidates_class = self._remove_similar(candidates_grp, candidates_class)
             n_shapelets += candidates_grp.shape[0]
             shapelets.update({i_grp: candidates_grp})
-            
+            shapelets_class.update({i_grp:  candidates_class})
             self._log("Extracted {} shapelets for kernel {}/{}".format(
                 candidates_grp.shape[0], i_grp, len(groups_param.keys())))
 
         self.shapelets_params = {i_grp: groups_param[i_grp] for i_grp in shapelets.keys()}
         self.shapelets_values = shapelets
+        self.shapelets_class = shapelets_class
         self._log("Extracted a total of {} shapelets".format(n_shapelets))
         self.n_shapelets = n_shapelets
         return self
@@ -192,7 +189,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         return distances
 
 
-    def _remove_similar(self, candidates_grp, strategy='uniform'):
+    def _remove_similar(self, candidates_grp, candidates_class,strategy='uniform'):
         """
         Apply discretization to candidates with n_bins attributes following
         the strategy in parameter. After that, keep only unique candidates
@@ -217,11 +214,11 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             if not np.all(candidates_grp.reshape(-1, 1) == candidates_grp.reshape(-1, 1)[0]):
                 kbd = KBinsDiscretizer(n_bins=self.n_bins, strategy=strategy, dtype=np.float32).fit(
                     candidates_grp.reshape(-1, 1))
-                candidates_grp = np.unique(kbd.inverse_transform(
-                    kbd.transform(candidates_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
+                candidates_grp, idx = np.unique(kbd.inverse_transform(
+                    kbd.transform(candidates_grp.reshape(-1, 1))).reshape(-1, 9), axis=0, return_index=True)
             else:
-                candidates_grp = np.unique(candidates_grp, axis=0)
-        return candidates_grp
+                candidates_grp, idx = np.unique(candidates_grp, axis=0, return_index=True)
+        return candidates_grp, candidates_class[idx]
     
     def _get_regions(self, indexes):
         regions = []
@@ -261,6 +258,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
         """
         candidates_grp = []
+        candidates_class = []
         for i_class in classes:
             for i_split in range(len(id_splits)):
                 #Mean of other classes
@@ -282,7 +280,8 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                 x_index = np.argmin(np.abs(Lp[id_splits[i_split][i_class], region[i]] - LC_region[region[i]]))
                                 candidates_grp.append(X[id_splits[i_split][i_class][x_index], 0, np.array(
                                     [region[i]+j*dilation for j in range(9)])])
-        return np.asarray(candidates_grp)
+                                candidates_class.append(i_class)
+        return np.asarray(candidates_grp), np.asarray(candidates_class)
 
     def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w):
         """
@@ -432,22 +431,22 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
         """
         self._log("Performing MiniRocket Transform")
-        m = MiniRocket(random_state=self.random_state,
-                       max_dilations_per_kernel=96,
-                       num_features=20000).fit(X)
-        ft, locs = m.transform(X, return_locs=True)
+        self.m = MiniRocket(random_state=self.random_state,
+                       max_dilations_per_kernel=32,
+                       num_features=10_000).fit(X)
+        ft, locs = self.m.transform(X, return_locs=True)
         self._log(
             "Performing kernel selection with {} kernels".format(locs.shape[1]))
         
         ft_selector = RandomForestClassifier(n_estimators=400, max_samples=0.75).fit(ft, y)
-        dilations, num_features_per_dilation, biases = m.parameters
+        dilations, num_features_per_dilation, biases = self.m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
         for i in range(dilations.shape[0]):
             dils[n:84*(num_features_per_dilation[i])+n] = dilations[i]
             n += 84*num_features_per_dilation[i]
 
-        i_sort = np.argsort(ft_selector.feature_importances_)
+        i_sort = np.argsort(ft_selector.feature_importances_)[::-1]
         n_kernels = (ft_selector.feature_importances_ > ft_selector.feature_importances_.max()*0.75).sum()
         if n_kernels > 50:
             i_kernels = i_sort[0:50]
@@ -459,7 +458,20 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         self.n_kernels = i_kernels.shape[0]
         self._log("Finished kernel selection with {} kernels".format(
             i_kernels.shape[0]))
-        return locs[:, i_kernels], dils[i_kernels], biases[i_kernels]
+        
+        weights = np.ones((i_kernels.shape[0],9))
+        
+        dilations, num_features_per_dilation = self._fit_dilations(
+            X.shape[2], self.m.num_features, self.m.max_dilations_per_kernel
+        )
+        for i in range(i_kernels.shape[0]):
+            id_dil = np.where(dilations == dils[i_kernels[i]])[0][0]
+            id_start = num_features_per_dilation[:id_dil].sum()*84
+            step_w = num_features_per_dilation[id_dil]
+            weights[i, self.m.indices[(i_kernels[i] - id_start)//step_w]] -= 3
+            
+            
+        return locs[:, i_kernels], dils[i_kernels], biases[i_kernels], weights
 
     def _check_is_fitted(self):
         """
@@ -479,3 +491,33 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                                                                   'shapelets_params']):
             raise AttributeError("CST is not fitted, call the fit method before"
                                  "attemping to transform data")
+
+    def _fit_dilations(self, n_timepoints, num_features, max_dilations_per_kernel):
+
+        num_kernels = 84
+    
+        num_features_per_kernel = num_features // num_kernels
+        true_max_dilations_per_kernel = min(
+            num_features_per_kernel, max_dilations_per_kernel
+        )
+        multiplier = num_features_per_kernel / true_max_dilations_per_kernel
+    
+        max_exponent = np.log2((n_timepoints - 1) / (9 - 1))
+        dilations, num_features_per_dilation = np.unique(
+            np.logspace(0, max_exponent, true_max_dilations_per_kernel, base=2).astype(
+                np.int32
+            ),
+            return_counts=True,
+        )
+        num_features_per_dilation = (num_features_per_dilation * multiplier).astype(
+            np.int32
+        )  # this is a vector
+    
+        remainder = num_features_per_kernel - np.sum(num_features_per_dilation)
+        i = 0
+        while remainder > 0:
+            num_features_per_dilation[i] += 1
+            remainder -= 1
+            i = (i + 1) % len(num_features_per_dilation)
+            
+        return dilations, num_features_per_dilation
