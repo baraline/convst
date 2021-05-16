@@ -264,22 +264,22 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, path=Non
     significant or not
     """
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
-
-    graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
-                cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
-
-    font = {'family': 'sans-serif',
-            'color':  'black',
-            'weight': 'normal',
-            'size': 22,
-            }
-    if title:
-        plt.title(title, fontdict=font, y=0.9, x=0.5)
-    if path is None:
-        plt.savefig('cd-diagram.png', bbox_inches='tight')
-    else:
-        plt.savefig(path, bbox_inches='tight')
-    return average_ranks
+    if p_values is not None:
+        graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
+                    cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
+    
+        font = {'family': 'sans-serif',
+                'color':  'black',
+                'weight': 'normal',
+                'size': 22,
+                }
+        if title:
+            plt.title(title, fontdict=font, y=0.9, x=0.5)
+        if path is None:
+            plt.savefig('cd-diagram.png', bbox_inches='tight')
+        else:
+            plt.savefig(path, bbox_inches='tight')
+    
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
     """
@@ -298,10 +298,12 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     friedman_p_value = friedmanchisquare(*(
         np.array(df_perf.loc[df_perf['classifier_name'] == c]['accuracy'])
         for c in classifiers))[1]
+    print(friedman_p_value)
     if friedman_p_value >= alpha:
         # then the null hypothesis over the entire classifiers cannot be rejected
         print('the null hypothesis over the entire classifiers cannot be rejected')
-        exit()
+        return None,None,None
+
     # get the number of classifiers
     m = len(classifiers)
     # init array that contains the p-values calculated by the Wilcoxon signed rank test
@@ -433,7 +435,7 @@ df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5,2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
+draw_cd_diagram(df_perf=df_split, alpha=0.55, title='',
                 labels=False, path=base_path+'P.png')
 
 # In[]
@@ -443,7 +445,7 @@ df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5,2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
+draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
                 path=base_path+'max_samples.png')
 
 # In[]
@@ -453,5 +455,5 @@ df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5,2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
+draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
                 path=base_path+'n_bins.png')

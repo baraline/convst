@@ -218,7 +218,8 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                     kbd.transform(candidates_grp.reshape(-1, 1))).reshape(-1, 9), axis=0, return_index=True)
             else:
                 candidates_grp, idx = np.unique(candidates_grp, axis=0, return_index=True)
-        return candidates_grp, candidates_class[idx]
+            candidates_class = candidates_class[idx]
+        return candidates_grp, candidates_class
     
     def _get_regions(self, indexes):
         regions = []

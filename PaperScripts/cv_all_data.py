@@ -25,18 +25,18 @@ resume = False
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
 n_cv = 30
-max_samples = 0.2
+max_samples = 0.25
 P = 80
-n_bins = 9
+n_bins = 11
 
-run_RKT = True
-run_CST = False
-run_SFC = True
+run_RKT = False
+run_CST = True
+run_SFC = False
 
 available_memory_bytes = 60 * 1e9
 max_cpu_cores = 90
 numba_n_thread = 3
-size_mult = 1500
+size_mult = 3500
 random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
