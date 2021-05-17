@@ -267,7 +267,7 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, path=Non
     if p_values is not None:
         graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
                     cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
-    
+
         font = {'family': 'sans-serif',
                 'color':  'black',
                 'weight': 'normal',
@@ -279,7 +279,7 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, path=Non
             plt.savefig('cd-diagram.png', bbox_inches='tight')
         else:
             plt.savefig(path, bbox_inches='tight')
-    
+
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
     """
@@ -299,10 +299,12 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         np.array(df_perf.loc[df_perf['classifier_name'] == c]['accuracy'])
         for c in classifiers))[1]
     print(friedman_p_value)
+    """
     if friedman_p_value >= alpha:
         # then the null hypothesis over the entire classifiers cannot be rejected
         print('the null hypothesis over the entire classifiers cannot be rejected')
         return None,None,None
+    """
 
     # get the number of classifiers
     m = len(classifiers)
@@ -359,6 +361,7 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     # return the p-values and the average ranks
     return p_values, average_ranks, max_nb_datasets
 
+
 def cv_col_clean_name(s):
     if s == 'Unnamed: 0':
         return "dataset_name"
@@ -367,17 +370,18 @@ def cv_col_clean_name(s):
     s = s.split('__')
     return s[1]+s[2]+s[3]
 
+
 def cv_col_clean_name2(s):
     if s == 'Unnamed: 0':
         return "dataset_name"
     for char in ["'", "{", "}", "CST", " ", ]:
         s = s.replace(char, "")
-    s = s.split('__')    
+    s = s.split('__')
     return s[1]
 
 
-base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-#base_path = r"C:\git_projects\CST\\"
+#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
+base_path = r"C:\git_projects\CST\csv_results\\"
 # In[]:
 
 cv_path = base_path + r"CV_30_results_25_9_[100, 95, 90, 85, 80]_resample.csv"
@@ -390,9 +394,9 @@ df = df[df['CST_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
 
-df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2[df2.columns.difference(['Dataset'])]],axis=1).rename(columns={'CST_mean':'CST',
-                                                                                                            'MiniRKT_mean':'MiniRKT',
-                                                                                                            'SFC_mean':'SFC'})
+df_means = pd.concat([df[['Dataset', 'CST_mean', 'MiniRKT_mean', 'SFC_mean']], df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_mean': 'CST',
+                                                                                                                                                  'MiniRKT_mean': 'MiniRKT',
+                                                                                                                                                  'SFC_mean': 'SFC'})
 """
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2['STC']],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
@@ -410,12 +414,7 @@ for col in df_means.columns.difference(['Dataset']):
 draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
 
 # In[]:
-P = [95,90,85,80]
-max_samples = [0.1,0.15,0.2,0.25,0.3]
-n_bins = [5, 7, 9, 11, 13, 15]
 ranking_path = r"params_csv.csv"
-
-
 df = pd.read_csv(base_path+ranking_path)
 df = df.rename(columns=lambda x: cv_col_clean_name(x))
 
@@ -423,7 +422,7 @@ df_res = pd.DataFrame()
 print(df.columns.difference(['dataset_name']).shape)
 for col in df.columns.difference(['dataset_name']):
     d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, 10))
+    d['classifier_name'] = pd.Series(col, index=range(0, df.shape[0]))
     d['accuracy'] = df[col]
     d['dataset_name'] = df['dataset_name']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
@@ -434,8 +433,8 @@ df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
-plt.figure(figsize=(5,2))
-draw_cd_diagram(df_perf=df_split, alpha=0.55, title='',
+plt.figure(figsize=(5, 2))
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
                 labels=False, path=base_path+'P.png')
 
 # In[]
@@ -444,7 +443,7 @@ df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
-plt.figure(figsize=(5,2))
+plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
                 path=base_path+'max_samples.png')
 
@@ -454,6 +453,6 @@ df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
-plt.figure(figsize=(5,2))
+plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
                 path=base_path+'n_bins.png')

@@ -20,7 +20,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
     dilation and padding parameters to slide itself on input time series.
     The values returned by the transformation is the minimum z-normalised euclidean
     distance from the shapelet to each sample.
-    
+
     Attributes
     ----------
     values : array
@@ -39,6 +39,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         Identifier of the feature kernel that generated this shapelet.
         The default is None.
     """
+
     def __init__(self, values=None, dilation=None, padding=None,
                  input_ft_id=None, ft_kernel_id=None):
         self.values = values
@@ -46,12 +47,12 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         self.padding = padding
         self.input_ft_id = input_ft_id
         self.ft_kernel_id = ft_kernel_id
-        
+
     def fit(self, X, y=None):
         self._check_is_init()
         X = self._check_array(X)
         return self
-    
+
     def transform(self, X, padding_matching=True):
         """
         Transform the input into distance to the Shapelet to be used as a 
@@ -78,45 +79,45 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         padding = self.padding
         if not padding_matching:
             padding = 0
-            
+
         if padding > 0:
             X_pad = np.zeros((n_samples, n_timestamps+2*padding))
-            X_pad[:,padding:-padding] = X[:,0,:]
+            X_pad[:, padding:-padding] = X[:, 0, :]
         else:
-            X_pad = X[:,0,:]   
-        X_strides = generate_strides_2D(X_pad,self.values.shape[0],self.dilation)
+            X_pad = X[:, 0, :]
+        X_strides = generate_strides_2D(
+            X_pad, self.values.shape[0], self.dilation)
         X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
-                    X_strides.std(axis=-1, keepdims=True) + 1e-8)
-        return compute_distances(X_strides, self.values.reshape(1,-1))
-        
-        
-    def _locate(self, x, return_dist=False, return_scale=False, 
-                padding_matching=False):   
-        X_strides = generate_strides_1D(x,self.values.shape[0],self.dilation)
+            X_strides.std(axis=-1, keepdims=True) + 1e-8)
+        return compute_distances(X_strides, self.values.reshape(1, -1))
+
+    def _locate(self, x, return_dist=False, return_scale=False,
+                padding_matching=False):
+        X_strides = generate_strides_1D(x, self.values.shape[0], self.dilation)
         X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
-                    X_strides.std(axis=-1, keepdims=True) + 1e-8)
+            X_strides.std(axis=-1, keepdims=True) + 1e-8)
         min_dist, i_loc = min_dist_shp_loc(X_strides, self.values)
-        
+
         # If padding is used, to get matching in original input (not padded) apply -padding
-        loc = np.asarray([i_loc + (j*self.dilation) for j in range(self.values.shape[0])])
-        
+        loc = np.asarray([i_loc + (j*self.dilation)
+                          for j in range(self.values.shape[0])])
+
         if return_dist and return_scale:
             return loc, min_dist, np.mean(x[loc]), np.std(x[loc])
         elif return_scale:
-             return loc, np.mean(x[loc]), np.std(x[loc])
+            return loc, np.mean(x[loc]), np.std(x[loc])
         elif return_dist:
             return loc, min_dist
         else:
-            return loc    
-    
-    
+            return loc
+
     def _check_is_init(self):
         if any(self.__dict__[attribute] is None for attribute in ['_values',
                                                                   '_dilation',
                                                                   '_padding']):
             raise AttributeError("Shapelet attribute not initialised correctly, "
                                  "at least one attribute was set to None")
-    
+
     def _check_array(self, X, coerce_to_numpy=True):
         if X.ndim != 3:
             raise ValueError(
@@ -133,9 +134,8 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
             if coerce_to_numpy:
                 X = from_nested_to_3d_numpy(X)
         return X
-    
-    
-    def plot_loc(self, x, padding_matching=False, ax=None, 
+
+    def plot_loc(self, x, padding_matching=False, ax=None,
                  alpha=0.75, x_alpha=0.75, size=15, color='black', c_x='blue'):
         """
         Plot the shapelet on the input. The shapelet will be displayed on its
@@ -167,67 +167,67 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         padding = self.padding
         if not padding_matching:
             padding = 0
-            
+
         if padding > 0:
             x_pad = np.zeros(x.shape[0] + 2 * padding)
             x_pad[padding:-padding] = x
         else:
             x_pad = x
-        
+
         loc, mean, std = self._locate(x_pad, return_dist=False, return_scale=True,
-                                     padding_matching=padding_matching)
+                                      padding_matching=padding_matching)
         vals = (self.values * std) + mean
         padding = self.padding
         if ax is None:
-            
-            plt.scatter(loc,vals,alpha=alpha,color=color,s=size)          
-            plt.plot(x_pad,c=c_x, alpha=x_alpha)
+
+            plt.scatter(loc, vals, alpha=alpha, color=color, s=size)
+            plt.plot(x_pad, c=c_x, alpha=x_alpha)
             plt.show()
         else:
-            
-            ax.scatter(loc,vals,alpha=alpha,color=color,s=size)
-            ax.plot(x_pad,c=c_x,  alpha=x_alpha)
-    
-    @property            
+
+            ax.scatter(loc, vals, alpha=alpha, color=color, s=size)
+            ax.plot(x_pad, c=c_x,  alpha=x_alpha)
+
+    @property
     def values(self):
         return self._values
-      
-    @values.setter   
-    def values(self, value):        
+
+    @values.setter
+    def values(self, value):
         self._values = value
-              
-    @property            
+
+    @property
     def padding(self):
         return self._padding
-      
-    @padding.setter   
+
+    @padding.setter
     def padding(self, value):
         if type(value) is not int:
             value = int(value)
         self._padding = value
-    
-    @property            
+
+    @property
     def dilation(self):
         return self._dilation
-      
-    @dilation.setter   
+
+    @dilation.setter
     def dilation(self, value):
         if type(value) is not int:
             value = int(value)
-        self._dilation = value    
-    
-    @property            
+        self._dilation = value
+
+    @property
     def input_ft_id(self):
         return self._input_ft_id
-      
-    @input_ft_id.setter   
-    def input_ft_id(self, value):        
+
+    @input_ft_id.setter
+    def input_ft_id(self, value):
         self._input_ft_id = value
-        
-    @property            
+
+    @property
     def ft_kernel_id(self):
         return self._ft_kernel_id
-      
-    @ft_kernel_id.setter   
-    def ft_kernel_id(self, value):        
+
+    @ft_kernel_id.setter
+    def ft_kernel_id(self, value):
         self._ft_kernel_id = value

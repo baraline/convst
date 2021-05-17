@@ -10,7 +10,9 @@ from numba import prange
 from numba import vectorize
 from itertools import combinations
 
-#TODO : debug parralel numba errors
+# TODO : debug parralel numba errors
+
+
 class MiniRocket(_PanelToTabularTransformer):
     """MINIROCKET
     MINImally RandOm Convolutional KErnel Transform
@@ -42,7 +44,8 @@ class MiniRocket(_PanelToTabularTransformer):
             np.int32(random_state) if isinstance(random_state, int) else None
         )
         super(MiniRocket, self).__init__()
-        self.indices = np.array([_ for _ in combinations(np.arange(9), 3)], dtype=np.int32)
+        self.indices = np.array(
+            [_ for _ in combinations(np.arange(9), 3)], dtype=np.int32)
 
     def fit(self, X, y=None):
         """Fits dilations and biases to input time series.
@@ -101,8 +104,8 @@ def _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, see
         np.random.seed(seed)
 
     n_instances, n_timepoints = X.shape
-    # >>> 
-    
+    # >>>
+
     num_kernels = len(indices)
     num_dilations = len(dilations)
 
@@ -153,7 +156,8 @@ def _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, see
 
             index_0, index_1, index_2 = indices[kernel_index]
 
-            C = C_alpha + C_gamma[index_0] + C_gamma[index_1] + C_gamma[index_2]
+            C = C_alpha + C_gamma[index_0] + \
+                C_gamma[index_1] + C_gamma[index_2]
 
             biases[feature_index_start:feature_index_end] = np.quantile(
                 C, quantiles[feature_index_start:feature_index_end]
@@ -215,7 +219,8 @@ def _fit(X, indices, num_features=10_000, max_dilations_per_kernel=32, seed=None
 
     quantiles = _quantiles(num_kernels * num_features_per_kernel)
 
-    biases = _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, seed)
+    biases = _fit_biases(X, indices, dilations,
+                         num_features_per_dilation, quantiles, seed)
 
     return dilations, num_features_per_dilation, biases
 
@@ -227,6 +232,7 @@ def _PPV(a, b):
     else:
         return 0
 
+
 @njit(
     fastmath=True,
     parallel=False,
@@ -235,12 +241,13 @@ def _PPV(a, b):
 def _conv_to_input_indexes(convolution_indexes, dilation, padding, length, n_timepoints):
     indexes = np.zeros((n_timepoints), dtype=np.uint8)
     for i_conv in prange(convolution_indexes.shape[0]):
-        for i_x in prange(length): 
+        for i_x in prange(length):
             i = convolution_indexes[i_conv] + i_x*dilation - padding
             if 0 <= i < n_timepoints:
-                indexes[i] += 1 
+                indexes[i] += 1
     return indexes
-    
+
+
 @njit(
     fastmath=True,
     parallel=True,
@@ -258,8 +265,9 @@ def _transform(X, indices, parameters):
     num_features = num_kernels * np.sum(num_features_per_dilation)
 
     features = np.zeros((n_instances, num_features), dtype=np.float32)
-    #Count how many time an X index is used for a ppv
-    features_location = np.zeros((n_instances, num_features, n_timepoints), dtype=np.uint8)
+    # Count how many time an X index is used for a ppv
+    features_location = np.zeros(
+        (n_instances, num_features, n_timepoints), dtype=np.uint8)
 
     for example_index in prange(n_instances):
 
@@ -310,32 +318,36 @@ def _transform(X, indices, parameters):
 
                 index_0, index_1, index_2 = indices[kernel_index]
 
-                C = C_alpha + C_gamma[index_0] + C_gamma[index_1] + C_gamma[index_2]
-                
+                C = C_alpha + C_gamma[index_0] + \
+                    C_gamma[index_1] + C_gamma[index_2]
+
                 if _padding1 == 0:
                     for feature_count in range(num_features_this_dilation):
-                        ppv = _PPV(C, biases[feature_index_start + feature_count])
-                        features[example_index, feature_index_start + feature_count] = ppv.mean()
-                        
-                        input_indexes = _conv_to_input_indexes(np.where(ppv>0)[0],
+                        ppv = _PPV(
+                            C, biases[feature_index_start + feature_count])
+                        features[example_index, feature_index_start +
+                                 feature_count] = ppv.mean()
+
+                        input_indexes = _conv_to_input_indexes(np.where(ppv > 0)[0],
                                                                dilation, padding,
                                                                9, n_timepoints)
                         features_location[
                             example_index, feature_index_start + feature_count, :
-                                ] += input_indexes
-                        
+                        ] += input_indexes
+
                 else:
                     for feature_count in range(num_features_this_dilation):
-                        ppv = _PPV(C[padding:-padding],biases[feature_index_start + feature_count])
-                        features[example_index, feature_index_start + feature_count] = ppv.mean()
-                        input_indexes = _conv_to_input_indexes(np.where(ppv>0)[0],
-                                       dilation, 0,
-                                       9, n_timepoints)
+                        ppv = _PPV(C[padding:-padding],
+                                   biases[feature_index_start + feature_count])
+                        features[example_index, feature_index_start +
+                                 feature_count] = ppv.mean()
+                        input_indexes = _conv_to_input_indexes(np.where(ppv > 0)[0],
+                                                               dilation, 0,
+                                                               9, n_timepoints)
                         features_location[
                             example_index, feature_index_start + feature_count, :
-                                ] += input_indexes
-                        
-                        
+                        ] += input_indexes
+
                 feature_index_start = feature_index_end
 
     return features, features_location

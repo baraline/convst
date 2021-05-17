@@ -182,6 +182,7 @@ def apply_all_kernels(X, weights, lengths, biases, dilations, paddings):
             )
     return X_new
 
+
 class ROCKET(BaseEstimator, TransformerMixin):
     """RandOm Convolutional KErnel Transformation.
 
@@ -244,7 +245,6 @@ class ROCKET(BaseEstimator, TransformerMixin):
         self.kernel_sizes = kernel_sizes
         self.random_state = random_state
 
-
     def fit(self, X, y=None):
         """Fit the model according to the given training data.
 
@@ -261,7 +261,7 @@ class ROCKET(BaseEstimator, TransformerMixin):
         self : object
 
         """
-        X = check_array(X[:,self.id_ft,:], dtype='float64')
+        X = check_array(X[:, self.id_ft, :], dtype='float64')
         n_samples, n_timestamps = X.shape
 
         kernel_sizes, seed = self._check_params(n_timestamps)
@@ -296,7 +296,7 @@ class ROCKET(BaseEstimator, TransformerMixin):
             X = (X - X.mean(axis=-1, keepdims=True)) / (
                 X.std(axis=-1, keepdims=True) + 1e-8
             )
-        X = check_array(X[:,self.id_ft,:], dtype='float64')
+        X = check_array(X[:, self.id_ft, :], dtype='float64')
         check_is_fitted(self, ['weights_', 'length_', 'bias_',
                                'dilation_', 'padding_'])
         X_new = apply_all_kernels(
@@ -304,7 +304,6 @@ class ROCKET(BaseEstimator, TransformerMixin):
             self.dilation_, self.padding_
         )
         return X_new
-
 
     def _check_params(self, n_timestamps):
         if not isinstance(self.n_kernels, (int, np.integer)):
