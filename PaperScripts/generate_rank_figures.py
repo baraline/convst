@@ -393,7 +393,8 @@ df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
 df[['CST_mean', 'CST_std', 'CST_runtime']] = dff[[
     'CST_mean', 'CST_std', 'CST_runtime']]
-df = df[df['CST_mean'] > 0]
+df = df[~pd.isna(df['CST_mean'])]
+df = df[df['CST_mean'] >0 ]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
 """
@@ -403,7 +404,7 @@ df_means = pd.concat([df[['Dataset', 'CST_mean', 'MiniRKT_mean', 'SFC_mean']], d
 """
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2['STC']],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
-                                                                                                            'SFC_mean':'SFC'})
+                                                                                                            'SFC_mean':'SFC'}).reset_index(drop=True)
 
 df_res = pd.DataFrame()
 

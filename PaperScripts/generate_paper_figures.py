@@ -123,7 +123,7 @@ fig, ax = plt.subplots(ncols=4, sharex=True, sharey=True, figsize=(18, 5))
 
 Lp = generate_strides_2D(locs[:, i_kernel, :], 9, dils[i_kernel]).sum(axis=-1)
 LC = np.zeros((np.unique(y_train).shape[0], Lp.shape[1]))
-for c in np.unique(y_train):
+for c in range(2):
     LC[c] = np.sum(Lp[np.where(y_train == c)[0]], axis=0)
     LC[c] = (LC[c] - LC[c].mean())/LC[c].std()
     ax[c].plot(LC[c], c='green', label='LC')
