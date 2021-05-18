@@ -27,6 +27,7 @@ from CST.base_transformers.minirocket import MiniRocket
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import RidgeClassifierCV
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.utils import resample
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
@@ -447,6 +448,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
         ft_selector = RandomForestClassifier(
             n_estimators=400, max_samples=0.75).fit(ft, y)
+
         dilations, num_features_per_dilation, biases = self.m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
@@ -455,6 +457,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             n += 84*num_features_per_dilation[i]
 
         i_sort = np.argsort(ft_selector.feature_importances_)[::-1]
+        
         n_kernels = (ft_selector.feature_importances_ >
                      ft_selector.feature_importances_.max()*0.5).sum()
         if n_kernels > 50:

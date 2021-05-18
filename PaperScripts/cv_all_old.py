@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 14 09:21:00 2021
+Created on Tue May 18 14:52:51 2021
 
 @author: A694772
 """
@@ -26,8 +26,7 @@ resume = False
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
 n_cv = 30
-n_trees=200
-max_ft=0.25
+max_samples = 0.1
 P = 80
 n_bins = 9
 
@@ -43,8 +42,8 @@ random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
 
-csv_name = 'CV_{}_results_({},{})_{}_{}.csv'.format(
-    n_cv, n_trees, max_ft, n_bins, P)
+csv_name = 'CV_{}_results_{}_{}_{}.csv'.format(
+    n_cv, max_samples, n_bins, P)
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
 dataset_names = return_all_dataset_names()
@@ -90,8 +89,7 @@ pipe_rkt = make_pipeline(MiniRKT(random_state=random_state),
                                            normalize=True))
 pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(n_threads=numba_n_thread,
                                                           P=P,
-                                                          n_trees=n_trees,
-                                                          max_ft=max_ft,
+                                                          max_samples=max_samples,
                                                           n_bins=n_bins,
                                                           random_state=random_state),
                          RandomForestClassifier(n_estimators=400,

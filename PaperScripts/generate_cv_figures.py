@@ -10,8 +10,8 @@ sns.set_context("talk", font_scale=0.9)
 #base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
 base_path = r"C:\git_projects\CST\csv_results\\"
 
-cv_path2 = base_path + r"CV_30_results_0.1_11_80.csv"
-cv_path = base_path + r"CV_30_results_0.2_9_80.csv"
+cv_path2 = base_path + r"CV_30_results_(200,0.25)_9_80.csv"
+cv_path = base_path + r"CV_30_results_sfc_rkt.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
 cv_f1_std = base_path + r"TESTF1_STDDEV.csv"
 

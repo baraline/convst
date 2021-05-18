@@ -368,7 +368,7 @@ def cv_col_clean_name(s):
     for char in ["'", "{", "}", "CST", " ", ]:
         s = s.replace(char, "")
     s = s.split('__')
-    return s[1]+s[2]+s[3]
+    return s[1]+s[2]+s[3]+s[4]+s[5]
 
 
 def cv_col_clean_name2(s):
@@ -379,21 +379,24 @@ def cv_col_clean_name2(s):
     s = s.split('__')
     return s[1]
 
-
 #base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
 base_path = r"C:\git_projects\CST\csv_results\\"
 # In[]:
 
-cv_path = base_path + r"CV_30_results_25_9_[100, 95, 90, 85, 80]_resample.csv"
+cv_path2 = base_path + r"CV_30_results_(200,0.25)_9_80.csv"
+cv_path = base_path + r"CV_30_results_sfc_rkt.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
 
 df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+dff = pd.read_csv(cv_path2, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
+df[['CST_mean', 'CST_std', 'CST_runtime']] = dff[[
+    'CST_mean', 'CST_std', 'CST_runtime']]
 df = df[df['CST_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
-
+"""
 df_means = pd.concat([df[['Dataset', 'CST_mean', 'MiniRKT_mean', 'SFC_mean']], df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_mean': 'CST',
                                                                                                                                                   'MiniRKT_mean': 'MiniRKT',
                                                                                                                                                   'SFC_mean': 'SFC'})
@@ -401,7 +404,7 @@ df_means = pd.concat([df[['Dataset', 'CST_mean', 'MiniRKT_mean', 'SFC_mean']], d
 df_means = pd.concat([df[['Dataset','CST_mean','MiniRKT_mean','SFC_mean']],df2['STC']],axis=1).rename(columns={'CST_mean':'CST',
                                                                                                             'MiniRKT_mean':'MiniRKT',
                                                                                                             'SFC_mean':'SFC'})
-"""
+
 df_res = pd.DataFrame()
 
 for col in df_means.columns.difference(['Dataset']):
@@ -414,7 +417,7 @@ for col in df_means.columns.difference(['Dataset']):
 draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
 
 # In[]:
-ranking_path = r"params_csv.csv"
+ranking_path = r"params_csv_P.csv"
 df = pd.read_csv(base_path+ranking_path)
 df = df.rename(columns=lambda x: cv_col_clean_name(x))
 
@@ -437,22 +440,28 @@ plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
                 labels=False, path=base_path+'P.png')
 
-# In[]
 
 df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
                 path=base_path+'max_samples.png')
-
-# In[]
 
 df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.95, title='', labels=False,
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
+                path=base_path+'n_bins.png')
+
+
+df_split = df_res.groupby([[x[3] for x in df_res['classifier_name'].str.split(
+    ",").values], 'dataset_name']).mean().reset_index()
+df_split = df_split.rename(columns={'level_0': 'classifier_name'})
+
+plt.figure(figsize=(5, 2))
+draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
                 path=base_path+'n_bins.png')
