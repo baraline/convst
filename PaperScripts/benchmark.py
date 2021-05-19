@@ -10,7 +10,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifierCV
 import pandas as pd
 import numpy as np
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+#from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
+from sktime.classification.shapelet_based import MrSEQLClassifier
 from sklearn.pipeline import make_pipeline
 from datetime import datetime
 from wildboar.ensemble import ShapeletForestClassifier
@@ -28,9 +30,12 @@ By placing the _TRAIN.arff and _TEST.arff in the folder specified by the path va
  you can simply change the name of the dataset in the functions bellow if you wish to 
  try it on other datasets, be sure in this case to change the lengths that are considered.
 """
+run_cst = True
+run_rkt = True
+run_sfc = True
+run_sql = True
 
-
-resume = True
+resume = False
 csv_name = 'tslength_Benchmark.csv'
 lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 1e+5]).astype(int)
 if resume:
@@ -38,61 +43,80 @@ if resume:
     df = df.set_index('Unnamed: 0')
 else:
     df = pd.DataFrame(index=lengths)
-    df['cst'] = pd.Series(0, index=df.index)
-    df['rkt'] = pd.Series(0, index=df.index)
-    df['sfc'] = pd.Series(0, index=df.index)
+    df['CST'] = pd.Series(0, index=df.index)
+    df['MiniRKT'] = pd.Series(0, index=df.index)
+    df['MrSEQL'] = pd.Series(0, index=df.index)
+    df['SFC'] = pd.Series(0, index=df.index)
 
 path = r"/home/prof/guillaume/Shapelets/ts_datasets/"
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
     path+"DucksAndGeese")
 n_cv = 10
 
+pipe_rkt = make_pipeline(MiniRKT(),
+                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
+                                           normalize=True))
+
+#SFC use 100 tree on default
+pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(
+                                                          P=80,
+                                                          n_trees=100,
+                                                          max_ft=1.0,
+                                                          n_bins=9,
+                                                          ),
+                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
+
+pipe_sfc = make_pipeline(ShapeletForestClassifier())
+
+pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
+
+
+def time_pipe(pipeline, X_train, y_train, X_test):
+    t0 = datetime.now()
+    pipeline.fit(X_train, y_train)
+    pipeline.predict(X_test)
+    t1 = datetime.now()
+    return (t1-t0).total_seconds()
+
+
 for l in lengths:
     x1 = X_train[:, :, :l]
     x2 = X_test[:, :, :l]
-
+    print(x1.shape)
     # CST
-    if df.loc[l, 'cst'] == 0:
+    if run_cst and df.loc[l, 'CST'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('cst', l, i_cv))
-            p = make_pipeline(ConvolutionalShapeletTransformer(),
-                              RandomForestClassifier())
-            t0 = datetime.now()
-            p.fit(x1, y_train)
-            p.predict(x2)
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[l, 'cst'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('CST', l, i_cv))
+            timing.append(time_pipe(pipe_cst, x1, y_train, x2))
+        df.loc[l, 'CST'] = np.mean(timing)
         df.to_csv(csv_name)
 
     # RKT
-    if df.loc[l, 'rkt'] == 0:
+    if run_rkt and df.loc[l, 'MiniRKT'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('rkt', l, i_cv))
-            p = make_pipeline(MiniRKT(),
-                              RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
-            t0 = datetime.now()
-            p.fit(x1, y_train)
-            p.predict(x2)
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[l, 'rkt'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('MiniRKT', l, i_cv))
+            timing.append(time_pipe(pipe_rkt, x1, y_train, x2))
+        df.loc[l, 'MiniRKT'] = np.mean(timing)
+        df.to_csv(csv_name)
+
+    # MrSEQL
+    if run_sql and df.loc[l, 'MrSEQL'] == 0:
+        timing = []
+        for i_cv in range(n_cv):
+            print("{}/{}/n_cv:{}".format('MrSEQL', l, i_cv))
+            timing.append(time_pipe(pipe_MrSEQL, x1, y_train, x2))
+        df.loc[l, 'MrSEQL'] = np.mean(timing)
         df.to_csv(csv_name)
 
     # SFC
-    if df.loc[l, 'sfc'] == 0:
+    if run_sfc and df.loc[l, 'SFC'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('sfc', l, i_cv))
-            p = ShapeletForestClassifier()
-            t0 = datetime.now()
-            p.fit(x1[:, 0, :], y_train)
-            p.predict(x2[:, 0, :])
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[l, 'sfc'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('SFC', l, i_cv))
+            timing.append(time_pipe(pipe_sfc, x1, y_train, x2))
+        df.loc[l, 'SFC'] = np.mean(timing)
         df.to_csv(csv_name)
 
 # In[]:
@@ -108,9 +132,11 @@ if resume:
     df = df.set_index('Unnamed: 0')
 else:
     df = pd.DataFrame(index=n_per_class*n_classes)
-    df['cst'] = pd.Series(0, index=df.index)
-    df['rkt'] = pd.Series(0, index=df.index)
-    df['sfc'] = pd.Series(0, index=df.index)
+    df['CST'] = pd.Series(0, index=df.index)
+    df['MiniRKT'] = pd.Series(0, index=df.index)
+    df['MrSEQL'] = pd.Series(0, index=df.index)
+    df['SFC'] = pd.Series(0, index=df.index)
+
 
 n_cv = 10
 for n in n_per_class:
@@ -119,46 +145,37 @@ for n in n_per_class:
     x2 = np.asarray([np.random.choice(np.where(y_test == i)[0],
                                       n, replace=False) for i in np.unique(y_train)]).reshape(-1)
     print(X_train[x1, 0, :].shape)
-    # CST
-    if df.loc[n*n_classes, 'cst'] == 0:
+    if run_cst and df.loc[n*n_classes, 'CST'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('cst', n, i_cv))
-            p = make_pipeline(ConvolutionalShapeletTransformer(),
-                              RandomForestClassifier())
-            t0 = datetime.now()
-            p.fit(X_train[x1], y_train[x1])
-            p.predict(X_test[x2])
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[n*n_classes, 'cst'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('CST', l, i_cv))
+            timing.append(time_pipe(pipe_cst, x1, y_train, x2))
+        df.loc[n*n_classes, 'CST'] = np.mean(timing)
+        df.to_csv(csv_name)
+        
+    # RKT
+    if run_rkt and df.loc[n*n_classes, 'MiniRKT'] == 0:
+        timing = []
+        for i_cv in range(n_cv):
+            print("{}/{}/n_cv:{}".format('MiniRKT', l, i_cv))
+            timing.append(time_pipe(pipe_rkt, x1, y_train, x2))
+        df.loc[n*n_classes, 'MiniRKT'] = np.mean(timing)
         df.to_csv(csv_name)
 
-    # RKT
-    if df.loc[n*n_classes, 'rkt'] == 0:
+    # MrSEQL
+    if run_sql and df.loc[n*n_classes, 'MrSEQL'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('rkt', n, i_cv))
-            p = make_pipeline(MiniRKT(),
-                              RidgeClassifierCV(alphas=np.logspace(-4, 4, 10), normalize=True))
-            t0 = datetime.now()
-            p.fit(X_train[x1], y_train[x1])
-            p.predict(X_test[x2])
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[n*n_classes, 'rkt'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('MrSEQL', l, i_cv))
+            timing.append(time_pipe(pipe_MrSEQL, x1, y_train, x2))
+        df.loc[n*n_classes, 'MrSEQL'] = np.mean(timing)
         df.to_csv(csv_name)
 
     # SFC
-    if df.loc[n*n_classes, 'sfc'] == 0:
+    if run_sfc and df.loc[n*n_classes, 'SFC'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('sfc', n, i_cv))
-            p = ShapeletForestClassifier()
-            t0 = datetime.now()
-            p.fit(X_train[x1, 0], y_train[x1])
-            p.predict(X_test[x2, 0])
-            t1 = datetime.now()
-            timing.append((t1-t0).total_seconds())
-        df.loc[n*n_classes, 'sfc'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format('SFC', l, i_cv))
+            timing.append(time_pipe(pipe_sfc, x1, y_train, x2))
+        df.loc[n*n_classes, 'SFC'] = np.mean(timing)
         df.to_csv(csv_name)

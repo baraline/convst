@@ -7,37 +7,33 @@ import pandas as pd
 sns.set()
 sns.set_context("talk", font_scale=0.9)
 
-#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\\"
-base_path = r"C:\git_projects\CST\csv_results\\"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
+#base_path = r"C:\git_projects\CST\csv_results\\"
 
-cv_path2 = base_path + r"CV_30_results_(200,0.25)_9_80.csv"
-cv_path = base_path + r"CV_30_results_sfc_rkt.csv"
+cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
 cv_f1_std = base_path + r"TESTF1_STDDEV.csv"
 
 df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 
-dff = pd.read_csv(cv_path2, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 df3 = pd.read_csv(cv_f1_std, sep=',').rename(
     columns={'TESTF1STDDEVS': 'Dataset'})
 
-df[['CST_mean', 'CST_std', 'CST_runtime']] = dff[[
-    'CST_mean', 'CST_std', 'CST_runtime']]
-df = df[df['CST_mean'] > 0]
+df = df[df['CST_f1_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 df3 = df3[df3['Dataset'].isin(df['Dataset'])]
 
 # In[]:
 
-df_means = pd.concat([df[['Dataset', 'MiniRKT_mean', 'CST_mean', 'SFC_mean']], df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_mean': 'CST',
-                                                                                                                                                  'MiniRKT_mean': 'MiniRKT',
-                                                                                                                                                  'SFC_mean': 'SFC'})
-competitors = ['MiniRKT', 'SFC', 'STC']
-
-ncols = 3
+df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'SFC_f1_mean', 'MrSEQL_f1_mean']], df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_f1_mean': 'CST',
+                                                                                                                                                  'MiniRKT_f1_mean': 'MiniRKT',
+                                                                                                                                                  'SFC_f1_mean': 'SFC',
+                                                                                                                                                  'MrSEQL_f1_mean':'MrSEQL'})
+competitors = ['MiniRKT', 'SFC', 'STC', 'MrSEQL']
+ncols = 4
 nrows = 1
-fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 5), sharey=True)
+fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(20, 5), sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
 for i, comp in enumerate(competitors):
     ax[i % ncols].plot([0, 1], [0, 1], color='r')
