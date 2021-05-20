@@ -27,7 +27,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from CST.base_transformers.minirocket import MiniRocket
 from CST.utils.checks_utils import check_array_3D
 from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy, generate_strides_1D
-from numba import set_num_threads
+from numba import set_num_threads, njit, prange
 
 class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
     def __init__(self,  P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
@@ -115,38 +115,47 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
             self._log2(
                 "Processing split {}/{} ...".format(i_split, len(tree_splits)))
             x_index, y_split, k_id = tree_splits[i_split]
-            classes = np.unique(y_split)
-            n_classes = classes.shape[0]
-            dilation = dils[k_id]
-
-            Lp = L[x_index, k_id, :]
-            Lp = generate_strides_2D(Lp, 9, dilation).sum(axis=-1)
-            if use_class_weights:
+            
+            @njit
+            def _generate_strides_2d(X, window, dilation)
+                n_rows, n_columns = X.shape
+                shape = (n_rows, n_columns - ((window-1)*dilation), window)
+                strides = np.array([X.strides[0], X.strides[1], X.strides[1]*dilation])
+                return np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)  
+            
+            @njit(fastmath=True, cache=True)
+            def _process_node(X, y, L, dilation):
+                classes = np.unique(y)
+                n_classes = classes.shape[0]
+                
+                #To test
+                Lp = generate_strides_2D(L, 9, dilation).sum(axis=-1)
+               
+                #to replace
                 c_w = compute_class_weight('balanced', classes=classes, y=y_split)
-            else:
-                c_w = np.ones(n_classes)
+                
+                LC = np.zeros((n_classes, Lp.shape[1]))
+                for i_class in prange(n_classes):
+                    LC[i_class] = c_w[i_class] * Lp[
+                        np.where(y_split == i_class)[0]].sum(axis=0)
+    
+                candidates_grp = np.zeros(n_candidates,9)
+                for i_class in prange(n_classes):
+                    if LC.sum() > 0:
+                        D = LC[i_class] - LC[(i_class+1) % 2]
+                        id_D = np.where(D >= np.percentile(D, self.P))[0]
+                        # To Replace
+                        regions = self._get_regions(id_D)
+                        for i_r in prange(regions.shape[0]):
+                            LC_region = LC[i_class, regions[i_r]]
+                            id_max_region = regions[i_r][LC_region.argmax()]
+                            x_index = np.argmax(
+                                Lp[np.where(y_split == i_class)[0], id_max_region])
+                            candidates_grp.append(X[np.where(y_split == i_class)[0][x_index], 0, np.array(
+                                [id_max_region+j*dilation for j in prange(9)])])
+                
+                return candidates_grp = np.asarray(candidates_grp)
             
-            LC = np.zeros((n_classes, Lp.shape[1]))
-            for i_class in classes:
-                LC[i_class:] = c_w[i_class] * Lp[
-                    np.where(y_split == i_class)[0]].sum(axis=0)
-
-            candidates_grp = []
-            for i_class in classes:
-                if LC.sum() > 0:
-                    D = LC[i_class] - LC[(i_class+1) % 2]
-                    id_D = np.where(D >= np.percentile(D, self.P))[0]
-                    # A region is a set of following indexes
-                    regions = self._get_regions(id_D)
-                    for i_r in range(len(regions)):
-                        LC_region = LC[i_class, regions[i_r]]
-                        id_max_region = regions[i_r][LC_region.argmax()]
-                        x_index = np.argmax(
-                            Lp[np.where(y_split == i_class)[0], id_max_region])
-                        candidates_grp.append(X[np.where(y_split == i_class)[0][x_index], 0, np.array(
-                            [id_max_region+j*dilation for j in range(9)])])
-            
-            candidates_grp = np.asarray(candidates_grp)
             if candidates_grp.shape[0] > 0:
                 if dilation in shapelets:
                     shapelets[dilation] = np.concatenate(
