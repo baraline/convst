@@ -32,7 +32,7 @@ from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy, 
 from numba import set_num_threads
 
 class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=80, n_trees=200, max_ft=0.25, id_ft=0, use_class_weights=True,
+    def __init__(self,  P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
                  verbose=0, n_bins=9, n_threads=3, random_state=None):
         """
         Initialize the Convolutional Shapelet Transform (CST)
@@ -114,7 +114,7 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
         shapelets = {}
         n_shp = 0
         for i_split in range(len(tree_splits)):
-            self._log(
+            self._log2(
                 "Processing split {}/{} ...".format(i_split, len(tree_splits)))
             x_index, y_split, k_id = tree_splits[i_split]
             classes = np.unique(y_split)
@@ -130,8 +130,8 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
             
             LC = np.zeros((n_classes, Lp.shape[1]))
             for i_class in classes:
-                LC[i_class:] = c_w[i_class] * \
-                    Lp[np.where(y_split == i_class)[0]].sum(axis=0)
+                LC[i_class:] = c_w[i_class] * Lp[
+                    np.where(y_split == i_class)[0]].sum(axis=0)
 
             candidates_grp = []
             for i_class in classes:

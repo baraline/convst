@@ -7,8 +7,8 @@ import pandas as pd
 sns.set()
 sns.set_context("talk", font_scale=0.9)
 
-base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-#base_path = r"C:\git_projects\CST\csv_results\\"
+#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
+base_path = r"C:\git_projects\CST\csv_results\\"
 
 cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
