@@ -32,7 +32,7 @@ from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy, 
 from numba import set_num_threads
 
 class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=80, n_trees=100, max_ft=1.0, id_ft=0, use_class_weights=True,
+    def __init__(self,  P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
                  verbose=0, n_bins=9, n_threads=3, random_state=None):
         """
         Initialize the Convolutional Shapelet Transform (CST)

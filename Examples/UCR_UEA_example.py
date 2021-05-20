@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'Car', normalize=True)
+    'GunPoint', normalize=True)
 
 # In[]:
 
@@ -36,6 +36,7 @@ print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 
 # In[]:
 cst = ConvolutionalShapeletTransformer_tree(verbose=1, n_bins=9).fit(X_train, y_train)
+
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 

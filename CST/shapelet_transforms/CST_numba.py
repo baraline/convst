@@ -11,10 +11,7 @@ Created on Sun Apr 18 14:52:44 2021
 @author: Antoine
 """
 
-# TODO : refactor as a classifier
-# TODO : Docs !
-# TODO : Implement parallelisation of candidates generation / distance computation + benchmarks
-# TODO : Implement parameter to change length of kernel/shapelet
+# TODO : WIP
 
 import numpy as np
 from sklearn.utils import resample
@@ -28,9 +25,10 @@ from CST.base_transformers.minirocket import MiniRocket
 from CST.utils.checks_utils import check_array_3D
 from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy, generate_strides_1D
 from numba import set_num_threads, njit, prange
+from numpy.lib.stride_tricks import as_strided
 
-class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
+class ConvolutionalShapeletTransformer_tree_nb(BaseEstimator, TransformerMixin):
+    def __init__(self, P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
                  verbose=0, n_bins=9, n_threads=3, random_state=None):
         """
         Initialize the Convolutional Shapelet Transform (CST)
@@ -115,47 +113,8 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
             self._log2(
                 "Processing split {}/{} ...".format(i_split, len(tree_splits)))
             x_index, y_split, k_id = tree_splits[i_split]
-            
-            @njit
-            def _generate_strides_2d(X, window, dilation)
-                n_rows, n_columns = X.shape
-                shape = (n_rows, n_columns - ((window-1)*dilation), window)
-                strides = np.array([X.strides[0], X.strides[1], X.strides[1]*dilation])
-                return np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)  
-            
-            @njit(fastmath=True, cache=True)
-            def _process_node(X, y, L, dilation):
-                classes = np.unique(y)
-                n_classes = classes.shape[0]
-                
-                #To test
-                Lp = generate_strides_2D(L, 9, dilation).sum(axis=-1)
-               
-                #to replace
-                c_w = compute_class_weight('balanced', classes=classes, y=y_split)
-                
-                LC = np.zeros((n_classes, Lp.shape[1]))
-                for i_class in prange(n_classes):
-                    LC[i_class] = c_w[i_class] * Lp[
-                        np.where(y_split == i_class)[0]].sum(axis=0)
-    
-                candidates_grp = np.zeros(n_candidates,9)
-                for i_class in prange(n_classes):
-                    if LC.sum() > 0:
-                        D = LC[i_class] - LC[(i_class+1) % 2]
-                        id_D = np.where(D >= np.percentile(D, self.P))[0]
-                        # To Replace
-                        regions = self._get_regions(id_D)
-                        for i_r in prange(regions.shape[0]):
-                            LC_region = LC[i_class, regions[i_r]]
-                            id_max_region = regions[i_r][LC_region.argmax()]
-                            x_index = np.argmax(
-                                Lp[np.where(y_split == i_class)[0], id_max_region])
-                            candidates_grp.append(X[np.where(y_split == i_class)[0][x_index], 0, np.array(
-                                [id_max_region+j*dilation for j in prange(9)])])
-                
-                return candidates_grp = np.asarray(candidates_grp)
-            
+            dilation = dils[k_id]
+            candidates_grp = _process_node(X[x_index], y_split, L[x_index,k_id, :], dilation, self.P)
             if candidates_grp.shape[0] > 0:
                 if dilation in shapelets:
                     shapelets[dilation] = np.concatenate(
@@ -267,10 +226,13 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
         if self.use_class_weights:
             rf = RandomForestClassifier(n_estimators=self.n_trees,
                                         max_features=self.max_ft,
-                                        class_weight='balanced')
+                                        class_weight='balanced',
+                                        ccp_alpha=0.01,
+                                        n_jobs=self.n_threads)
         else:
             rf = RandomForestClassifier(n_estimators=self.n_trees,
-                                        max_features=self.max_ft)
+                                        max_features=self.max_ft,
+                                        n_jobs=self.n_threads)
         rf.fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
@@ -291,7 +253,7 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
                     threshold = tree_.threshold[node]
                     L = x_id[np.where(features[x_id, ft_id] <= threshold)[0]]
                     R = x_id[np.where(features[x_id, ft_id] > threshold)[0]]
-                    y_node = np.zeros(x_id.shape[0], dtype=int)
+                    y_node = np.zeros(x_id.shape[0], dtype=np.int32)
                     y_node[L.shape[0]:] += 1
                     recurse(tree_.children_left[node], depth + 1,
                             x_id[np.where(features[x_id, ft_id] <= threshold)[0]])
@@ -324,3 +286,61 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
         if any(self.__dict__[attribute] is None for attribute in ['shapelets_values']):
             raise AttributeError("CST is not fitted, call the fit method before"
                                  "attemping to transform data")
+
+@njit
+def _generate_strides_2d(X, window_size, window_step):
+    n_samples, n_timestamps = X.shape
+    
+    shape_new = (n_samples,
+                 n_timestamps - (window_size-1)*window_step,
+                 window_size // 1)
+    s0, s1 = X.strides
+    strides_new = (s0, s1, window_step *s1)
+    return as_strided(X, shape=shape_new, strides=strides_new)
+
+@njit
+def _get_regions(indexes):
+    regions = np.zeros((indexes.shape[0]*2),dtype=np.int64)-1
+    p = 0
+    for i in prange(indexes.shape[0]-1):
+        regions[p] = indexes[i]
+        if indexes[i] == indexes[i+1]-1:
+            p+=1
+        else:
+            p+=2
+    regions[p] = indexes[-1]
+    idx = np.where(regions!=-1)[0]
+    return regions[idx], np.concatenate((np.array([0],dtype=np.int64),np.where(np.diff(idx)!=1)[0]+1,np.array([indexes.shape[0]],dtype=np.int64)))
+
+
+@njit(fastmath=True, parallel=True)
+def _process_node(X, y, L, dilation, P):
+    classes = np.unique(y)
+    n_classes = classes.shape[0]
+    Lp = _generate_strides_2d(L, 9, dilation).sum(axis=-1)
+    
+    c_w = X.shape[0] / (n_classes * np.bincount(y))
+    LC = np.zeros((n_classes, Lp.shape[1]),dtype=np.float32)
+    for i_class in prange(n_classes):
+        LC[i_class] = c_w[i_class] * Lp[
+            np.where(y == i_class)[0]].sum(axis=0)
+    
+    candidates_grp = np.zeros((1,9),dtype=np.float32)
+    for i_class in prange(n_classes):
+        if LC.sum() > 0:
+            D = LC[i_class] - LC[(i_class+1) % 2]
+            id_D = np.where(D >= np.percentile(D, P))[0]
+            regions, i_regions = _get_regions(id_D)
+            for i_r in prange(i_regions.shape[0]-1):
+                region = regions[i_regions[i_r]:i_regions[i_r+1]]
+                LC_region = LC[i_class][region]
+                id_max_region = region[LC_region.argmax()]
+                x_index = np.argmax(
+                    Lp[np.where(y == i_class)[0], id_max_region])
+                candidate = np.zeros((1,9),dtype=np.float32)
+                for j in prange(9):
+                    candidate[0,j] = X[np.where(y == i_class)[0][x_index], 0, id_max_region+j*dilation]
+                candidates_grp = np.concatenate((candidates_grp, candidate),axis=0)
+                
+    return candidates_grp
+    

@@ -115,14 +115,14 @@ def _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, see
 
     feature_index_start = 0
 
-    for dilation_index in range(num_dilations):
+    for dilation_index in prange(num_dilations):
 
         dilation = dilations[dilation_index]
         padding = ((9 - 1) * dilation) // 2
 
         num_features_this_dilation = num_features_per_dilation[dilation_index]
 
-        for kernel_index in range(num_kernels):
+        for kernel_index in prange(num_kernels):
 
             feature_index_end = feature_index_start + num_features_this_dilation
 
@@ -140,14 +140,14 @@ def _fit_biases(X, indices, dilations, num_features_per_dilation, quantiles, see
             start = dilation
             end = n_timepoints - padding
 
-            for gamma_index in range(9 // 2):
+            for gamma_index in prange(9 // 2):
 
                 C_alpha[-end:] = C_alpha[-end:] + A[:end]
                 C_gamma[gamma_index, -end:] = G[:end]
 
                 end += dilation
 
-            for gamma_index in range(9 // 2 + 1, 9):
+            for gamma_index in prange(9 // 2 + 1, 9):
 
                 C_alpha[:-start] = C_alpha[:-start] + A[start:]
                 C_gamma[gamma_index, :-start] = G[start:]
