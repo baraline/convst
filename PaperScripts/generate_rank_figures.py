@@ -391,13 +391,7 @@ df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
 df = df[df['CST_f1_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-"""
-df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'SFC_f1_mean', 'MrSEQL_f1_mean']],
-                      df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_f1_mean': 'CST',
-                                                                                         'MiniRKT_f1_mean': 'MiniRKT',
-                                                                                         'SFC_f1_mean': 'SFC',
-                                                                                         'MrSEQL_f1_mean':'MrSEQL'})
-"""
+
 df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'SFC_f1_mean', 'MrSEQL_f1_mean']],
                       df2[['STC']]], axis=1).rename(columns={'CST_f1_mean': 'CST',
                                                              'MiniRKT_f1_mean': 'MiniRKT',
@@ -413,7 +407,7 @@ for col in df_means.columns.difference(['Dataset']):
     d['dataset_name'] = df_means['Dataset']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
 
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
 
 # In[]:
 cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
@@ -425,18 +419,37 @@ df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
 
 df = df[df['CST_acc_mean'] > 0]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-"""
-df_means = pd.concat([df[['Dataset', 'MiniRKT_acc_mean', 'CST_acc_mean', 'SFC_acc_mean', 'MrSEQL_acc_mean']],
-                      df2[df2.columns.difference(['Dataset'])]], axis=1).rename(columns={'CST_acc_mean': 'CST',
-                                                                                         'MiniRKT_acc_mean': 'MiniRKT',
-                                                                                         'SFC_acc_mean': 'SFC',
-                                                                                         'MrSEQL_acc_mean':'MrSEQL'})
-"""
+
 df_means = pd.concat([df[['Dataset', 'MiniRKT_acc_mean', 'CST_acc_mean', 'SFC_acc_mean', 'MrSEQL_acc_mean']],
                       df2[['STC']]], axis=1).rename(columns={'CST_acc_mean': 'CST',
                                                              'MiniRKT_acc_mean': 'MiniRKT',
                                                              'SFC_acc_mean': 'SFC',
                                                              'MrSEQL_acc_mean':'MrSEQL'})
+
+df_res = pd.DataFrame()
+
+for col in df_means.columns.difference(['Dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
+    d['accuracy'] = df_means[col]
+    d['dataset_name'] = df_means['Dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
+
+# In[]:
+cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
+cv_acc = base_path + r"TESTACC_MEANS.csv"
+
+df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
+
+df = df[df['CST_acc_mean'] > 0]
+df2 = df2[df2['Dataset'].isin(df['Dataset'])]
+
+df_means = pd.concat([df[['Dataset', 'CST_acc_mean', 'MrSEQL_acc_mean']],
+                      df2[df2.columns.difference(['Dataset','Catch22','TSF','RISE'])]], axis=1).rename(columns={'CST_acc_mean': 'CST',
+                                                                                         'MrSEQL_acc_mean':'MrSEQL'})
 
 df_res = pd.DataFrame()
 
@@ -481,7 +494,7 @@ df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
-                path=base_path+'max_samples.png')
+                path=base_path+'max_ft.png')
 
 df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
@@ -498,4 +511,4 @@ df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
-                path=base_path+'n_bins.png')
+                path=base_path+'n_trees.png')

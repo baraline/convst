@@ -16,6 +16,7 @@ from sktime.classification.shapelet_based import MrSEQLClassifier
 from sklearn.pipeline import make_pipeline
 from datetime import datetime
 from wildboar.ensemble import ShapeletForestClassifier
+from numba import set_num_threads
 
 """
 I did this "dummy" script to have more control over what was included in the 
@@ -36,6 +37,9 @@ run_sfc = True
 run_sql = True
 
 resume = False
+
+n_threads=20
+set_num_threads(n_threads)
 csv_name = 'tslength_Benchmark.csv'
 lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 1e+5]).astype(int)
 if resume:
@@ -63,10 +67,11 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(
                                                           n_trees=100,
                                                           max_ft=1.0,
                                                           n_bins=9,
+                                                          n_threads=n_threads
                                                           ),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
 
-pipe_sfc = make_pipeline(ShapeletForestClassifier())
+pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_threads))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 

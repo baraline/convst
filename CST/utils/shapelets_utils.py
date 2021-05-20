@@ -165,6 +165,6 @@ def min_dist_shp_loc(x_strides, subseq):
         the subsequence and the first location of this minimum
 
     """
-    d = np.array([np.linalg.norm(x_strides[i]-subseq)
+    d = np.array([np.sum(np.power((x_strides[i]-subseq),2))
                   for i in prange(x_strides.shape[0])])
     return np.min(d), np.argmin(d)

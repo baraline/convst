@@ -8,9 +8,8 @@ import pandas as pd
 import numpy as np
 
 from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
@@ -24,7 +23,7 @@ numba_n_thread = 3
 size_mult = 3500
 
 max_process = max_cpu_cores//numba_n_thread
-file_name = 'params_csv_P.csv'
+file_name = 'params_csv.csv'
 n_cv = 10
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
@@ -69,7 +68,7 @@ for name in dataset_names:
             y = np.concatenate([y_train, y_test], axis=0)
             splitter = UCR_stratified_resample(n_cv, ds_path)
             pipe = Pipeline([('CST', ConvolutionalShapeletTransformer_tree()),
-                             ('rf', RandomForestClassifier(n_estimators=400))])
+                             ('rdg', RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))])
             clf = GridSearchCV(
                 pipe, params, n_jobs=n_jobs, cv=splitter, verbose=1)
             clf.fit(X, y)
