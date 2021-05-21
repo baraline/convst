@@ -33,7 +33,7 @@ from numba import set_num_threads
 
 class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
     def __init__(self,  P=80, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
-                 verbose=0, n_bins=9, n_threads=3, random_state=None):
+                 verbose=0, n_bins=9, n_threads=3, ccp_alpha=0.0, random_state=None):
         """
         Initialize the Convolutional Shapelet Transform (CST)
 
@@ -70,6 +70,7 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
         self.verbose = verbose
         self.shapelets_params = None
         self.shapelets_values = None
+        self.ccp_alpha= ccp_alpha
         self.P = P
         self.n_trees = n_trees
         self.use_class_weights=use_class_weights
@@ -261,12 +262,12 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
             rf = RandomForestClassifier(n_estimators=self.n_trees,
                                         max_features=self.max_ft,
                                         class_weight='balanced',
-                                        ccp_alpha=0.01,
+                                        ccp_alpha=self.ccp_alpha,
                                         n_jobs=self.n_threads)
         else:
             rf = RandomForestClassifier(n_estimators=self.n_trees,
                                         max_features=self.max_ft,
-                                        ccp_alpha=0.01,
+                                        ccp_alpha=self.ccp_alpha,
                                         n_jobs=self.n_threads)
         rf.fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters

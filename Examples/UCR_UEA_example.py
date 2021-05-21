@@ -50,53 +50,38 @@ rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST Rdg: {}".format(accuracy_score(y_test, pred)))
 # In[]:
-    
-from matplotlib import pyplot as plt
+ct = ConvolutionalShapeletTransformer_interpret().fit(X_train,y_train)
+a = ct.transform(X_test)
 
-classes = y_test
-n_classes = np.unique(classes).shape[0]
-lb = 0.85
-coefs = rdg.coef_
-if n_classes == 2:
-    coefs = np.concatenate((coefs, -coefs), axis=0)
-
-x = X_test[0][0]
-x_d = np.zeros((n_classes, x.shape[0]))
-x_n_shp = np.zeros((n_classes,x.shape[0]))
-for i_c in range(n_classes):
-
-    for i_shp in np.where(coefs[i_c]>=coefs[i_c].max()*lb)[0]:
-        d = 0
-        for dil in cst.shapelets_values:
-            l = len(cst.shapelets_values[dil])
-            if d<i_shp<d+l:
-                shp = Convolutional_shapelet(values=cst.shapelets_values[dil][i_shp-d], dilation=int(dil), padding=0, input_ft_id=0)
-                locs = shp._locate(x)
-                x_n_shp[i_c, locs] += 1
-                x_d[i_c, locs] += (((x[locs]-x[locs].mean()) / x[locs].std()) - shp.values)**2
-            d+=l
-x_d /= x_n_shp
 # In[]:
+import matplotlib
+from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
-plot_x = np.asarray(range(x.shape[0]))
-plot_y = x
-points = np.array([plot_x, plot_y]).T.reshape(-1, 1, 2)
-segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+n_classes = np.unique(y_test).shape[0]
+i_samples = [np.random.choice(np.where(y_test==c)[0]) for c in np.unique(y_test)]
 fig, axs = plt.subplots(ncols=n_classes, nrows=1, sharex=True, sharey=True,figsize=(15,5))
-norm = plt.Normalize(x_d[x_n_shp>0].min(), x_d[x_n_shp>0].max())
+
+axs[0].set_xlim(0, X_test.shape[2])
+axs[0].set_ylim(X_test[i_samples].min()-0.15, X_test[i_samples].max()+0.15)
 for i_c in range(n_classes):
-    print(i_c)
-    dydx = x_d[i_c]
-    lc = LineCollection(segments, cmap='jet', norm=norm)
+    x = X_test[i_samples[i_c],0]
+    plot_x = np.asarray(range(x.shape[0]))
+    plot_y = x
+    points = np.array([plot_x, plot_y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    dydx = a[i_samples[i_c]]
+    norm = plt.Normalize(a[i_samples[i_c]].min(), a[i_samples[i_c]].max())
+    lc = LineCollection(segments, cmap='jet', norm=norm,alpha=0.75)
     lc.set_array(dydx)
-    lc.set_linewidth(x_n_shp[i_c]*20)
+    lw = ((dydx - dydx.min())/(dydx.max()-dydx.min()))*25
+    lc.set_linewidth(lw)
     line = axs[i_c].add_collection(lc)
     fig.colorbar(line, ax=axs[i_c])
-    axs[i_c].plot(plot_y)
-    axs[i_c].set_xlim(plot_x.min(), plot_x.max())
-    axs[i_c].set_ylim(plot_y.min(), plot_y.max())
+    axs[i_c].plot(plot_y,c='black',linewidth=1)    
 plt.show()
+
 
 """
 for i in i_shp:

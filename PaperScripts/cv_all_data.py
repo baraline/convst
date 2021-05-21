@@ -20,7 +20,7 @@ from wildboar.ensemble import ShapeletForestClassifier
 from sklearn.metrics import accuracy_score
 
 #Can use this to resume to last dataset if a problem occured
-resume = False
+resume = True
 
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
@@ -37,8 +37,8 @@ run_SFC = True
 
 available_memory_bytes = 60 * 1e9
 max_cpu_cores = 90
-numba_n_thread = 3
-size_mult = 2500
+numba_n_thread = 5
+size_mult = 3000
 random_state = None
 
 max_process = max_cpu_cores//numba_n_thread
@@ -109,7 +109,7 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(n_threads=numba_n
                                                           random_state=random_state),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
 
-pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state))
+pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state, n_jobs=numba_n_thread))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 
@@ -123,7 +123,7 @@ for name in dataset_names:
 
     if run_RKT and df.loc[name, 'MiniRKT_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-                      ((X_train.nbytes + X_test.nbytes) * 1000)), n_cv)
+                      ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing RKT with {} jobs".format(n_jobs))
@@ -153,7 +153,7 @@ for name in dataset_names:
 
     if run_MrSEQL and df.loc[name, 'MrSEQL_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-              ((X_train.nbytes + X_test.nbytes) * 1000)), n_cv)
+              ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing MrSEQL with {} jobs".format(n_jobs))
@@ -168,7 +168,7 @@ for name in dataset_names:
 
     if run_SFC and df.loc[name, 'SFC_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-              ((X_train.nbytes + X_test.nbytes) * 1000)), n_cv)
+              ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing SFC with {} jobs".format(n_jobs))
