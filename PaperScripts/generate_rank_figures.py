@@ -379,8 +379,8 @@ def cv_col_clean_name2(s):
     s = s.split('__')
     return s[1]
 
-#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-base_path = r"C:\git_projects\CST\csv_results\\"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
+#base_path = r"C:\git_projects\CST\csv_results\\"
 # In[]:
 cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"

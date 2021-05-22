@@ -17,8 +17,10 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
+    'FacesUCR', normalize=True)
 
+#0:00:42.524087
+#0:01:55.721411
 # In[]:
 
 # Init ROCKET object
@@ -35,11 +37,17 @@ pred = rdg.predict(X_rkt_test)
 print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 
 # In[]:
-cst = ConvolutionalShapeletTransformer_tree(verbose=1, n_bins=9).fit(X_train, y_train)
-
+from datetime import datetime
+t0 = datetime.now()
+cst = ConvolutionalShapeletTransformer(verbose=0, n_bins=9, random_state=0).fit2(X_train, y_train)
+t1 = datetime.now()
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
+print(X_cst_test.shape)
+t2 = datetime.now()
+print(t1-t0)
+print(t2-t1)
 rf = RandomForestClassifier(
     n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)
@@ -49,6 +57,7 @@ rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                         normalize=True,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST Rdg: {}".format(accuracy_score(y_test, pred)))
+
 # In[]:
 ct = ConvolutionalShapeletTransformer_interpret().fit(X_train,y_train)
 a = ct.transform(X_test)

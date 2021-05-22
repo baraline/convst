@@ -107,26 +107,29 @@ class ConvolutionalShapeletTransformer_tree_nb(BaseEstimator, TransformerMixin):
         #L = (n_samples, n_kernels, n_timestamps)
         # Kernel selection is performed in this function
         L, dils, biases, tree_splits = self._generate_inputs(X, y)
-        shapelets = {}
-        n_shp = 0
+        X_indexes = np.zeros((len(tree_splits),X.shape[0]),dtype=np.int64)
+        Y_indexes = np.zeros((len(tree_splits),X.shape[0]),dtype=np.int64)
+        K_indexes = np.zeros((len(tree_splits)),dtype=np.int64)
         for i_split in range(len(tree_splits)):
-            self._log2(
-                "Processing split {}/{} ...".format(i_split, len(tree_splits)))
             x_index, y_split, k_id = tree_splits[i_split]
-            dilation = dils[k_id]
-            candidates_grp = _process_node(X[x_index], y_split, L[x_index,k_id, :], dilation, self.P)
-            if candidates_grp.shape[0] > 0:
-                if dilation in shapelets:
-                    shapelets[dilation] = np.concatenate(
-                        (shapelets[dilation], candidates_grp), axis=0)
-                else:
-                    shapelets.update({dilation: candidates_grp})
-
-        for dil in shapelets.keys():
-            candidates_grp = shapelets[dil]
+            X_indexes[i_split,0:x_index.shape[0]] += x_index
+            X_indexes[i_split,x_index.shape[0]:] -= 1
+            Y_indexes[i_split,0:x_index.shape[0]] += y_split
+            Y_indexes[i_split,x_index.shape[0]:] -= 1
+            K_indexes[i_split] += k_id
+        dils = dils[K_indexes]
+        u_dils = np.unique(dils)
+        shapelets = {}
+        n_shapelets = 0
+        for dil in u_dils:
+            i_dil = np.where(dils==dil)[0]
+            candidates_grp = process_all_nodes(X, y, L[:,i_dil], dil, self.P, 
+                                               X_indexes[i_dil], Y_indexes[i_dil],
+                                               K_indexes[i_dil])
             if candidates_grp.shape[0] > 0:
                 candidates_grp = (candidates_grp - candidates_grp.mean(axis=-1, keepdims=True)) / (
                     candidates_grp.std(axis=-1, keepdims=True) + 1e-8)
+                
                 if not np.all(candidates_grp.reshape(-1, 1) == candidates_grp.reshape(-1, 1)[0]):
                     kbd = KBinsDiscretizer(n_bins=self.n_bins, strategy='uniform', dtype=np.float32).fit(
                         candidates_grp.reshape(-1, 1))
@@ -134,11 +137,10 @@ class ConvolutionalShapeletTransformer_tree_nb(BaseEstimator, TransformerMixin):
                         kbd.transform(candidates_grp.reshape(-1, 1))).reshape(-1, 9), axis=0)
                 else:
                     candidates_grp = np.unique(candidates_grp, axis=0)
-                shapelets[dil] = candidates_grp
-                n_shp += candidates_grp.shape[0]
-
+                shapelets.update({dil: candidates_grp})
+                n_shapelets+=candidates_grp.shape[0]
+        self.n_shapelets = n_shapelets
         self.shapelets_values = shapelets
-        self.n_shapelets = n_shp
         return self
 
     def transform(self, X):
@@ -287,7 +289,22 @@ class ConvolutionalShapeletTransformer_tree_nb(BaseEstimator, TransformerMixin):
             raise AttributeError("CST is not fitted, call the fit method before"
                                  "attemping to transform data")
 
-@njit
+@njit(parallel=True, fastmath=True, cache=True)
+def process_all_nodes(X, y, L, dil, P, X_indexes, Y_indexes, K_indexes):
+    candidates = np.zeros((X_indexes.shape[0]*20,9),dtype=np.float32)
+    m = 0
+    for i_split in prange(X_indexes.shape[0]):        
+    
+        i_x = np.where(X_indexes[i_split]>=0)[0]
+        x = X[X_indexes[i_split][i_x]]
+        iy = Y_indexes[i_split][i_x]
+        l = L[X_indexes[i_split][i_x], i_split]
+        k =  K_indexes[i_split]
+        c = _process_node(x, iy, l, dil, P)
+
+    return candidates
+
+@njit(cache=True)
 def _generate_strides_2d(X, window_size, window_step):
     n_samples, n_timestamps = X.shape
     
@@ -298,7 +315,7 @@ def _generate_strides_2d(X, window_size, window_step):
     strides_new = (s0, s1, window_step *s1)
     return as_strided(X, shape=shape_new, strides=strides_new)
 
-@njit
+@njit(cache=True)
 def _get_regions(indexes):
     regions = np.zeros((indexes.shape[0]*2),dtype=np.int64)-1
     p = 0
@@ -312,11 +329,11 @@ def _get_regions(indexes):
     idx = np.where(regions!=-1)[0]
     return regions[idx], np.concatenate((np.array([0],dtype=np.int64),np.where(np.diff(idx)!=1)[0]+1,np.array([indexes.shape[0]],dtype=np.int64)))
 
-
-@njit(fastmath=True, parallel=True)
+@njit(fastmath=True, cache=True)
 def _process_node(X, y, L, dilation, P):
     classes = np.unique(y)
     n_classes = classes.shape[0]
+    
     Lp = _generate_strides_2d(L, 9, dilation).sum(axis=-1)
     
     c_w = X.shape[0] / (n_classes * np.bincount(y))
@@ -326,6 +343,7 @@ def _process_node(X, y, L, dilation, P):
             np.where(y == i_class)[0]].sum(axis=0)
     
     candidates_grp = np.zeros((1,9),dtype=np.float32)
+    
     for i_class in prange(n_classes):
         if LC.sum() > 0:
             D = LC[i_class] - LC[(i_class+1) % 2]
@@ -341,6 +359,6 @@ def _process_node(X, y, L, dilation, P):
                 for j in prange(9):
                     candidate[0,j] = X[np.where(y == i_class)[0][x_index], 0, id_max_region+j*dilation]
                 candidates_grp = np.concatenate((candidates_grp, candidate),axis=0)
-                
+    
     return candidates_grp
     

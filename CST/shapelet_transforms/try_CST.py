@@ -114,6 +114,7 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
         L, dils, biases, tree_splits = self._generate_inputs(X, y)
         shapelets = {}
         n_shp = 0
+        print(len(tree_splits))
         for i_split in range(len(tree_splits)):
             self._log2(
                 "Processing split {}/{} ...".format(i_split, len(tree_splits)))
@@ -263,12 +264,14 @@ class ConvolutionalShapeletTransformer_tree(BaseEstimator, TransformerMixin):
                                         max_features=self.max_ft,
                                         class_weight='balanced',
                                         ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_threads)
+                                        n_jobs=self.n_threads,
+                                        random_state=self.random_state)
         else:
             rf = RandomForestClassifier(n_estimators=self.n_trees,
                                         max_features=self.max_ft,
                                         ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_threads)
+                                        n_jobs=self.n_threads,
+                                        random_state=self.random_state)
         rf.fit(ft, y)
         dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
