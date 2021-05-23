@@ -1,81 +1,40 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 11 13:43:20 2021
-
-@author: A694772
-"""
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 18 14:52:44 2021
+Created on Sat May 22 09:34:51 2021
 
 @author: Antoine
 """
 
-# TODO : refactor as a classifier
-# TODO : Docs !
-# TODO : Implement parallelisation of candidates generation / distance computation + benchmarks
-# TODO : Implement parameter to change length of kernel/shapelet
-
-
-
-
 import numpy as np
-from numba import set_num_threads
-from CST.utils.shapelets_utils import generate_strides_2D, shapelet_dist_numpy
-from CST.utils.checks_utils import check_array_3D
-from CST.base_transformers.minirocket import MiniRocket
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.tree import _tree
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import RidgeClassifierCV
-from sklearn.utils.class_weight import compute_class_weight
-from sklearn.utils import resample
+from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.base import BaseEstimator, TransformerMixin
+from CST.base_transformers.minirocket import MiniRocket
+from CST.utils.checks_utils import check_array_3D
+from numba import njit, prange
+from numpy.lib.stride_tricks import as_strided
+from scipy.spatial.distance import cdist
+from numba import set_num_threads
+
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self,  P=80, max_samples=0.1, id_ft=0,
-                 verbose=0, n_bins=9, n_threads=3, use_kernel_grouping=False,
-                 random_state=None):
-        """
-        Initialize the Convolutional Shapelet Transform (CST)
-
-        Parameters
-        ----------
-        P : array of int, optional
-            Percentile used in the shapelet extraction process.
-            The default is 80.
-        max_samples : int or float, optional
-            Number or percenatge of samples in each stratified resampling for extraction step.
-            The default is 10.
-        id_ft : int, optional
-            Identifier of the feature on which the transform will be performed.
-            The default is 0.
-        verbose : int, optional
-            Verbose parameter, higher values will output more logs. The default is 0.
-        n_bins : int, optional
-            Number of bins used in the candidates discretization. The default is 9.
-        n_threads : int, optional
-            Number of numba thread used. The default is 3.
-        use_kernel_grouping : bool, optional
-            Wheter or not to enable kernel grouping based on dilation and bias parameter.
-            The default is True.
-        random_state : int, optional
-            Random state setter. The default is None.
-
-        Returns
-        -------
-        None.
-
-        """
+    
+    def __init__(self,  P=90, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
+                 verbose=0, n_bins=13, n_jobs=3, ccp_alpha=0.005, random_state=None):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets_params = None
         self.shapelets_values = None
+        self.ccp_alpha= ccp_alpha
         self.P = P
-        self.max_samples = max_samples
+        self.n_trees = n_trees
+        self.use_class_weights=use_class_weights
+        self.max_ft = max_ft
         self.n_bins = n_bins
-        self.n_threads = n_threads
-        self.use_kernel_grouping = use_kernel_grouping
+        self.n_jobs = n_jobs
         self.random_state = random_state
-
+        set_num_threads(n_jobs)
+        
     def _log(self, message):
         if self.verbose > 0:
             print(message)
@@ -83,452 +42,239 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     def _log2(self, message):
         if self.verbose > 1:
             print(message)
-
-    def fit(self, X, y, use_class_weights=True):
-        """
-
-        Parameters
-        ----------
-        X : array, shape = (n_samples, n_features, n_timestamps)
-            Input data containing time series (tested with dtype np.float32), the algorithm
-            will only process feature indicated by attribute id_ft.
-        y : array, shape = (n_samples)
-            Associated classes of the input time series
-        use_class_weights : TYPE, optional
-            Whether or not to balance computation based on the number of samples
-            of each class.
-
-        Returns
-        -------
-        ConvolutionalShapeletTransformer
-            Fitted instance of self.
-
-        """
+        
+    def fit(self,X,y):
         X = check_array_3D(X)
-        set_num_threads(self.n_threads)
-        #L = (n_samples, n_kernels, n_timestamps)
-        # Kernel selection is performed in this function
-        L, dils, biases, _ = self._generate_inputs(X, y)
-
-        # Grouping kernel, use_kernel_grouping attribute is used here
-        groups_id, groups_param = self._group_kernels(dils, biases)
-
-        self._log("Begining extraction with {} kernels".format(len(groups_param)))
-        classes = set(np.unique(y))
-        n_classes = np.unique(y).shape[0]
-        n_shapelets = 0
-        shapelets = {}
-        shapelets_class = {}
-        for i_grp in groups_param.keys():
-            dilation = int(groups_param[i_grp][0])
-            candidates_grp = []
-            # Sum of L for each kernel in group for all samples
-            Lp = np.sum(L[:, np.where(groups_id == i_grp)[0], :], axis=1)
-            # From input space, go back to convolutional space (n_samples, n_conv, 9),
-            # sum it to get a per conv point score as (n_samples, n_conv)
-            Lp = generate_strides_2D(Lp, 9, dilation).sum(axis=-1)
-
-            # Computing splits indexes, shape (n_split, n_classes, n_idx)
-            id_splits = self._resample_splitter(X, y)
-            # Compute class weight of each split
-            if use_class_weights:
-                c_w = self._split_classweights(y, id_splits)
+        #L, dils, X_split, y_split, kernel_id = self._generate_inputs(X,y)
+        m = MiniRocket().fit(X)
+        ft, L = m.transform(X, return_locs=True)
+        self._log("Performing kernel selection with {} kernels".format(L.shape[1]))
+        if self.use_class_weights:
+            rf = RandomForestClassifier(n_estimators=self.n_trees,
+                                        max_features=self.max_ft,
+                                        class_weight='balanced',
+                                        ccp_alpha=self.ccp_alpha,
+                                        n_jobs=self.n_jobs,
+                                        random_state=self.random_state)
+        else:
+            rf = RandomForestClassifier(n_estimators=self.n_trees,
+                                        max_features=self.max_ft,
+                                        ccp_alpha=self.ccp_alpha,
+                                        n_jobs=self.n_jobs,
+                                        random_state=self.random_state)
+        rf.fit(ft, y)
+        dilations, num_features_per_dilation, biases = m.parameters
+        dils = np.zeros(biases.shape[0], dtype=np.uint16)
+        n = 0
+        for i in range(dilations.shape[0]):
+            dils[n:84*(num_features_per_dilation[i])+n] = dilations[i]
+            n += 84*num_features_per_dilation[i]
+        
+        n_nodes = np.asarray([rf.estimators_[i_dt].tree_.node_count 
+                              for i_dt in range(self.n_trees)])
+        n_leaves = np.asarray([rf.estimators_[i_dt].tree_.n_leaves 
+                               for i_dt in range(self.n_trees)])
+        n_splits = (n_nodes - n_leaves).sum()
+        
+        kernel_id = np.zeros((n_splits),dtype=np.int32)
+        X_split = np.zeros((n_splits,X.shape[0]),dtype=np.bool_)
+        y_split = np.zeros((n_splits,X.shape[0]),dtype=np.int8) - 1
+        
+        i_split_nodes = np.zeros(self.n_trees+1,dtype=np.int32)
+        i_split_nodes[1:] += (n_nodes - n_leaves).cumsum()
+        
+        for i_dt in range(self.n_trees):
+            tree = rf.estimators_[i_dt].tree_
+            node_indicator = rf.estimators_[i_dt].decision_path(ft)
+            nodes_id = np.where(tree.feature != _tree.TREE_UNDEFINED)[0]
+            kernel_id[i_split_nodes[i_dt]:i_split_nodes[i_dt+1]] += tree.feature[nodes_id]
+            for i in range(nodes_id.shape[0]):
+                x_index_node = node_indicator[:,nodes_id[i]].nonzero()[0]
+                X_split[i_split_nodes[i_dt]+i, x_index_node] = True
+                y_split[i_split_nodes[i_dt]+i, x_index_node] += (ft[
+                    x_index_node, kernel_id[i_split_nodes[i_dt]+i]
+                    ] <= tree.threshold[nodes_id[i]]) + 1
+        
+        arr = np.concatenate((X_split,y_split,kernel_id.reshape(-1,1)),axis=1)
+        v_unique, i_unique = np.unique(arr,axis=0,return_index=True)
+        X_split = X_split[i_unique]
+        y_split = y_split[i_unique]
+        kernel_id = kernel_id[i_unique]
+        
+        shp, d = _fit(X, X_split, y_split, kernel_id, L, dils, self.P)
+        self.n_shapelets = 0
+        self.shapelets = {}
+        for dil in np.unique(d):
+            candidates = shp[d==dil]
+            candidates = (candidates - candidates.mean(axis=-1, keepdims=True)) / (
+                candidates.std(axis=-1, keepdims=True) + 1e-8)
+            if not np.all(candidates.reshape(-1, 1) == candidates.reshape(-1, 1)[0]):
+                kbd = KBinsDiscretizer(n_bins=self.n_bins, strategy='uniform', dtype=np.float32).fit(
+                    candidates.reshape(-1, 1))
+                candidates = np.unique(kbd.inverse_transform(
+                    kbd.transform(candidates.reshape(-1, 1))).reshape(-1, 9), axis=0)
             else:
-                c_w = np.ones((len(id_splits), n_classes))
-            # Compute LC for all splits
-            per_split_LC = self._compute_LC_per_split(Lp, id_splits,
-                                                      n_classes, classes,
-                                                      c_w)
-            # Extract candidates for all splits
-            candidates_grp, candidates_class = self._extract_candidates(X, Lp, per_split_LC,
-                                                                        id_splits, c_w,
-                                                                        classes, dilation)
-            self._log2("Got {} candidates for kernel {}".format(
-                candidates_grp.shape[0], i_grp))
-
-            candidates_grp, candidates_class = self._remove_similar(
-                candidates_grp, candidates_class)
-            n_shapelets += candidates_grp.shape[0]
-            shapelets.update({i_grp: candidates_grp})
-            shapelets_class.update({i_grp:  candidates_class})
-            self._log("Extracted {} shapelets for kernel {}/{}".format(
-                candidates_grp.shape[0], i_grp, len(groups_param.keys())))
-
-        self.shapelets_params = {
-            i_grp: groups_param[i_grp] for i_grp in shapelets.keys()}
-        self.shapelets_values = shapelets
-        self.shapelets_class = shapelets_class
-        self._log("Extracted a total of {} shapelets".format(n_shapelets))
-        self.n_shapelets = n_shapelets
+                candidates = np.unique(candidates, axis=0)
+                
+            self.n_shapelets += candidates.shape[0]
+            self.shapelets.update({dil: candidates})
         return self
-
+    
     def transform(self, X):
-        """
-        Transform input time series into Shapelet distances
-
-        Parameters
-        ----------
-        X : array, shape = (n_samples, n_features, n_timestamps)
-            Input data containing time series (tested with dtype np.float32), the algorithm
-            will only process feature indicated by attribute id_ft.
-
-        Returns
-        -------
-        distances : array, shape = (n_samples, n_shapelets)
-            Shapelet distance to all samples
-
-        """
-        self._check_is_fitted()
         X = check_array_3D(X)
         distances = np.zeros((X.shape[0], self.n_shapelets))
         prev = 0
-        for i, i_grp in enumerate(self.shapelets_params.keys()):
-            self._log("Transforming for kernel {} ({}/{}) with {} shapelets".format(self.shapelets_params[i_grp],
-                                                                                    i, len(
-                self.shapelets_params),
-                self.shapelets_values[i_grp].shape[0]))
-            if len(self.shapelets_values[i_grp]) > 0:
-                dilation, _ = self.shapelets_params[i_grp]
-                X_strides = self._get_X_strides(X, 9, dilation, 0)
-                d = shapelet_dist_numpy(
-                    X_strides, self.shapelets_values[i_grp])
-                distances[:, prev:prev+d.shape[1]] = d
-                prev += d.shape[1]
+        for i, dil in enumerate(self.shapelets.keys()):
+            self._log("Transforming for dilation {} ({}/{}) with {} shapelets".format(
+                dil, i, len(self.shapelets), len(self.shapelets[dil])))
+            dilation = dil
+            X_strides = _generate_strides_2d(X[:,self.id_ft,:], 9, dilation)
+            X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
+                X_strides.std(axis=-1, keepdims=True) + 1e-8)
+            d = np.asarray([cdist(X_strides[j], self.shapelets[dil],
+                                  metric='sqeuclidean').min(axis=0) 
+                            for j in range(X.shape[0])])
+            distances[:, prev:prev+d.shape[1]] = d
+            prev += d.shape[1]
         return distances
-
-    def _remove_similar(self, candidates_grp, candidates_class, strategy='uniform'):
-        """
-        Apply discretization to candidates with n_bins attributes following
-        the strategy in parameter. After that, keep only unique candidates
-
-        Parameters
-        ----------
-        candidates_grp : array, shape = (n_candidates, kernel_length)
-            DESCRIPTION.
-        strategy : string, optional
-            Strategy used for the discritization using KBinsDiscretizer.
-            The default is 'uniform'.
-
-        Returns
-        -------
-        candidates_grp : array, shape = (n_discretized_candidates, kernel_length)
-            Discretized candidates with removed duplicates
-
-        """
-        if candidates_grp.shape[0] > 0:
-            candidates_grp = (candidates_grp - candidates_grp.mean(axis=-1, keepdims=True)) / (
-                candidates_grp.std(axis=-1, keepdims=True) + 1e-8)
-            if not np.all(candidates_grp.reshape(-1, 1) == candidates_grp.reshape(-1, 1)[0]):
-                kbd = KBinsDiscretizer(n_bins=self.n_bins, strategy=strategy, dtype=np.float32).fit(
-                    candidates_grp.reshape(-1, 1))
-                candidates_grp, idx = np.unique(kbd.inverse_transform(
-                    kbd.transform(candidates_grp.reshape(-1, 1))).reshape(-1, 9), axis=0, return_index=True)
-            else:
-                candidates_grp, idx = np.unique(
-                    candidates_grp, axis=0, return_index=True)
-            candidates_class = candidates_class[idx]
-        return candidates_grp, candidates_class
-
-    def _get_regions(self, indexes):
-        regions = []
-        region = []
-        for i in range(indexes.shape[0]-1):
-            region.append(indexes[i])
-            if indexes[i] != indexes[i+1]-1:
-                regions.append(region)
-                region = []
-        if len(region) > 0:
-            regions.append(region)
-        return regions
-
-    def _extract_candidates(self, X, Lp, per_split_LC, id_splits, c_w, classes, dilation):
-        """
-
-
-        Parameters
-        ----------
-        X : TYPE
-            DESCRIPTION.
-        Lp : TYPE
-            DESCRIPTION.
-        per_split_LC : TYPE
-            DESCRIPTION.
-        id_splits : TYPE
-            DESCRIPTION.
-        classes : TYPE
-            DESCRIPTION.
-        dilation : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
-        """
-        candidates_grp = []
-        candidates_class = []
-        for i_class in classes:
-            for i_split in range(len(id_splits)):
-                # Mean of other classes
-                if per_split_LC[i_class, i_split, :].sum() > 0:
-                    D = [per_split_LC[j, i_split, :] for j in classes -
-                         {i_class} if per_split_LC[j, i_split, :].sum() > 0]
-                    if len(D) > 0:
-                        D = np.asarray(D).mean(axis=0)
-                        D = per_split_LC[i_class, i_split, :] - D
-                        id_D = np.where(D >= np.percentile(D, self.P))[0]
-                        # A region is a set of following indexes
-                        regions = self._get_regions(id_D)
-                        for i_r in range(len(regions)):
-                            LC_region = per_split_LC[i_class,
-                                                     i_split][regions[i_r]]
-                            id_max_region = regions[i_r][LC_region.argmax()]
-                            x_index = np.argmax(
-                                Lp[id_splits[i_split][i_class], id_max_region])
-                            candidates_grp.append(X[id_splits[i_split][i_class][x_index], 0, np.array(
-                                [id_max_region+j*dilation for j in range(9)])])
-                            candidates_class.append(i_class)
-        return np.asarray(candidates_grp), np.asarray(candidates_class)
-
-    def _compute_LC_per_split(self, Lp, id_splits, n_classes, classes, c_w):
-        """
-
-
-        Parameters
-        ----------
-        Lp : TYPE
-            DESCRIPTION.
-        id_splits : TYPE
-            DESCRIPTION.
-        n_classes : TYPE
-            DESCRIPTION.
-        classes : TYPE
-            DESCRIPTION.
-        c_w : TYPE
-            DESCRIPTION.
-        use_class_weights : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        per_split_LC : TYPE
-            DESCRIPTION.
-
-        """
-        per_split_LC = np.zeros((n_classes,  len(id_splits), Lp.shape[1]))
-        for i_class in classes:
-            for i_split in range(len(id_splits)):
-                if len(id_splits[i_split][i_class]) > 0:
-                    per_split_LC[i_class, i_split, :] = c_w[i_split][i_class] * \
-                        Lp[id_splits[i_split][i_class]].sum(axis=0)
-        return per_split_LC
-
-    def _split_classweights(self, y, id_splits):
-        """
-
-
-        Parameters
-        ----------
-        y : TYPE
-            DESCRIPTION.
-        id_splits : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        c_w : TYPE
-            DESCRIPTION.
-
-        """
-        n_classes = np.bincount(y).shape[0]
-        c_w = np.zeros((len(id_splits), n_classes))
-        for i_split in range(len(id_splits)):
-            y_split = []
-            for i_c in id_splits[i_split]:
-                y_split.extend(y[i_c])
-            cw = compute_class_weight(
-                'balanced', classes=np.unique(y_split), y=y_split)
-            for i, yi in enumerate(np.unique(y_split)):
-                c_w[i_split, yi] = cw[i]
-        return c_w
-
-    def _resample_splitter(self, X, y):
-        X_idx = np.asarray(range(X.shape[0]))
-        n_classes = np.bincount(y).shape[0]
-        size_rs = int(self.max_samples*X.shape[0])
-        if size_rs < n_classes:
-            size_rs = n_classes
-
-        id_splits = []
-        n_splits = max(n_classes, (X.shape[0]//size_rs)*3)
-
-        for i_split in range(n_splits):
-            idx = resample(X_idx, n_samples=size_rs, replace=False, stratify=y)
-            id_splits.append([idx[np.where(y[idx] == i_class)[0]]
-                              for i_class in np.unique(y)])
-        return id_splits
-
-    def _group_kernels(self, kernels_dilations, kernels_bias):
-        """
-        Depending on attribute use_kernel_grouping, this will either produce
-        groups of kernels that share the same dilation parameter and either positive
-        or negative bias, or it will output each kernel in its own group.
-
-        Parameters
-        ----------
-        kernels_dilations : array, shape = (n_kernels)
-            Array containing the dilation parameter of all kernels
-        kernels_bias : array, shape = (n_kernels)
-            Array containing the bias parameter of all kernels
-
-        Returns
-        -------
-        array, shape = (n_kernels)
-            The group identifier of each individual kernel
-        dictionnary, shape = (n_groups,2)
-            The groups parameters
-        """
-        kernels_bias = np.array([b >= 0 for b in kernels_bias]).astype(int)
-        groups_params = np.array([[kernels_dilations[i],
-                                   kernels_bias[i]]
-                                  for i in range(kernels_dilations.shape[0])], dtype=np.int32)
-        if not self.use_kernel_grouping:
-            return np.array(range(kernels_dilations.shape[0])), {i: groups_params[i] for i in range(kernels_dilations.shape[0])}
-        else:
-            groups_id = np.zeros(kernels_dilations.shape[0])
-            unique_groups = np.unique(groups_params, axis=0)
-            unique_groups = {i: unique_groups[i]
-                             for i in range(unique_groups.shape[0])}
-            for i in unique_groups.keys():
-                groups_id[np.where(
-                    (groups_params == unique_groups[i]).all(axis=1))[0]] = i
-            return groups_id, unique_groups
-
-    def _get_X_strides(self, X, length, dilation, padding):
-        n_samples, _, n_timestamps = X.shape
-        if padding > 0:
-            X_pad = np.zeros((n_samples, n_timestamps+2*padding))
-            X_pad[:, padding:-padding] = X[:, self.id_ft, :]
-        else:
-            X_pad = X[:, self.id_ft, :]
-        X_strides = generate_strides_2D(X_pad, length, dilation)
-        X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
-            X_strides.std(axis=-1, keepdims=True) + 1e-8)
-        return X_strides
-
+    
     def _generate_inputs(self, X, y):
-        """
-
-
-        Parameters
-        ----------
-        X : TYPE
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-        TYPE
-            DESCRIPTION.
-        TYPE
-            DESCRIPTION.
-
-        """
         self._log("Performing MiniRocket Transform")
-        self.m = MiniRocket(random_state=self.random_state,
-                            max_dilations_per_kernel=32,
-                            num_features=10_000).fit(X)
-        ft, locs = self.m.transform(X, return_locs=True)
-        self._log(
-            "Performing kernel selection with {} kernels".format(locs.shape[1]))
-
-        ft_selector = RandomForestClassifier(
-            n_estimators=400, max_samples=0.75).fit(ft, y)
-
-        dilations, num_features_per_dilation, biases = self.m.parameters
+        m = MiniRocket().fit(X)
+        ft, L = m.transform(X, return_locs=True)
+        self._log("Performing kernel selection with {} kernels".format(L.shape[1]))
+        if self.use_class_weights:
+            rf = RandomForestClassifier(n_estimators=self.n_trees,
+                                        max_features=self.max_ft,
+                                        class_weight='balanced',
+                                        ccp_alpha=self.ccp_alpha,
+                                        n_jobs=self.n_jobs,
+                                        random_state=self.random_state)
+        else:
+            rf = RandomForestClassifier(n_estimators=self.n_trees,
+                                        max_features=self.max_ft,
+                                        ccp_alpha=self.ccp_alpha,
+                                        n_jobs=self.n_jobs,
+                                        random_state=self.random_state)
+        rf.fit(ft, y)
+        dilations, num_features_per_dilation, biases = m.parameters
         dils = np.zeros(biases.shape[0], dtype=int)
         n = 0
         for i in range(dilations.shape[0]):
             dils[n:84*(num_features_per_dilation[i])+n] = dilations[i]
             n += 84*num_features_per_dilation[i]
-
-        i_sort = np.argsort(ft_selector.feature_importances_)[::-1]
         
-        n_kernels = (ft_selector.feature_importances_ >
-                     ft_selector.feature_importances_.max()*0.5).sum()
-        if n_kernels > 50:
-            i_kernels = i_sort[0:50]
-        elif n_kernels < 5:
-            i_kernels = i_sort[0:5]
+        n_nodes = np.asarray([rf.estimators_[i_dt].tree_.node_count 
+                              for i_dt in range(self.n_trees)])
+        n_leaves = np.asarray([rf.estimators_[i_dt].tree_.n_leaves 
+                               for i_dt in range(self.n_trees)])
+        n_splits = (n_nodes - n_leaves).sum()
+        
+        kernel_id = np.zeros((n_splits),dtype=np.uint16)
+        X_split = np.zeros((n_splits,X.shape[0]),dtype=np.bool_)
+        y_split = np.zeros((n_splits,X.shape[0]),dtype=np.int8) - 1
+        
+        i_split_nodes = np.zeros(self.n_trees+1,dtype=np.int32)
+        i_split_nodes[1:] += (n_nodes - n_leaves).cumsum()
+        
+        for i_dt in range(self.n_trees):
+            tree = rf.estimators_[i_dt].tree_
+            node_indicator = rf.estimators_[i_dt].decision_path(ft)
+            nodes_id = np.where(tree.feature != _tree.TREE_UNDEFINED)[0]
+            kernel_id[i_split_nodes[i_dt]:i_split_nodes[i_dt+1]] += tree.feature[nodes_id]
+            for i in range(nodes_id.shape[0]):
+                x_index_node = node_indicator[:,nodes_id[i]].nonzero()[0]
+                X_split[i_split_nodes[i_dt]+i, x_index_node] = True
+                y_split[i_split_nodes[i_dt]+i, x_index_node] += (ft[
+                    x_index_node, kernel_id[i_split_nodes[i_dt]+i]
+                    ] <= tree.threshold[nodes_id[i]]) + 1
+
+        return L, dils, X_split, y_split, kernel_id
+   
+#TODO : When numba support sparse array, make sparse here !
+@njit(cache=True, fastmath=True, parallel=True)
+def _fit(X, X_split, y_split, kernel_id, L, dils, P):
+    x_mask = np.zeros((X_split.shape[0],2,X.shape[0]*X.shape[2]),dtype=np.bool_)
+    for i_split in prange(X_split.shape[0]):
+        x_indexes = np.where(X_split[i_split])[0]
+        k_id = kernel_id[i_split]
+        y_splt = y_split[i_split][x_indexes]
+        dil = dils[k_id]
+        classes = np.unique(y_splt)
+        n_classes = classes.shape[0]
+        Lp = _generate_strides_2d(L[x_indexes, k_id, :], 9, dil).sum(axis=-1)
+        c_w =  X[x_indexes].shape[0] / (n_classes * np.bincount(y_splt))
+        
+        LC = np.zeros((n_classes, Lp.shape[1]))
+        for i_class in classes:
+            LC[i_class] = c_w[i_class] * Lp[y_splt==i_class].sum(axis=0)
+        
+        for i_class in classes:
+            if LC.sum() > 0:
+                D = LC[i_class] - LC[(i_class+1) % 2]
+                id_D = np.where(D >= np.percentile(D, P))[0]
+                # A region is a set of following indexes
+                regions, i_regions = _get_regions(id_D)
+                for i_r in prange(i_regions.shape[0]-1):
+                    region = regions[i_regions[i_r]:i_regions[i_r+1]]
+                    LC_region = LC[i_class][region]
+                    if LC_region.shape[0] > 0:
+                        id_max_region = region[LC_region.argmax()]
+                        x_index = np.argmax(
+                            Lp[np.where(y_splt == i_class)[0], id_max_region])
+                        x_mask[i_split, i_class, x_indexes[x_index]*X.shape[2] + id_max_region] += 1
+    
+    n_candidates = np.sum(x_mask)
+    candidates = np.zeros((n_candidates,9),dtype=np.float32)
+    candidates_dil = np.zeros((n_candidates),dtype=np.uint16)
+    per_split_id = np.zeros((X_split.shape[0]+1),dtype=np.int32)
+    for i_split in prange(X_split.shape[0]):
+        per_split_id[i_split+1] = np.sum(x_mask[i_split])
+    per_split_id = per_split_id.cumsum()
+    
+    for i_split in prange(X_split.shape[0]):
+        mask = X_split[i_split]
+        k_id = kernel_id[i_split]
+        y_splt = y_split[i_split][mask]
+        dil = dils[k_id]
+        
+        candidates_dil[per_split_id[i_split]:per_split_id[i_split+1]] += dil
+        
+        classes = np.unique(y_splt)
+        for i_class in classes:
+            indexes = np.where(x_mask[i_split,i_class])[0]
+            
+            x_indexes = indexes//X.shape[2]
+            l_indexes = indexes%X.shape[2]
+            for i_candidate in prange(x_indexes.shape[0]):
+                for j in prange(9):
+                    
+                    candidates[per_split_id[i_split]+(i_class*(x_mask[i_split,0].sum()))+i_candidate 
+                               ,j] = X[x_indexes[i_candidate],0, l_indexes[i_candidate]+j*dil]
+    
+    return candidates, candidates_dil
+
+@njit(cache=True)
+def _get_regions(indexes):
+    regions = np.zeros((indexes.shape[0]*2),dtype=np.int32)-1
+    p = 0
+    for i in prange(indexes.shape[0]-1):
+        regions[p] = indexes[i]
+        if indexes[i] == indexes[i+1]-1:
+            p+=1
         else:
-            i_kernels = i_sort[0:n_kernels]
+            p+=2
+    regions[p] = indexes[-1]
+    idx = np.where(regions!=-1)[0]
+    return regions[idx], np.concatenate((np.array([0],dtype=np.int32),np.where(np.diff(idx)!=1)[0]+1,np.array([indexes.shape[0]],dtype=np.int32)))
 
-        self.n_kernels = i_kernels.shape[0]
-        self._log("Finished kernel selection with {} kernels".format(
-            i_kernels.shape[0]))
-
-        weights = np.ones((i_kernels.shape[0], 9))
-
-        dilations, num_features_per_dilation = self._fit_dilations(
-            X.shape[2], self.m.num_features, self.m.max_dilations_per_kernel
-        )
-        for i in range(i_kernels.shape[0]):
-            id_dil = np.where(dilations == dils[i_kernels[i]])[0][0]
-            id_start = num_features_per_dilation[:id_dil].sum()*84
-            step_w = num_features_per_dilation[id_dil]
-            weights[i, self.m.indices[(i_kernels[i] - id_start)//step_w]] -= 3
-
-        return locs[:, i_kernels], dils[i_kernels], biases[i_kernels], weights
-
-    def _check_is_fitted(self):
-        """
-
-
-        Raises
-        ------
-        AttributeError
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
-        if any(self.__dict__[attribute] is None for attribute in ['shapelets_values',
-                                                                  'shapelets_params']):
-            raise AttributeError("CST is not fitted, call the fit method before"
-                                 "attemping to transform data")
-
-    def _fit_dilations(self, n_timepoints, num_features, max_dilations_per_kernel):
-
-        num_kernels = 84
-
-        num_features_per_kernel = num_features // num_kernels
-        true_max_dilations_per_kernel = min(
-            num_features_per_kernel, max_dilations_per_kernel
-        )
-        multiplier = num_features_per_kernel / true_max_dilations_per_kernel
-
-        max_exponent = np.log2((n_timepoints - 1) / (9 - 1))
-        dilations, num_features_per_dilation = np.unique(
-            np.logspace(0, max_exponent, true_max_dilations_per_kernel, base=2).astype(
-                np.int32
-            ),
-            return_counts=True,
-        )
-        num_features_per_dilation = (num_features_per_dilation * multiplier).astype(
-            np.int32
-        )  # this is a vector
-
-        remainder = num_features_per_kernel - np.sum(num_features_per_dilation)
-        i = 0
-        while remainder > 0:
-            num_features_per_dilation[i] += 1
-            remainder -= 1
-            i = (i + 1) % len(num_features_per_dilation)
-
-        return dilations, num_features_per_dilation
+@njit(cache=True)
+def _generate_strides_2d(X, window_size, window_step):
+    n_samples, n_timestamps = X.shape
+    
+    shape_new = (n_samples,
+                 n_timestamps - (window_size-1)*window_step,
+                 window_size // 1)
+    s0, s1 = X.strides
+    strides_new = (s0, s1, window_step *s1)
+    return as_strided(X, shape=shape_new, strides=strides_new)

@@ -10,13 +10,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifierCV
 import pandas as pd
 import numpy as np
-#from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sktime.classification.shapelet_based import MrSEQLClassifier
 from sklearn.pipeline import make_pipeline
 from datetime import datetime
 from wildboar.ensemble import ShapeletForestClassifier
-from numba import set_num_threads
+
 
 """
 I did this "dummy" script to have more control over what was included in the 
@@ -38,8 +37,7 @@ run_sql = True
 
 resume = False
 
-n_threads=20
-set_num_threads(n_threads)
+n_jobs=20
 csv_name = 'tslength_Benchmark.csv'
 lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 1e+5]).astype(int)
 if resume:
@@ -51,7 +49,8 @@ else:
     df['MiniRKT'] = pd.Series(0, index=df.index)
     df['MrSEQL'] = pd.Series(0, index=df.index)
     df['SFC'] = pd.Series(0, index=df.index)
-
+    
+    
 path = r"/home/prof/guillaume/Shapelets/ts_datasets/"
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
     path+"DucksAndGeese")
@@ -61,17 +60,17 @@ pipe_rkt = make_pipeline(MiniRKT(),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                                            normalize=True))
 
-#SFC use 100 tree on default
-pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(
-                                                          P=80,
+
+pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(
+                                                          P=90,
                                                           n_trees=100,
                                                           max_ft=1.0,
-                                                          n_bins=9,
-                                                          n_threads=n_threads
+                                                          n_bins=13,
+                                                          n_jobs=n_jobs
                                                           ),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
 
-pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_threads))
+pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_jobs))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 

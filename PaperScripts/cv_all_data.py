@@ -10,7 +10,7 @@ import numpy as np
 from datetime import datetime
 from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
 from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sktime.classification.shapelet_based import MrSEQLClassifier
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline
@@ -25,23 +25,23 @@ resume = True
 print("Imports OK")
 #n_cv = 1 to test on original train test split, more to make stratified k folds
 n_cv = 30
-n_trees=200
+n_trees=100
 max_ft=1.0
-P = 80
-n_bins = 9
+P = 90
+n_bins = 13
 
-run_RKT = True
+run_RKT = False
 run_CST = True
-run_MrSEQL = True
-run_SFC = True
+run_MrSEQL = False
+run_SFC = False
 
 available_memory_bytes = 60 * 1e9
-max_cpu_cores = 90
-numba_n_thread = 5
-size_mult = 3000
+max_cpu_cores = 32
+njobs = 4
+size_mult = 3500
 random_state = None
 
-max_process = max_cpu_cores//numba_n_thread
+max_process = max_cpu_cores//njobs
 
 csv_name = 'CV_{}_results_({},{})_{}_{}.csv'.format(
     n_cv, n_trees, max_ft, n_bins, P)
@@ -101,7 +101,7 @@ pipe_rkt = make_pipeline(MiniRKT(random_state=random_state),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                                            normalize=True))
 
-pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(n_threads=numba_n_thread,
+pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(n_jobs=njobs,
                                                           P=P,
                                                           n_trees=n_trees,
                                                           max_ft=max_ft,
@@ -109,7 +109,7 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer_tree(n_threads=numba_n
                                                           random_state=random_state),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
 
-pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state, n_jobs=numba_n_thread))
+pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state, n_jobs=njobs))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 
@@ -123,7 +123,7 @@ for name in dataset_names:
 
     if run_RKT and df.loc[name, 'MiniRKT_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-                      ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
+                      ((X_train.nbytes + X_test.nbytes) * 2000)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing RKT with {} jobs".format(n_jobs))
@@ -153,7 +153,7 @@ for name in dataset_names:
 
     if run_MrSEQL and df.loc[name, 'MrSEQL_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-              ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
+              ((X_train.nbytes + X_test.nbytes) * 500)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing MrSEQL with {} jobs".format(n_jobs))
@@ -168,7 +168,7 @@ for name in dataset_names:
 
     if run_SFC and df.loc[name, 'SFC_f1_mean'] == 0:
         n_possible_jobs = min(int(available_memory_bytes //
-              ((X_train.nbytes + X_test.nbytes) * 1500)), n_cv)
+              ((X_train.nbytes + X_test.nbytes) * 500)), n_cv)
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print("Processing SFC with {} jobs".format(n_jobs))

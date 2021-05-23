@@ -8,7 +8,6 @@ Created on Sat Apr 10 12:14:16 2021
 from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.base_transformers.minirocket import MiniRocket
 #from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-#from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import accuracy_score
@@ -17,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'FacesUCR', normalize=True)
+    'GunPoint', normalize=True)
 
 #0:00:42.524087
 #0:01:55.721411
@@ -38,16 +37,12 @@ print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 
 # In[]:
 from datetime import datetime
-t0 = datetime.now()
-cst = ConvolutionalShapeletTransformer(verbose=0, n_bins=9, random_state=0).fit2(X_train, y_train)
-t1 = datetime.now()
+
+cst = ConvolutionalShapeletTransformer(verbose=0, random_state=0).fit(X_train, y_train)
+
 X_cst_train = cst.transform(X_train)
 X_cst_test = cst.transform(X_test)
 
-print(X_cst_test.shape)
-t2 = datetime.now()
-print(t1-t0)
-print(t2-t1)
 rf = RandomForestClassifier(
     n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)

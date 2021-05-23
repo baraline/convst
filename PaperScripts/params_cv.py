@@ -8,37 +8,34 @@ import pandas as pd
 import numpy as np
 
 from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from CST.shapelet_transforms.try_CST import ConvolutionalShapeletTransformer_tree
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
 
 # Can use this to resume to last dataset if a problem occured
-resume = False
+resume = True
 
 available_memory_bytes = 60 * 1e9
-max_cpu_cores = 96
-numba_n_thread = 3
-size_mult = 3500
+max_cpu_cores = 32
+tree_jobs = 4
+size_mult = 3250
 
-max_process = max_cpu_cores//numba_n_thread
-file_name = 'params_csv.csv'
+
+max_process = max_cpu_cores//tree_jobs
+file_name = 'params_csv_all.csv'
 n_cv = 10
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
 P = [95, 90, 85, 80]
-n_trees = [50,100,150,200]
-max_ft = [0.25,0.5,0.75,1.0]
+n_trees = [100,200,300,400]
 n_bins = [7, 9, 11, 13]
-use_class_weights = [True,False]
-
 
 params = {'CST__P': P,
-          'CST__max_ft': max_ft,
           'CST__n_trees': n_trees,
-          'CST__use_class_weights': use_class_weights,
           'CST__n_bins':n_bins}
+
 
 
 print(params)
@@ -50,6 +47,7 @@ else:
     df = pd.DataFrame()
 
 dataset_names = return_all_dataset_names()
+
 
 for name in dataset_names:
     results = {}
@@ -63,16 +61,16 @@ for name in dataset_names:
         n_jobs = max(n_possible_jobs if n_possible_jobs <=
                      max_process else max_process, 1)
         print(n_jobs)
-        if n_jobs >= 32:
+        if n_jobs >= 25:
             X = np.concatenate([X_train, X_test], axis=0)
             y = np.concatenate([y_train, y_test], axis=0)
             splitter = UCR_stratified_resample(n_cv, ds_path)
-            pipe = Pipeline([('CST', ConvolutionalShapeletTransformer_tree()),
+            pipe = Pipeline([('CST', ConvolutionalShapeletTransformer(n_jobs=tree_jobs)),
                              ('rdg', RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))])
             clf = GridSearchCV(
-                pipe, params, n_jobs=n_jobs, cv=splitter, verbose=1)
+                pipe, params, n_jobs=n_jobs//2, cv=splitter, verbose=1)
             clf.fit(X, y)
-
+            print('Done!')
             p_key = clf.cv_results_['params']
             rank = clf.cv_results_['mean_test_score']
 
