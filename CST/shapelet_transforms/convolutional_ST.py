@@ -120,9 +120,9 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             self.shapelets.update({dil: candidates})
         return self
     
-    def transform(self, X, store=False, return_inverse=True):
+    def transform(self, X, store=False, return_inverse=False):
         X = check_array_3D(X)
-        distances = np.zeros((X.shape[0], self.n_shapelets))
+        distances = np.zeros((X.shape[0], self.n_shapelets),dtype=np.float32)
         prev = 0
         if store:
             self.shp = []
@@ -142,7 +142,10 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                             for j in range(X.shape[0])])
             distances[:, prev:prev+d.shape[1]] = d
             prev += d.shape[1]
-        return 1/distances
+        if return_inverse:
+            return 1/(distances+1e-8)
+        else:
+            return distances
     
     def _generate_inputs(self, X, y):
         self._log("Performing MiniRocket Transform")
