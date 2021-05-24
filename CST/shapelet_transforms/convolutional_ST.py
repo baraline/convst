@@ -120,10 +120,13 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             self.shapelets.update({dil: candidates})
         return self
     
-    def transform(self, X):
+    def transform(self, X, store=False, return_inverse=True):
         X = check_array_3D(X)
         distances = np.zeros((X.shape[0], self.n_shapelets))
         prev = 0
+        if store:
+            self.shp = []
+            self.dil = []
         for i, dil in enumerate(self.shapelets.keys()):
             self._log("Transforming for dilation {} ({}/{}) with {} shapelets".format(
                 dil, i, len(self.shapelets), len(self.shapelets[dil])))
@@ -131,12 +134,15 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             X_strides = _generate_strides_2d(X[:,self.id_ft,:], 9, dilation)
             X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                 X_strides.std(axis=-1, keepdims=True) + 1e-8)
+            if store:
+                self.shp.extend(self.shapelets[dil])
+                self.dil.extend([dil]*self.shapelets[dil].shape[0])
             d = np.asarray([cdist(X_strides[j], self.shapelets[dil],
-                                  metric='sqeuclidean').min(axis=0) 
+                                  metric='sqeuclidean').min(axis=0)
                             for j in range(X.shape[0])])
             distances[:, prev:prev+d.shape[1]] = d
             prev += d.shape[1]
-        return distances
+        return 1/distances
     
     def _generate_inputs(self, X, y):
         self._log("Performing MiniRocket Transform")

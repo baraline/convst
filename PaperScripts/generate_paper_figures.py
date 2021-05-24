@@ -25,7 +25,7 @@ locs, dils, biases, weights = CST._generate_inputs(X_train, y_train)
 # In[]:
 
 # GunPoint data Figure
-fig, ax = plt.subplots(ncols=2, sharex=True, sharey=True, figsize=(15, 5))
+fig, ax = plt.subplots(ncols=2, sharex=True, sharey=True, figsize=(15, 4))
 for i in range(X_train.shape[0]):
     if y_train[i] == 1:
         ax[1].plot(X_train[i, 0], c='orange', alpha=0.2)

@@ -266,7 +266,7 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, labels=False, path=Non
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
     if p_values is not None:
         graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
-                    cd=None, reverse=True, width=9, textspace=1.5, labels=labels)
+                    cd=None, reverse=True, width=5, textspace=1.5, labels=labels)
 
         font = {'family': 'sans-serif',
                 'color':  'black',
@@ -368,7 +368,7 @@ def cv_col_clean_name(s):
     for char in ["'", "{", "}", "CST", " ", ]:
         s = s.replace(char, "")
     s = s.split('__')
-    return s[1]+s[2]+s[3]+s[4]+s[5]
+    return s[1]+s[2]+s[3]
 
 
 def cv_col_clean_name2(s):
@@ -437,9 +437,9 @@ draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=False)
 
 
 # In[]:
-ranking_path = r"params_csv_P.csv"
+ranking_path = r"params_csv_all.csv"
 df = pd.read_csv(base_path+ranking_path)
-df = df.rename(columns=lambda x: cv_col_clean_name2(x))
+df = df.rename(columns=lambda x: cv_col_clean_name(x))
 
 df_res = pd.DataFrame()
 print(df.columns.difference(['dataset_name']).shape)
@@ -461,16 +461,7 @@ draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
                 labels=False, path=base_path+'P.png')
 
 
-# In[]
 df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
-    ",").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-
-plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
-                path=base_path+'max_ft.png')
-
-df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
@@ -478,11 +469,11 @@ plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
                 path=base_path+'n_bins.png')
 
-
-df_split = df_res.groupby([[x[3] for x in df_res['classifier_name'].str.split(
+df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
     ",").values], 'dataset_name']).mean().reset_index()
 df_split = df_split.rename(columns={'level_0': 'classifier_name'})
 
 plt.figure(figsize=(5, 2))
 draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
                 path=base_path+'n_trees.png')
+#In

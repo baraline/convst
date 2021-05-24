@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
+    'Adiac', normalize=True)
 
 #0:00:42.524087
 #0:01:55.721411
@@ -40,68 +40,57 @@ from datetime import datetime
 
 cst = ConvolutionalShapeletTransformer(verbose=0, random_state=0).fit(X_train, y_train)
 
-X_cst_train = cst.transform(X_train)
+X_cst_train = cst.transform(X_train, store=True)
 X_cst_test = cst.transform(X_test)
 
 rf = RandomForestClassifier(
     n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rf.predict(X_cst_test)
 print("Accuracy Score for CST RF : {}".format(accuracy_score(y_test, pred)))
-
+# In[]:
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                         normalize=True,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST Rdg: {}".format(accuracy_score(y_test, pred)))
 
 # In[]:
-ct = ConvolutionalShapeletTransformer_interpret().fit(X_train,y_train)
-a = ct.transform(X_test)
-
-# In[]:
-import matplotlib
+from CST.utils.shapelets_utils import generate_strides_1D
+from scipy.spatial.distance import cdist
 from matplotlib import pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, BoundaryNorm
+import seaborn as sns
+sns.set()
+import pandas as pd
+n_classes = np.unique(y_train).shape[0]
+topk = 5
+sample_id = 18
+print(y_test[sample_id])
+x_dist = 1/X_cst_train
+i_ft = np.argsort(rf.feature_importances_)[::-1][0:topk].astype(str)
+fig, ax = plt.subplots(nrows=topk, ncols=3,figsize=(5*n_classes,5*topk))
+df = pd.DataFrame(x_dist)
+df.columns = df.columns.astype(str)
+df['y'] = y_train
 
-n_classes = np.unique(y_test).shape[0]
-i_samples = [np.random.choice(np.where(y_test==c)[0]) for c in np.unique(y_test)]
-fig, axs = plt.subplots(ncols=n_classes, nrows=1, sharex=True, sharey=True,figsize=(15,5))
+for i in range(topk):
+    df_long = pd.melt(df[[i_ft[i],"y"]], "y", var_name=" ", value_name="")
+    sns.boxplot(x=" ", hue="y", y="", data=df_long, ax=ax[i,0], linewidth=2.5)
+    ax[i,0].axhline(1/X_cst_test[sample_id, int(i_ft[i])],color='red',linestyle='--')
+    ax[0,0].set_title("BoxPlot of 1/d for training samples")    
+    ax[0,0].set_xlabel("Shapelet n° {}".format(i_ft[0]))
+    ax[0,1].set_title("Shapelet")
+    ax[0,2].set_title("Test sample with scaled shapelet")
+    ax[i,2].plot(X_test[sample_id][0])
+    dil = cst.dil[int(i_ft[i])]
+    shp = cst.shp[int(i_ft[i])]
+    x = generate_strides_1D(X_test[sample_id][0],9, dil)
+    x = (x - x.mean(axis=-1, keepdims=True))/x.std(axis=-1, keepdims=True)
+    d = cdist(x, shp.reshape(1,9),metric='sqeuclidean')
+    loc = d.argmin()
+    x_indexes = [loc + j*dil for j in range(9)]
+    shp_v = (shp * X_test[sample_id, 0, x_indexes].std()) + X_test[sample_id, 0, x_indexes].mean()
+    ax[i,2].scatter(x_indexes,shp_v, color='red')
+    ax[i,1].scatter([0,1,2,3,4,5,6,7,8],shp, color='red')
+    
+    
+    
 
-axs[0].set_xlim(0, X_test.shape[2])
-axs[0].set_ylim(X_test[i_samples].min()-0.15, X_test[i_samples].max()+0.15)
-for i_c in range(n_classes):
-    x = X_test[i_samples[i_c],0]
-    plot_x = np.asarray(range(x.shape[0]))
-    plot_y = x
-    points = np.array([plot_x, plot_y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    dydx = a[i_samples[i_c]]
-    norm = plt.Normalize(a[i_samples[i_c]].min(), a[i_samples[i_c]].max())
-    lc = LineCollection(segments, cmap='jet', norm=norm,alpha=0.75)
-    lc.set_array(dydx)
-    lw = ((dydx - dydx.min())/(dydx.max()-dydx.min()))*25
-    lc.set_linewidth(lw)
-    line = axs[i_c].add_collection(lc)
-    fig.colorbar(line, ax=axs[i_c])
-    axs[i_c].plot(plot_y,c='black',linewidth=1)    
-plt.show()
-
-
-"""
-for i in i_shp:
-    d = 0
-    for dil in cst.shapelets_values:
-        l = len(cst.shapelets_values[dil])
-        if d<i<d+l:
-            print(cst.shapelets_values[dil][i-d])
-            shp = Convolutional_shapelet(values=cst.shapelets_values[dil][i-d], dilation=int(dil), padding=0, input_ft_id=0)
-            fig, ax = plt.subplots(ncols=n_classes,figsize=(n_classes*5,6))
-            for j in range(n_classes):
-                idx = np.where(y_test==j)[0][0]
-                shp.plot_loc(X_test[idx,0],ax=ax[j])
-                ax[j].set_title(X_cst_test[idx,i])
-            plt.show()
-            break
-        else:
-            d+=l
-"""      

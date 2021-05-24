@@ -7,8 +7,8 @@ import pandas as pd
 sns.set()
 sns.set_context("talk", font_scale=0.9)
 
-#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-base_path = r"C:\git_projects\CST\csv_results\\"
+base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
+#base_path = r"C:\git_projects\CST\csv_results\\"
 
 cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
@@ -49,15 +49,21 @@ for i, comp in enumerate(competitors):
     ax[i // ncols,i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols,i % ncols].transAxes, fontsize=14,
                        verticalalignment='top', bbox=props)
     
-ranking_path = r"params_csv.csv"
+ranking_path = r"params_csv_all.csv"
 df_params = pd.read_csv(base_path+ranking_path).rename(columns={'Unnamed: 0': 'Dataset'})
 
-df2['STC'] = df2['STC'].apply(lambda x: '%.5f' % x)
-df3['STC'] = df3['STC'].apply(lambda x: '%.5f' % x)
+#df2['STC'] = df2['STC'].apply(lambda x: '%.5f' % x)
+#df3['STC'] = df3['STC'].apply(lambda x: '%.5f' % x)
 df_latex = df[['Dataset', 'CST_f1_mean', 'CST_f1_std', 'MiniRKT_f1_mean',
-               'MiniRKT_f1_std', 'SFC_f1_mean', 'SFC_f1_std','MrSEQL_f1_mean','MrSEQL_f1_std']].astype(str)
-
+               'MiniRKT_f1_std', 'SFC_f1_mean', 'SFC_f1_std','MrSEQL_f1_mean','MrSEQL_f1_std']]
+df_latex['STC_f1_mean'] = df2['STC']
+df_latex['STC_f1_std'] = df3['STC']
+# In[]:
 df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
+df_latex2 = df_latex.set_index('Dataset')
+df_latex['STC_f1_mean'] = df_latex['STC_f1_mean'].apply(lambda x: '%.5f' % x)
+df_latex['STC_f1_std'] = df_latex['STC_f1_std'].apply(lambda x: '%.5f' % x)
+df_latex = df_latex.astype(str)
 
 df_latex['CST'] = df_latex['CST_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex['CST_f1_std'].str[0:5]+')'
@@ -67,12 +73,40 @@ df_latex['SFC'] = df_latex['SFC_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex['SFC_f1_std'].str[0:5]+')'
 df_latex['MrSEQL'] = df_latex['MrSEQL_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex['MrSEQL_f1_std'].str[0:5]+')'
-df_latex['STC'] = df2['STC'].astype(
-    str).str[0:5] + ' (+/- ' + df3['STC'].astype(str).str[0:5]+')'
+df_latex['STC'] = df_latex['STC_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex['STC_f1_std'].str[0:5]+')'
 
 df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
          ].to_latex(base_path+'CV_table_f1.tex', index=False)
 
+
+# In[]:
+
+df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
+
+df_latex2['Type'] = df_type[' Type']
+counts = df_latex2.groupby('Type').count()['CST_f1_mean']
+df_latex2 = df_latex2.groupby('Type').mean()
+
+df_latex2 = df_latex2.reset_index()
+
+df_latex2['Type'] = df_latex2['Type'].apply(lambda x : x + ' (' +str(counts.loc[x])+ ')')
+df_latex2['STC_f1_mean'] = df_latex2['STC_f1_mean'].apply(lambda x: '%.5f' % x)
+df_latex2['STC_f1_std'] = df_latex2['STC_f1_std'].apply(lambda x: '%.5f' % x)
+df_latex2 = df_latex2.astype(str)
+
+df_latex2['CST'] = df_latex2['CST_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex2['CST_f1_std'].str[0:5]+')'
+df_latex2['SFC'] = df_latex2['SFC_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex2['SFC_f1_std'].str[0:5]+')'
+df_latex2['MrSEQL'] = df_latex2['MrSEQL_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex2['MrSEQL_f1_std'].str[0:5]+')'
+df_latex2['STC'] = df_latex2['STC_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex2['STC_f1_std'].str[0:5]+')'
+df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_f1_mean'].str[0:5] + \
+    ' (+/- ' + df_latex2['MiniRKT_f1_std'].str[0:5]+')'
+df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCKET','STC','SFC','MrSEQL']),axis=1)
+df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)
 # In[]:
 
 cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
