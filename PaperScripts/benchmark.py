@@ -39,7 +39,7 @@ resume = False
 
 n_jobs=20
 csv_name = 'tslength_Benchmark.csv'
-lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 1e+5]).astype(int)
+lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 2.5e+4]).astype(int)
 if resume:
     df = pd.read_csv(csv_name)
     df = df.set_index('Unnamed: 0')
@@ -73,6 +73,16 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(
 pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_jobs))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
+
+#Run all script a first time to avoid issues related to first numba run being slower
+pipe_cst.fit(X_train[0:100, :, 0:100], y_train[0:100])
+pipe_cst.predict(X_train[0:100, :, 0:100])
+pipe_sfc.fit(X_train[0:100, :, 0:100], y_train[0:100])
+pipe_sfc.predict(X_train[0:100, :, 0:100])
+pipe_rkt.fit(X_train[0:100, :, 0:100], y_train[0:100])
+pipe_rkt.predict(X_train[0:100, :, 0:100])
+pipe_MrSEQL.fit(X_train[0:100, :, 0:100], y_train[0:100])
+pipe_MrSEQL.predict(X_train[0:100, :, 0:100])
 
 
 def time_pipe(pipeline, X_train, y_train, X_test):
@@ -125,6 +135,7 @@ for l in lengths:
 
 # In[]:
 resume = False
+
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
     path+"InsectSound")
 n_classes = np.bincount(y_train).shape[0]
@@ -141,19 +152,18 @@ else:
     df['MrSEQL'] = pd.Series(0, index=df.index)
     df['SFC'] = pd.Series(0, index=df.index)
 
-
 n_cv = 10
 for n in n_per_class:
     x1 = np.asarray([np.random.choice(np.where(y_train == i)[
                     0], n, replace=False) for i in np.unique(y_train)]).reshape(-1)
     x2 = np.asarray([np.random.choice(np.where(y_test == i)[0],
                                       n, replace=False) for i in np.unique(y_train)]).reshape(-1)
-    print(X_train[x1, 0, :].shape)
+    print(x1.shape)
     if run_cst and df.loc[n*n_classes, 'CST'] == 0:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('CST', l, i_cv))
-            timing.append(time_pipe(pipe_cst, x1, y_train, x2))
+            timing.append(time_pipe(pipe_cst, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'CST'] = np.mean(timing)
         df.to_csv(csv_name)
         
@@ -162,7 +172,7 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('MiniRKT', l, i_cv))
-            timing.append(time_pipe(pipe_rkt, x1, y_train, x2))
+            timing.append(time_pipe(pipe_rkt, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MiniRKT'] = np.mean(timing)
         df.to_csv(csv_name)
 
@@ -171,7 +181,7 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('MrSEQL', l, i_cv))
-            timing.append(time_pipe(pipe_MrSEQL, x1, y_train, x2))
+            timing.append(time_pipe(pipe_MrSEQL, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MrSEQL'] = np.mean(timing)
         df.to_csv(csv_name)
 
@@ -180,6 +190,6 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('SFC', l, i_cv))
-            timing.append(time_pipe(pipe_sfc, x1, y_train, x2))
+            timing.append(time_pipe(pipe_sfc, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'SFC'] = np.mean(timing)
         df.to_csv(csv_name)

@@ -20,7 +20,7 @@ from numba import set_num_threads
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     
     def __init__(self,  P=90, n_trees=200, max_ft=1.0, id_ft=0, use_class_weights=True,
-                 verbose=0, n_bins=13, n_jobs=3, ccp_alpha=0.005, random_state=None):
+                 verbose=0, n_bins=13, n_jobs=3, ccp_alpha=0.0, random_state=None):
         self.id_ft = id_ft
         self.verbose = verbose
         self.shapelets_params = None
