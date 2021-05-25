@@ -38,13 +38,13 @@ run_SFC = False
 
 #Machine parameters
 available_memory_bytes = 60 * 1e9
-n_cores = 30
+n_cores = 90
 
 def get_n_jobs_n_threads(nbytes, size_mult=4000):
     nbytes *= size_mult
     n_jobs = min(max(available_memory_bytes//nbytes,1),n_cv//2)
     n_threads = min(max(n_cores//n_jobs,1),n_cores//2)
-    return n_jobs, n_threads
+    return int(n_jobs), int(n_threads)
 
 csv_name = 'CV_{}_results_({},{})_{}_{}.csv'.format(
     n_cv, n_trees, max_ft, n_bins, P)
@@ -145,7 +145,7 @@ for name in dataset_size.keys():
         df.to_csv(csv_name)
 
     if run_CST and df.loc[name, 'CST_f1_mean'] == 0:
-        n_jobs, n_threads = get_n_jobs_n_threads(dataset_size[name], size_mult=4000)
+        n_jobs, n_threads = get_n_jobs_n_threads(dataset_size[name], size_mult=12500)
         print("Processing CST with {} jobs and {} thread".format(n_jobs, n_threads))
         acc_mean, acc_std, f1_mean, f1_std, time = run_pipeline(
             pipe_cst.set_params(convolutionalshapelettransformer__n_jobs=n_threads),

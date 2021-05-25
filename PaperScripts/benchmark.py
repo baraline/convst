@@ -139,7 +139,7 @@ resume = False
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
     path+"InsectSound")
 n_classes = np.bincount(y_train).shape[0]
-n_per_class = np.asarray([10, 50, 100, 250, 500]).astype(int)
+n_per_class = np.asarray([10, 50, 100, 250, 400]).astype(int)
 csv_name = 'n_samples_Benchmark.csv'
 
 if resume:
@@ -162,7 +162,7 @@ for n in n_per_class:
     if run_cst and df.loc[n*n_classes, 'CST'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('CST', l, i_cv))
+            print("{}/{}/n_cv:{}".format('CST', n, i_cv))
             timing.append(time_pipe(pipe_cst, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'CST'] = np.mean(timing)
         df.to_csv(csv_name)
@@ -171,7 +171,7 @@ for n in n_per_class:
     if run_rkt and df.loc[n*n_classes, 'MiniRKT'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MiniRKT', l, i_cv))
+            print("{}/{}/n_cv:{}".format('MiniRKT', n, i_cv))
             timing.append(time_pipe(pipe_rkt, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MiniRKT'] = np.mean(timing)
         df.to_csv(csv_name)
@@ -180,7 +180,7 @@ for n in n_per_class:
     if run_sql and df.loc[n*n_classes, 'MrSEQL'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MrSEQL', l, i_cv))
+            print("{}/{}/n_cv:{}".format('MrSEQL', n, i_cv))
             timing.append(time_pipe(pipe_MrSEQL, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MrSEQL'] = np.mean(timing)
         df.to_csv(csv_name)
@@ -189,7 +189,7 @@ for n in n_per_class:
     if run_sfc and df.loc[n*n_classes, 'SFC'] == 0:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('SFC', l, i_cv))
+            print("{}/{}/n_cv:{}".format('SFC', n, i_cv))
             timing.append(time_pipe(pipe_sfc, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'SFC'] = np.mean(timing)
         df.to_csv(csv_name)
