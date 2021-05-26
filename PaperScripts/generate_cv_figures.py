@@ -61,7 +61,7 @@ df_latex = df[['Dataset', 'CST_f1_mean', 'CST_f1_std', 'MiniRKT_f1_mean',
                'MiniRKT_f1_std', 'SFC_f1_mean', 'SFC_f1_std','MrSEQL_f1_mean','MrSEQL_f1_std']]
 df_latex['STC_f1_mean'] = df2['STC']
 df_latex['STC_f1_std'] = df3['STC']
-# In[]:
+
 df_latex2 = df_latex.set_index('Dataset')
 df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
 df_latex['STC_f1_mean'] = df_latex['STC_f1_mean'].apply(lambda x: '%.5f' % x)
@@ -83,31 +83,32 @@ df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
          ].to_latex(base_path+'CV_table_f1.tex', index=False)
 
 
-# In[]:
-
 df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
 
 df_latex2['Type'] = df_type[' Type']
 counts = df_latex2.groupby('Type').count()['CST_f1_mean']
+df_latex3 = df_latex2.groupby('Type').std()
 df_latex2 = df_latex2.groupby('Type').mean()
 
 df_latex2 = df_latex2.reset_index()
+df_latex3 = df_latex3.reset_index()
 
 df_latex2['Type'] = df_latex2['Type'].apply(lambda x : x + ' (' +str(counts.loc[x])+ ')')
 df_latex2['STC_f1_mean'] = df_latex2['STC_f1_mean'].apply(lambda x: '%.5f' % x)
 df_latex2['STC_f1_std'] = df_latex2['STC_f1_std'].apply(lambda x: '%.5f' % x)
 df_latex2 = df_latex2.astype(str)
+df_latex3 = df_latex3.astype(str)
 
 df_latex2['CST'] = df_latex2['CST_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['CST_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['CST_f1_mean'].str[0:5]+')'
 df_latex2['SFC'] = df_latex2['SFC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['SFC_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['SFC_f1_mean'].str[0:5]+')'
 df_latex2['MrSEQL'] = df_latex2['MrSEQL_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['MrSEQL_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['MrSEQL_f1_std'].str[0:5]+')'
 df_latex2['STC'] = df_latex2['STC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['STC_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['STC_f1_mean'].str[0:5]+')'
 df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['MiniRKT_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['MiniRKT_f1_mean'].str[0:5]+')'
 df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCKET','STC','SFC','MrSEQL']),axis=1)
 df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)
 # In[]:
@@ -160,10 +161,9 @@ df_latex = df[['Dataset', 'CST_acc_mean', 'CST_acc_std', 'MiniRKT_acc_mean',
                'MiniRKT_acc_std', 'SFC_acc_mean', 'SFC_acc_std','MrSEQL_acc_mean','MrSEQL_acc_std']]
 df_latex['STC_acc_mean'] = df2['STC']
 df_latex['STC_acc_std'] = df3['STC']
-# In[]:
-df_latex2 = df_latex.set_index('Dataset')    
-df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
 
+df_latex2 = df_latex.set_index('Dataset')
+df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
 df_latex['STC_acc_mean'] = df_latex['STC_acc_mean'].apply(lambda x: '%.5f' % x)
 df_latex['STC_acc_std'] = df_latex['STC_acc_std'].apply(lambda x: '%.5f' % x)
 df_latex = df_latex.astype(str)
@@ -183,31 +183,31 @@ df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
          ].to_latex(base_path+'CV_table_acc.tex', index=False)
 
 
-# In[]:
-
 df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
 
 df_latex2['Type'] = df_type[' Type']
-
 counts = df_latex2.groupby('Type').count()['CST_acc_mean']
+df_latex3 = df_latex2.groupby('Type').std().fillna(0)
 df_latex2 = df_latex2.groupby('Type').mean()
 
 df_latex2 = df_latex2.reset_index()
+df_latex3 = df_latex3.reset_index()
 
 df_latex2['Type'] = df_latex2['Type'].apply(lambda x : x + ' (' +str(counts.loc[x])+ ')')
 df_latex2['STC_acc_mean'] = df_latex2['STC_acc_mean'].apply(lambda x: '%.5f' % x)
 df_latex2['STC_acc_std'] = df_latex2['STC_acc_std'].apply(lambda x: '%.5f' % x)
 df_latex2 = df_latex2.astype(str)
+df_latex3 = df_latex3.astype(str)
 
 df_latex2['CST'] = df_latex2['CST_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['CST_acc_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['CST_acc_mean'].str[0:5]+')'
 df_latex2['SFC'] = df_latex2['SFC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['SFC_acc_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['SFC_acc_mean'].str[0:5]+')'
 df_latex2['MrSEQL'] = df_latex2['MrSEQL_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['MrSEQL_acc_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['MrSEQL_acc_mean'].str[0:5]+')'
 df_latex2['STC'] = df_latex2['STC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['STC_acc_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['STC_acc_mean'].str[0:5]+')'
 df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex2['MiniRKT_acc_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['MiniRKT_acc_mean'].str[0:5]+')'
 df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCKET','STC','SFC','MrSEQL']),axis=1)
 df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)

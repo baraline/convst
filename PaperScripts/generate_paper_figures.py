@@ -32,7 +32,7 @@ for i in range(X_train.shape[0]):
     else:
         ax[0].plot(X_train[i, 0], c='blue', alpha=0.2)
 ax[0].set_title("Class 0 of GunPoint (Gun)")
-ax[1].set_title("Class 1 of GunPoint (NoGun)")
+ax[1].set_title("Class 1 of GunPoint (Point)")
 plt.show()
 
 # In[]:

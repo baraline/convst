@@ -20,7 +20,7 @@ from wildboar.ensemble import ShapeletForestClassifier
 from sklearn.metrics import accuracy_score
 from numba import set_num_threads
 #Can use this to resume to last dataset if a problem occured
-resume = True
+resume = False
 
 print("Imports OK")
 #n_cv = 1 to test on original train test split.
@@ -32,13 +32,13 @@ n_bins=11
 random_state = None
 
 run_RKT = False
-run_CST = True
+run_CST = False
 run_MrSEQL = False
-run_SFC = False
+run_SFC = True
 
 #Machine parameters
 available_memory_bytes = 60 * 1e9
-n_cores = 90
+n_cores = 32
 
 def get_n_jobs_n_threads(nbytes, size_mult=4000):
     nbytes *= size_mult
@@ -109,7 +109,9 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(P=P,
                                                           random_state=random_state),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
 
-pipe_sfc = make_pipeline(ShapeletForestClassifier(random_state=random_state))
+pipe_sfc = make_pipeline(ShapeletForestClassifier(n_estimators=n_trees,
+                                                  metric='scaled_euclidean',
+                                                  random_state=random_state))
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 
@@ -175,7 +177,7 @@ for name in dataset_size.keys():
         set_num_threads(n_threads)
         print("Processing SFC with {} jobs and {} thread".format(n_jobs, n_threads))
         acc_mean, acc_std, f1_mean, f1_std, time = run_pipeline(
-            pipe_sfc.set_params(shapeletForestclassifier__n_jobs=n_threads),
+            pipe_sfc.set_params(shapeletforestclassifier__n_jobs=n_threads),
             X_train, X_test, y_train, y_test, splitter, n_jobs)
         df.loc[name, 'SFC_acc_mean'] = acc_mean
         df.loc[name, 'SFC_acc_std'] = acc_std
