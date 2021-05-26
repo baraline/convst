@@ -42,16 +42,16 @@ cst = ConvolutionalShapeletTransformer(verbose=0).fit(X_train, y_train)
 
 X_cst_train = cst.transform(X_train, store=True)
 X_cst_test = cst.transform(X_test)
-
+# In[]:
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                        normalize=True,class_weight='balanced').fit(X_cst_train, y_train)
-pred = rdg.predict(X_cst_test)
+                        normalize=True,class_weight='balanced').fit(1/X_cst_train, y_train)
+pred = rdg.predict(1/X_cst_test)
 print("Accuracy Score for CST Rdg: {}".format(accuracy_score(y_test, pred)))
 print("Accuracy Score for CST Rdg : {}".format(f1_score(y_test, pred,average='macro')))
 
 rf = RandomForestClassifier(
-    n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
-pred = rf.predict(X_cst_test)
+    n_estimators=400,class_weight='balanced').fit(1/X_cst_train, y_train)
+pred = rf.predict(1/X_cst_test)
 print("Accuracy Score for CST RF: {}".format(accuracy_score(y_test, pred)))
 print("Accuracy Score for CST RF : {}".format(f1_score(y_test, pred,average='macro')))
 

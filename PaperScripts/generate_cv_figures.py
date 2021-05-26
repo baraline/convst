@@ -104,7 +104,7 @@ df_latex2['CST'] = df_latex2['CST_f1_mean'].str[0:5] + \
 df_latex2['SFC'] = df_latex2['SFC_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex3['SFC_f1_mean'].str[0:5]+')'
 df_latex2['MrSEQL'] = df_latex2['MrSEQL_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['MrSEQL_f1_std'].str[0:5]+')'
+    ' (+/- ' + df_latex3['MrSEQL_f1_mean'].str[0:5]+')'
 df_latex2['STC'] = df_latex2['STC_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex3['STC_f1_mean'].str[0:5]+')'
 df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_f1_mean'].str[0:5] + \
