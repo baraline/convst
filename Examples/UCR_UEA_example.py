@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
+    'Adiac', normalize=True)
 
 #0:00:42.524087
 #0:01:55.721411
@@ -43,15 +43,15 @@ cst = ConvolutionalShapeletTransformer(verbose=0, random_state=0).fit(X_train, y
 X_cst_train = cst.transform(X_train, store=True)
 X_cst_test = cst.transform(X_test)
 
-rf = RandomForestClassifier(
-    n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
-pred = rf.predict(X_cst_test)
-print("Accuracy Score for CST RF : {}".format(accuracy_score(y_test, pred)))
-
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                         normalize=True,class_weight='balanced').fit(X_cst_train, y_train)
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST Rdg: {}".format(accuracy_score(y_test, pred)))
+# In[]:
+rf = RandomForestClassifier(
+    n_estimators=400,class_weight='balanced').fit(X_cst_train, y_train)
+pred = rf.predict(X_cst_test)
+print("Accuracy Score for CST RF : {}".format(accuracy_score(y_test, pred)))
 
 # In[]:
 from CST.utils.shapelets_utils import generate_strides_1D
