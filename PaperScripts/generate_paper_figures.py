@@ -3,7 +3,7 @@
 
 import matplotlib
 from sklearn.ensemble import RandomForestClassifier
-from CST.base_transformers.shapelets import Convolutional_shapelet
+#from CST.base_transformers.shapelets import Convolutional_shapelet
 from matplotlib import gridspec
 from CST.base_transformers.convolutional_kernels import Rocket_kernel
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer

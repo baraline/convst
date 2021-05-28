@@ -62,10 +62,10 @@ pipe_rkt = make_pipeline(MiniRKT(),
 
 
 pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(
-                                                          P=90,
+                                                          P=80,
                                                           n_trees=100,
                                                           max_ft=1.0,
-                                                          n_bins=13,
+                                                          n_bins=11,
                                                           n_jobs=n_jobs
                                                           ),
                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))

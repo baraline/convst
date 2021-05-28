@@ -10,20 +10,17 @@ sns.set_context("talk", font_scale=0.9)
 #base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
 base_path = r"C:\git_projects\CST\csv_results\\"
 
-cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
 cv_f1_std = base_path + r"TESTF1_STDDEV.csv"
 
-df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
-df4 = pd.read_csv(base_path + 'CV_30_results_(200,1.0)_11_80.csv', sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 df3 = pd.read_csv(cv_f1_std, sep=',').rename(
     columns={'TESTF1STDDEVS': 'Dataset'})
 
-colcst = ['CST_f1_mean','CST_f1_std','CST_acc_mean','CST_acc_std']
-df[colcst] = df4[colcst]
 
-df = df[(df['CST_f1_mean'] > 0) & (df['MiniRKT_f1_mean'] > 0)]
+df = df[(df['CST_f1_mean'] > 0)]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 df3 = df3[df3['Dataset'].isin(df['Dataset'])]
 
@@ -113,21 +110,17 @@ df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCK
 df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)
 # In[]:
 
-cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
 cv_acc = base_path + r"TESTACC_MEANS.csv"
 cv_acc_std = base_path + r"TESTACC_STDDEV.csv"
 
-df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
-
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
 df3 = pd.read_csv(cv_acc_std, sep=',').rename(
     columns={'TESTACCSTDDEVS': 'Dataset'})
-df4 = pd.read_csv(base_path + 'CV_30_results_(200,1.0)_11_80.csv', sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
 
-colcst = ['CST_f1_mean','CST_f1_std','CST_acc_mean','CST_acc_std']
-df[colcst] = df4[colcst]
 
-df = df[(df['CST_f1_mean'] > 0) & (df['MiniRKT_f1_mean'] > 0)]
+df = df[(df['CST_f1_mean'] > 0)]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 df3 = df3[df3['Dataset'].isin(df['Dataset'])]
 
@@ -184,8 +177,12 @@ df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
 
 
 df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
-
+# In[]:
 df_latex2['Type'] = df_type[' Type']
+df_latex2.loc['CinCECGTorso','Type'] = ' ECG'
+df_latex2.loc['StarLightCurves','Type'] = ' SENSOR'
+df_latex2.loc['Phoneme','Type'] = ' AUDIO'
+# In[]:
 counts = df_latex2.groupby('Type').count()['CST_acc_mean']
 df_latex3 = df_latex2.groupby('Type').std().fillna(0)
 df_latex2 = df_latex2.groupby('Type').mean()

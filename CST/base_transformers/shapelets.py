@@ -179,14 +179,15 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
         vals = (self.values * std) + mean
         padding = self.padding
         if ax is None:
-
-            plt.scatter(loc, vals, alpha=alpha, color=color, s=size)
-            plt.plot(x_pad, c=c_x, alpha=x_alpha)
+            plt.plot(x_pad, c=c_x, alpha=x_alpha,linewidth=8)
+            plt.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=4)
+            
             plt.show()
         else:
 
-            ax.scatter(loc, vals, alpha=alpha, color=color, s=size)
-            ax.plot(x_pad, c=c_x,  alpha=x_alpha)
+            ax.plot(x_pad, c=c_x, alpha=x_alpha, linewidth=8)
+            ax.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=4)
+            
 
     @property
     def values(self):

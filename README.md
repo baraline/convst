@@ -1,4 +1,4 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, one of the most accurate shapelet algorithm.
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
@@ -46,13 +46,13 @@ The function assumes the input is in arff format, they can be obtained on the [t
 ## Contributing, Citing and Contact
 
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
-For other question or to take contact with me, you can email me at antoine.guillaume45@gmail.com (institutional email might change soon so i provide this as a temporary address)
+For other question or to take contact with me, you can email me at XXXX (institutional email might change soon so i provide this as a temporary address)
 
 If you use our algorithm or publication in any work, please cite the following paper :
 ```bibtex
 @article{CST,
   title={Convolutional Shapelet Transform: A new approach for time series shapelets},
-  author={Guillaume Antoine, Vrain Chrsitel, Elloumi Weal},
+  author={Guillaume Antoine, Vrain Christel, Elloumi Wael},
   journal={},
   volume={},
   number={},

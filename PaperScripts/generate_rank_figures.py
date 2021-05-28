@@ -382,18 +382,14 @@ def cv_col_clean_name2(s):
 #base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
 base_path = r"C:\git_projects\CST\csv_results\\"
 # In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
 cv_f1 = base_path + r"TESTF1_MEANS.csv"
 
 
-df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
-df4 = pd.read_csv(base_path + 'CV_30_results_(200,1.0)_11_80.csv', sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
-colcst = ['CST_f1_mean','CST_f1_std','CST_acc_mean','CST_acc_std']
-df[colcst] = df4[colcst]
-
-df = df[(df['CST_f1_mean'] > 0) & (df['MiniRKT_f1_mean'] > 0)]
+df = df[(df['CST_f1_mean'] > 0)]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
 df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'SFC_f1_mean', 'MrSEQL_f1_mean']],
@@ -415,17 +411,13 @@ draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
 
 
 # In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_9_80.csv"
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
 cv_acc = base_path + r"TESTACC_MEANS.csv"
 
-df = pd.read_csv(cv_path, sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
-df4 = pd.read_csv(base_path + 'CV_30_results_(200,1.0)_11_80.csv', sep=',').rename(columns={'Unnamed: 0': 'Dataset'})
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
 df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
 
-colcst = ['CST_f1_mean','CST_f1_std','CST_acc_mean','CST_acc_std']
-df[colcst] = df4[colcst]
-
-df = df[(df['CST_f1_mean'] > 0) & (df['MiniRKT_f1_mean'] > 0)]
+df = df[(df['CST_acc_mean'] > 0)]
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
 
 df_means = pd.concat([df[['Dataset','MiniRKT_acc_mean', 'CST_acc_mean', 'SFC_acc_mean', 'MrSEQL_acc_mean']],
@@ -443,7 +435,35 @@ for col in df_means.columns.difference(['Dataset']):
     d['dataset_name'] = df_means['Dataset']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
 
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=8)
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
+
+
+# In[]:
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
+cv_acc = base_path + r"TESTACC_MEANS.csv"
+
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
+df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
+
+df = df[(df['CST_acc_mean'] > 0)]
+df2 = df2[df2['Dataset'].isin(df['Dataset'])]
+
+df_means = pd.concat([df[['Dataset', 'CST_acc_mean']],
+                      df2[df2.columns.difference(['Dataset','Catch22'])]], axis=1).rename(columns={'CST_acc_mean': 'CST',
+                                                           'MiniRKT_acc_mean':'MiniRKT',
+                                                           'SFC_acc_mean':'SFC',
+                                                           'MrSEQL_acc_mean':'MrSEQL'}).reset_index(drop=True)
+
+df_res = pd.DataFrame()
+
+for col in df_means.columns.difference(['Dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
+    d['accuracy'] = df_means[col]
+    d['dataset_name'] = df_means['Dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
 
 
 # In[]:

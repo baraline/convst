@@ -7,7 +7,7 @@ Created on Sat Apr 10 12:14:16 2021
 
 from CST.base_transformers.shapelets import Convolutional_shapelet
 from CST.base_transformers.minirocket import MiniRocket
-#from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from sklearn.linear_model import RidgeClassifierCV
 from CST.utils.dataset_utils import load_sktime_dataset_split
 from sklearn.metrics import accuracy_score, f1_score
@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'Adiac', normalize=True)
+    'SemgHandSubjectCh2', normalize=True)
 
 #0:00:42.524087
 #0:01:55.721411
@@ -38,9 +38,9 @@ print("Accuracy Score for MINI-ROCKET: {}".format(accuracy_score(y_test, pred)))
 # In[]:
 from datetime import datetime
 
-cst = ConvolutionalShapeletTransformer(verbose=0).fit(X_train, y_train)
+cst = ConvolutionalShapeletTransformer(verbose=1, P=80,n_trees=10).fit(X_train, y_train)
 
-X_cst_train = cst.transform(X_train, store=True)
+X_cst_train = cst.transform(X_train, store=False)
 X_cst_test = cst.transform(X_test)
 # In[]:
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
