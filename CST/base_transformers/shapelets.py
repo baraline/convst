@@ -5,189 +5,166 @@ Created on Thu Apr  1 18:10:58 2021
 @author: Antoine
 """
 import numpy as np
-import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 from matplotlib import pyplot as plt
-
-from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, min_dist_shp_loc, generate_strides_1D
+from scipy.spatial.distance import cdist
+from CST.utils.checks_utils import check_array_3D, check_array_1D
+from CST.utils.shapelets_utils import generate_strides_2D
 
 
 class Convolutional_shapelet(BaseEstimator, TransformerMixin):
-    """
-    A Convolutional Shapelet transformer. It takes an array of values, with 
-    dilation and padding parameters to slide itself on input time series.
-    The values returned by the transformation is the minimum z-normalised euclidean
-    distance from the shapelet to each sample.
 
-    Attributes
-    ----------
-    values : array
-        Values of the shapelet, the values should be z-normalised.
-        The default is None.
-    dilation : int
-        Dilation parameter applied when computing distance to input subsequences. 
-        The default is None.
-    padding : int
-        Padding parameter applied when computing distance to input subsequences. 
-        The default is None.
-    input_ft_id : int
-        Identifier of the time series feature on which to apply this shapelet.
-        The default is None.
-    ft_kernel_id : int
-        Identifier of the feature kernel that generated this shapelet.
-        The default is None.
-    """
-
-    def __init__(self, values=None, dilation=None, padding=None,
-                 input_ft_id=None, ft_kernel_id=None):
+    def __init__(self, values=None, dilation=None):
+        """
+        A Convolutional Shapelet transformer. It takes an array of values, with a
+        dilation parameter to slide itself on input time series.
+        The values returned by the transformation is the minimum z-normalised 
+        squarred euclidean distance from the shapelet to each sample.
+    
+        Attributes
+        ----------
+        values : array, shape = (length,)
+            Values of the shapelet, those values will be z-normalised.
+            
+        dilation : int
+            Dilation parameter applied when computing distance to input subsequences. 
+            
+        """
         self.values = values
         self.dilation = dilation
-        self.padding = padding
-        self.input_ft_id = input_ft_id
-        self.ft_kernel_id = ft_kernel_id
 
     def fit(self, X, y=None):
-        self._check_is_init()
-        X = self._check_array(X)
-        return self
-
-    def transform(self, X, padding_matching=True):
         """
-        Transform the input into distance to the Shapelet to be used as a 
-        single feature. The distance used is the normalised euclidean distance
-        and the minimum distance between the shapelet values and the sample is
-        returned for each sample in X.
+        Placeholder method to allow fit_transform method.
 
         Parameters
         ----------
-        X : TYPE
-            DESCRIPTION.
-        padding_matching : TYPE, optional
-            DESCRIPTION. The default is False.
+        X : ignored
+        
+        y : ignored, optional
+
 
         Returns
         -------
-        array, shape=(X.shape[0])
-            Minimum z-normalized euclidean distance from sample to input.
+        self
 
         """
-        self._check_is_init()
-        X = self._check_array(X)
-        n_samples, _, n_timestamps = X.shape
-        padding = self.padding
-        if not padding_matching:
-            padding = 0
+        self._check_is_init()        
+        return self
 
-        if padding > 0:
-            X_pad = np.zeros((n_samples, n_timestamps+2*padding))
-            X_pad[:, padding:-padding] = X[:, 0, :]
-        else:
-            X_pad = X[:, 0, :]
-        X_strides = generate_strides_2D(
-            X_pad, self.values.shape[0], self.dilation)
-        X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
-            X_strides.std(axis=-1, keepdims=True) + 1e-8)
-        return compute_distances(X_strides, self.values.reshape(1, -1))
-
-    def _locate(self, x, return_dist=False, return_scale=False,
-                padding_matching=False):
-        X_strides = generate_strides_1D(x, self.values.shape[0], self.dilation)
-        X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
-            X_strides.std(axis=-1, keepdims=True) + 1e-8)
-        min_dist, i_loc = min_dist_shp_loc(X_strides, self.values)
-
-        # If padding is used, to get matching in original input (not padded) apply -padding
-        loc = np.asarray([i_loc + (j*self.dilation)
-                          for j in range(self.values.shape[0])])
-
-        if return_dist and return_scale:
-            return loc, min_dist, np.mean(x[loc]), np.std(x[loc])
-        elif return_scale:
-            return loc, np.mean(x[loc]), np.std(x[loc])
-        elif return_dist:
-            return loc, min_dist
-        else:
-            return loc
-
-    def _check_is_init(self):
-        if any(self.__dict__[attribute] is None for attribute in ['_values',
-                                                                  '_dilation',
-                                                                  '_padding']):
-            raise AttributeError("Shapelet attribute not initialised correctly, "
-                                 "at least one attribute was set to None")
-
-    def _check_array(self, X, coerce_to_numpy=True):
-        if X.ndim != 3:
-            raise ValueError(
-                "If passed as a np.array, X must be a 3-dimensional "
-                "array, but found shape: {}".format(X.shape)
-            )
-        if isinstance(X, pd.DataFrame):
-            if not is_nested_dataframe(X):
-                raise ValueError(
-                    "If passed as a pd.DataFrame, X must be a nested "
-                    "pd.DataFrame, with pd.Series or np.arrays inside cells."
-                )
-            # convert pd.DataFrame
-            if coerce_to_numpy:
-                X = from_nested_to_3d_numpy(X)
-        return X
-
-    def plot_loc(self, x, padding_matching=False, ax=None,
-                 alpha=0.75, x_alpha=0.75, size=15, color='black', c_x='blue'):
+    def transform(self, X, return_location=False, return_scale=False):
         """
-        Plot the shapelet on the input. The shapelet will be displayed on its
-        closest match to the input serie and scaled to the input. 
-        If padding_matching is used, the padded version of x will be displayed.
+        Transform the input using Shapelet distance (minimum z-normalized
+        squarred euclidean distance to all subsequences of a time series)
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        padding_matching : TYPE, optional
-            DESCRIPTION. The default is False.
-        ax : TYPE, optional
-            DESCRIPTION. The default is None.
-        alpha : TYPE, optional
-            DESCRIPTION. The default is 0.75.
-        size : TYPE, optional
-            DESCRIPTION. The default is 15.
+        X : array, shape = (n_samples, n_features, n_timestamps)
+            Input time series.
+            
+        return_location : boolean, optional
+            Also return the location of the minimum distance. 
+            Default is False.
+            
+        return_scale : boolean, optional
+            Also return the scale (mean and std) of the subsequence of inputs were
+            minimum distance was found. Default is False.
+
+        Returns
+        -------
+        array, shape=(n_samples, n_features)
+            Shapelet distance to all inputs and features.
+
+        """
+        self._check_is_init()
+        X = check_array_3D(X)
+        n_samples, n_features, n_timestamps = X.shape
+        
+        if return_location:
+            locs = np.zeros((n_samples, n_features))
+        if return_scale:
+            scales = np.zeros((n_samples, n_features, 2))
+        dist = np.zeros((n_samples, n_features))
+        
+        for i in range(n_features):
+            X_strides = generate_strides_2D(
+                X[:,i], self.length, self.dilation)
+            X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
+                X_strides.std(axis=-1, keepdims=True) + 1e-8)
+            print(X_strides.shape)
+            for j in range(X.shape[0]):
+                d = cdist(X_strides[j], self.values.reshape(1,-1), metric='sqeuclidean')
+                dist[j, i] += d.min(axis=0)
+                if return_location:
+                    locs[j, i] += d.argmin(axis=0)
+                if return_scale:
+                    subseq = X[j, i,
+                               np.asarray([d.argmin(axis=0) + j*self.dilation 
+                                           for j in range(self.length)])
+                               ]
+                    scales[j, i, 0] += subseq.mean()
+                    scales[j, i, 1] += subseq.std()
+                
+        if return_location and return_scale:
+            return dist, locs, scales
+        elif return_location:
+            return dist, locs
+        elif return_scale:
+            return dist, scales
+        else:
+            return dist
+
+    def _check_is_init(self):
+        if any(self.__dict__[attribute] is None for attribute in ['_values',
+                                                                  '_dilation']):
+            raise AttributeError("Shapelet attribute not initialised correctly, "
+                                 "at least one attribute was set to None")
+
+    def plot(self, X, ax=None,
+                 alpha=0.75, x_alpha=0.9, lw=3, x_lw=4,
+                 color='red', c_x='blue'):
+        """
+        Plot the shapelet on an input time series. The shapelet will be displayed on its
+        closest match to the input serie and scaled to the input. 
+
+        Parameters
+        ----------
+        X : array, shape=(n_timestamps)
+            Input time series.
+        ax : matplotlib.axes, optional
+            A matplotlib axe on which to plot.
+        alpha : float, optional
+            The alpha parameter for the shapelet. The default is 0.75.
+        x_alpha : float, optional
+            The alpha parameter for the input. The default is 0.9.
+        x_lw : float, optional
+            The linewidth of the input. The default is 4.
+        lw : float, optional
+            The linewidth of the Shapelet. The default is 3.
         color : TYPE, optional
-            DESCRIPTION. The default is 'black'.
-        c_x : TYPE, optional
-            DESCRIPTION. The default is 'blue'.
+            Color of the shapelet. The default is 'black'.
+        c_x : string, optional
+            Color of the input time serie. The default is 'blue'.
 
         Returns
         -------
         None.
 
         """
-        padding = self.padding
-        if not padding_matching:
-            padding = 0
-
-        if padding > 0:
-            x_pad = np.zeros(x.shape[0] + 2 * padding)
-            x_pad[padding:-padding] = x
-        else:
-            x_pad = x
-
-        loc, mean, std = self._locate(x_pad, return_dist=False, return_scale=True,
-                                      padding_matching=padding_matching)
-        vals = (self.values * std) + mean
-        padding = self.padding
+        _, loc, scale = self.transform(X.reshape(1,1,-1), return_scale=True,
+                                        return_location=True)
+        vals = (self.values * scale[0,0,1]) + scale[0,0,0]
+        loc = [loc[0,0] + j*self.dilation for j in range(self.length)]
+        print(vals)
+        print(loc)
         if ax is None:
-            plt.plot(x_pad, c=c_x, alpha=x_alpha,linewidth=8)
-            plt.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=4)
-            
+            plt.plot(X, c=c_x, alpha=x_alpha, linewidth=x_lw)
+            plt.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=lw)
             plt.show()
         else:
-
-            ax.plot(x_pad, c=c_x, alpha=x_alpha, linewidth=8)
-            ax.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=4)
-            
+            ax.plot(X, c=c_x, alpha=x_alpha, linewidth=x_lw)
+            ax.plot(loc, vals, alpha=alpha, color=color, linestyle='dashed', linewidth=lw)
 
     @property
     def values(self):
@@ -195,17 +172,17 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
 
     @values.setter
     def values(self, value):
+        value = check_array_1D(value)
         self._values = value
-
+        self.length = self.values.shape[0]
+        
     @property
-    def padding(self):
-        return self._padding
+    def length(self):
+        return self._length
 
-    @padding.setter
-    def padding(self, value):
-        if type(value) is not int:
-            value = int(value)
-        self._padding = value
+    @length.setter
+    def length(self, value):
+        self._length = value
 
     @property
     def dilation(self):
@@ -217,18 +194,3 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
             value = int(value)
         self._dilation = value
 
-    @property
-    def input_ft_id(self):
-        return self._input_ft_id
-
-    @input_ft_id.setter
-    def input_ft_id(self, value):
-        self._input_ft_id = value
-
-    @property
-    def ft_kernel_id(self):
-        return self._ft_kernel_id
-
-    @ft_kernel_id.setter
-    def ft_kernel_id(self, value):
-        self._ft_kernel_id = value

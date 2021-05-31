@@ -8,18 +8,36 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from CST.utils.kernel_utils import apply_one_kernel_one_sample, apply_one_kernel_all_sample
-from CST.utils.checks_utils import check_array_3D
+from CST.utils.checks_utils import check_array_3D, check_array_1D
 
 
 class kernel(BaseEstimator, TransformerMixin):
-    def __init__(self, length=None, bias=None, dilation=None, padding=None,
+    def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None, id_ft=0):
-        self.length = length
+        """
+        Basic implementation of a convolutional kernel
+
+        Parameters
+        ----------
+        bias : float
+            Bias of the kernel.
+        dilation : int
+            Dilation of the kernel. 
+        padding : int
+            Padding of the kernel.
+        weights : array, shape = (length)
+            Weights of the kernel.
+
+        Returns
+        -------
+        None.
+
+        """
         self.bias = bias
         self.dilation = dilation
         self.padding = padding
         self.weights = weights
-        self.id_ft = id_ft
+        self.length = self.weights.shape[0]
 
     def print_info(self):
         """
@@ -38,54 +56,79 @@ class kernel(BaseEstimator, TransformerMixin):
         print('-- WEIGHTS : {}'.format(self.weights))
 
     def fit(self, X, y=None, normalise=True):
+        """
+        Placeholder method to allow fit_transform method.
+
+        Parameters
+        ----------
+        X : ignored
+        
+        y : ignored, optional
+            
+        normalise : ignored, optional
+            
+        
+        Returns
+        -------
+        self
+
+        """
         self._check_is_init()
         return self
 
     def transform(self, X, normalise=True):
         """
-        Apply the kernel through a convolution operation on each time series of the input
+        Apply the kernel through a convolution operation on each time series of the input.
+        If the input is have multiple feature, it will apply the convolution to all of them.
 
         Parameters
         ----------
-        X : 3-D array
-            A 3 dimensional array of shape (n_samples, n_features, n_timestamps).
+        X : array, shape = (n_samples, n_features, n_timestamps)
+            Input time series to convolve
         normalise : boolean, optional
             If True, X will be normalised before applying the convolution.
             The default is True.
-
+        
         Returns
         -------
-        3-D array
-            The convolved input time series. The array will be of shape 
-            (n_samples, n_features, n_conv_timestamps)
+        array, shape = (n_samples, n_features, n_convolution)
+            The convolved input time series.
         """
 
         self._check_is_init()
-        X = check_array_3D(X)
+        X = check_array_3D(X, coerce_to_numpy=True)
         if normalise:
             X = (X - X.mean(axis=-1, keepdims=True)) / (
                 X.std(axis=-1, keepdims=True) + 1e-8
             )
-        return apply_one_kernel_all_sample(X, self.id_ft, self.weights,
-                                           self.length, self.bias,
-                                           self.dilation, self.padding)
 
-    def _convolve_one_sample(self, x):
+        n_conv = X.shape[2] - ((self.length - 1) *
+                               self.dilation) + (2 * self.padding)
+        conv = np.zeros(X.shape[0], X.shape[1], n_conv)
+
+        for i in range(X.shape[1]):
+            conv[:, i] += apply_one_kernel_all_sample(X, i, self.weights,
+                                                      self.length, self.bias,
+                                                      self.dilation, self.padding)
+        return conv
+
+    def _convolve_one_sample(self, X):
         """
         Apply the kernel through a convolution operation to the input time series
 
         Parameters
         ----------
-        x : 1-D array
+        X : array, shape = (n_timestamps)
             A univariate time series.
 
         Returns
         -------
-        1-D array
+        array, shape = (n_convolution)
             The result of the convolution.
 
         """
-        return apply_one_kernel_one_sample(x, x.shape[0], self.weights,
+        X = check_array_1D(X)
+        return apply_one_kernel_one_sample(X, X.shape[0], self.weights,
                                            self.length, self.bias,
                                            self.dilation, self.padding)
 
@@ -101,7 +144,7 @@ class kernel(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        1-D array
+        array, shape = (length)
             An array which contain the indexes of the input values
             used by the convolution operation at convolution_index.
 
@@ -110,8 +153,9 @@ class kernel(BaseEstimator, TransformerMixin):
                            for l in range(self.length)])
 
     def _check_is_init(self):
-        if any(self.__dict__[attribute] is None for attribute in ['_length', '_bias',
-                                                                  '_dilation', '_padding',
+        if any(self.__dict__[attribute] is None for attribute in ['_bias',
+                                                                  '_dilation',
+                                                                  '_padding',
                                                                   '_weights']):
             raise AttributeError("Kernel attribute not initialised correctly, "
                                  "at least one attribute was set to None")
@@ -123,14 +167,6 @@ class kernel(BaseEstimator, TransformerMixin):
     @length.setter
     def length(self, value):
         self._length = value
-
-    @property
-    def id_ft(self):
-        return self._id_ft
-
-    @id_ft.setter
-    def id_ft(self, value):
-        self._id_ft = value
 
     @property
     def bias(self):
@@ -162,41 +198,92 @@ class kernel(BaseEstimator, TransformerMixin):
 
     @weights.setter
     def weights(self, value):
+        value = check_array_1D(value)
         self._weights = value
+        self.length = self.weights.shape[0]
 
 
-class Rocket_feature_kernel(kernel):
-    def __init__(self, length=None, bias=None, dilation=None, padding=None,
-                 weights=None, id_ft=None, feature_id=None):
-        self.kernel_id = feature_id//2
-        self.feature_id = feature_id
-        super().__init__(length=length, bias=bias, dilation=dilation,
-                         padding=padding, weights=weights,
-                         id_ft=id_ft)
-        f_val, f_loc = self._get_ft_func()
-        self.f_val = f_val
-        self.f_loc = f_loc
+class Rocket_kernel(kernel):
+    def __init__(self, bias=None, dilation=None, padding=None,
+                 weights=None):
+        """
+        Wrapper for kernels extracted from ROCKET.
+        Support multivariate in a basic way by convolving all features.
 
-    def fit(self):
+        Parameters
+        ----------
+        bias : float
+            Bias of the kernel.
+        dilation : int
+            Dilation of the kernel.
+        padding : int
+            Padding of the kernel. 
+        weights : array, shape = (length)
+            Weights of the kernel. 
+
+        Returns
+        -------
+        None.
+
+        """
+        super().__init__(bias=bias, dilation=dilation,
+                         padding=padding, weights=weights)
+
+    def fit(self, X, y=None):
+        """
+        Placeholder method to allow fit_transform method.
+
+        Parameters
+        ----------
+        X : ignored
+        
+        y : ignored, optional
+            
+        normalise : ignored, optional
+            
+
+        Returns
+        -------
+        self
+
+        """
         self._check_is_init()
         return self
 
-    def get_features(self, X, normalise=True):
-        self._check_is_init()
-        X = check_array_3D(X)
-        return self.f_val(self.transform(X, normalise=normalise)[:, self.id_ft])
+    def transform(self, X, normalise=True, to_feature=True):
+        """
+        Apply the kernel through a convolution operation on each time series of the input.
+        If the input is have multiple feature, it will apply the convolution to all of them.
 
-    def get_locs(self, X, normalise=True):
-        self._check_is_init()
-        X = check_array_3D(X)
-        X_conv = self.transform(X, normalise=normalise)
-        return np.asarray([self.f_loc(x) for x in X_conv[:, self.id_ft]], dtype='object')
+        Parameters
+        ----------
+        X : array, shape = (n_samples, n_features, n_timestamps)
+            Input time series to convolve
+        normalise : boolean, optional
+            If True, X will be normalised before applying the convolution.
+            The default is True.
+         to_feature : boolean, optional
+            If True, the function will return the ppv and max features
+            of the convolution. The default is True.
 
-    def _get_ft_func(self):
-        if self.feature_id % 2 == 0:
-            return self._ft_ppv, self._ft_pnv_loc
+        Returns
+        -------
+        array, shape = (n_samples, n_features, 2)
+            The convolved input time series on which the ppv and max 
+            features were extracted if to_feature is True. Else it return
+            the raw convolutions.
+        """
+        self._check_is_init()
+        conv = super().transform(X, normalise=normalise)
+
+        if to_feature:
+            features = np.zeros(X.shape[0], X.shape[1], 2)
+            for i in range(X.shape[1]):
+                features[:, i, 0] += self._ft_ppv(conv[:, i])
+                features[:, i, 1] += self._ft_max(conv[:, i])
+            return features
         else:
-            return self._ft_max, self._ft_max_loc
+            return conv
 
     def _ft_max(self, X_conv):
         return np.max(X_conv, axis=-1)
@@ -210,65 +297,90 @@ class Rocket_feature_kernel(kernel):
     def _ft_ppv_loc(self, conv):
         return (conv > 0).nonzero()[0]
 
-    def _ft_pnv_loc(self, conv):
-        return (conv <= 0).nonzero()[0]
 
-    @property
-    def f_val(self):
-        return self._f_val
+class MiniRocket_kernel(kernel):
+    def __init__(self, bias=None, dilation=None, padding=None,
+                 weights=None):
+        """
+        Wrapper for kernels extracted from Mini-ROCKET.
+        Support multivariate in a basic way by convolving all features.
 
-    @f_val.setter
-    def f_val(self, value):
-        self._f_val = value
+        Parameters
+        ----------
+        bias : float
+            Bias of the kernel.
+        dilation : int
+            Dilation of the kernel.
+        padding : int
+            Padding of the kernel. 
+        weights : array, shape = (length)
+            Weights of the kernel. 
 
-    @property
-    def f_loc(self):
-        return self._f_loc
+        Returns
+        -------
+        None.
 
-    @f_loc.setter
-    def f_loc(self, value):
-        self._f_loc = value
+        """
+        super().__init__(bias=bias, dilation=dilation,
+                         padding=padding, weights=weights)
 
-    @property
-    def feature_id(self):
-        return self._feature_id
+    def fit(self, X, y=None):
+        """
+        Placeholder method to allow fit_transform method.
 
-    @feature_id.setter
-    def feature_id(self, value):
-        self._feature_id = value
+        Parameters
+        ----------
+        X : ignored
+        
+        y : ignored, optional
+            
+        normalise : ignored, optional
+            
 
-    @property
-    def kernel_id(self):
-        return self._kernel_id
+        Returns
+        -------
+        self
 
-    @kernel_id.setter
-    def kernel_id(self, value):
-        self._kernel_id = value
-
-
-class Rocket_kernel(kernel):
-    def __init__(self, length=None, bias=None, dilation=None, padding=None,
-                 weights=None, id_ft=None, kernel_id=None):
-        self.kernel_id = kernel_id
-        super().__init__(length=length, bias=bias, dilation=dilation,
-                         padding=padding, weights=weights,
-                         id_ft=id_ft)
-
-    def fit(self, X, y=None, normalise=True):
+        """
         self._check_is_init()
         return self
 
-    def get_features(self, X, normalise=True):
+    def transform(self, X, normalise=True, to_feature=True):
+        """
+        Apply the kernel through a convolution operation on each time series of the input.
+        If the input is have multiple feature, it will apply the convolution to all of them.
+
+        Parameters
+        ----------
+        X : array, shape = (n_samples, n_features, n_timestamps)
+            Input time series to convolve
+        normalise : boolean, optional
+            If True, X will be normalised before applying the convolution.
+            The default is True.
+         to_feature : boolean, optional
+            If True, the function will return the ppv feature
+            of the convolution. The default is True.
+
+        Returns
+        -------
+        array, shape = (n_samples, n_features)
+            The convolved input time series on which the ppv feature was 
+            extracted if to_feature is True. Else it return the raw convolutions.
+        """
         self._check_is_init()
-        X = check_array_3D(X)
-        X_conv = self.transform(X, normalise=normalise)
-        return np.concatenate((np.mean(X_conv > 0, axis=-1),
-                               np.max(X_conv, axis=-1)), axis=1)
+        conv = super().transform(X, normalise=normalise)
 
-    @property
-    def kernel_id(self):
-        return self._kernel_id
+        if to_feature:
+            features = np.zeros(X.shape[0], X.shape[1])
+            for i in range(X.shape[1]):
+                features[:, i] += self._ft_ppv(conv[:, i])
 
-    @kernel_id.setter
-    def kernel_id(self, value):
-        self._kernel_id = value
+            return features
+        else:
+            return conv
+
+    def _ft_ppv(self, X_conv):
+        return np.mean(X_conv > 0, axis=-1)
+
+    def _ft_ppv_loc(self, conv):
+        return (conv > 0).nonzero()[0]

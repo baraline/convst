@@ -10,12 +10,16 @@ from sklearn.tree import _tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.base import BaseEstimator, TransformerMixin
-from CST.base_transformers.minirocket import MiniRocket
-from CST.utils.checks_utils import check_array_3D
+
 from numba import njit, prange
 from numpy.lib.stride_tricks import as_strided
-from scipy.spatial.distance import cdist
 from numba import set_num_threads
+
+from scipy.spatial.distance import cdist
+
+from CST.base_transformers.minirocket import MiniRocket
+from CST.utils.checks_utils import check_array_3D
+from CST.utils.shapelets_utils import generate_strides_2D
 
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
     
@@ -131,7 +135,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             self._log("Transforming for dilation {} ({}/{}) with {} shapelets".format(
                 dil, i, len(self.shapelets), len(self.shapelets[dil])))
             dilation = dil
-            X_strides = _generate_strides_2d(X[:,self.id_ft,:], 9, dilation)
+            X_strides = generate_strides_2D(X[:,self.id_ft,:], 9, dilation)
             X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                 X_strides.std(axis=-1, keepdims=True) + 1e-8)
             if store:
@@ -211,7 +215,7 @@ def _fit(X, X_split, y_split, kernel_id, L, dils, P):
         dil = dils[k_id]
         classes = np.unique(y_splt)
         n_classes = classes.shape[0]
-        Lp = _generate_strides_2d(L[x_indexes, k_id, :], 9, dil).sum(axis=-1)
+        Lp = generate_strides_2D(L[x_indexes, k_id, :], 9, dil).sum(axis=-1)
         c_w =  X[x_indexes].shape[0] / (n_classes * np.bincount(y_splt))
         
         LC = np.zeros((n_classes, Lp.shape[1]))
@@ -276,14 +280,3 @@ def _get_regions(indexes):
     regions[p] = indexes[-1]
     idx = np.where(regions!=-1)[0]
     return regions[idx], np.concatenate((np.array([0],dtype=np.int32),np.where(np.diff(idx)!=1)[0]+1,np.array([indexes.shape[0]],dtype=np.int32)))
-
-@njit(cache=True)
-def _generate_strides_2d(X, window_size, window_step):
-    n_samples, n_timestamps = X.shape
-    
-    shape_new = (n_samples,
-                 n_timestamps - (window_size-1)*window_step,
-                 window_size // 1)
-    s0, s1 = X.strides
-    strides_new = (s0, s1, window_step *s1)
-    return as_strided(X, shape=shape_new, strides=strides_new)

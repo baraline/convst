@@ -67,9 +67,9 @@ def apply_one_kernel_all_sample(X, id_ft, weights, length, bias,
                                 dilation, padding):
     n_samples, _, n_timestamps = X.shape
     n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
-    X_conv = np.zeros((n_samples, 1, n_conv),dtype=np.float32)
+    X_conv = np.zeros((n_samples, n_conv),dtype=np.float32)
     for i in prange(n_samples):
-        X_conv[i,0,:] = apply_one_kernel_one_sample(X[i,id_ft], n_timestamps,
+        X_conv[i,:] = apply_one_kernel_one_sample(X[i, id_ft], n_timestamps,
                                                     weights, length, bias, 
                                                     dilation, padding)
     return X_conv
