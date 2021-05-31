@@ -26,11 +26,11 @@ from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransf
 from CST.utils.dataset_utils import load_sktime_dataset_split
 
 # Load Dataset by name. Any name of the univariate UCR archive can work.
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
+X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
     'GunPoint', normalize=True)
 
 # First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time !
-# Put verbose = 1 to see some of the progression of the algorithm.
+# Put verbose = 1 to see the progression of the algorithm.
 
 cst = make_pipeline(
     ConvolutionalShapeletTransformer(verbose=0),
@@ -46,14 +46,13 @@ print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 
 We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yet extended the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform.
 
-In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results. Additional experiments mentioned in the paper are also found in this folder.
+In the `Example` folder, you can find some other scripts/notebooks to help you get started and show you how to plot some results. Additional experiments mentioned in the paper are also found in this folder.
 
-## Reproducing the paper results and figures
+## Reproducing the paper results
 
-Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to build figures and LaTeX tables we use in our paper.
+Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results.
 
-To obtain the same resampling data as the UCR archive, you muse use the [tsml](https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/examples/DataHandling.java) java repository, then from the class `DataHandling` in the package examples, use the function `resamplingData` and change where to read and write the data from. 
-The function assumes the input is in arff format, they can be obtained on the [time serie classification website](http://www.timeseriesclassification.com/)
+To obtain the same resampling data as the UCR archive, you muse use the [tsml](https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/examples/DataHandling.java) java repository, then from the class `DataHandling` in the package examples, use the function `resamplingData` and change where to read and write the data from. The function assumes the input is in arff format, they can be obtained on the [time serie classification website](http://www.timeseriesclassification.com/)
 
 ## Contributing, Citing and Contact
 
@@ -79,11 +78,11 @@ If you use our algorithm or publication in any work, please cite the following p
 ## Citations
 Here are the code-related citations that were not made in the paper
 
-[2]: [Loning, Markus and Bagnall, Anthony and Ganesh, Sajaysurya and Kazakov, Viktor and Lines, Jason and Kiraly, Franz J, "sktime: A Unified Interface for Machine Learning with Time Series", Workshop on Systems for ML at NeurIPS 2019}](https://www.sktime.org/en/latest/)
+[1]: [Loning, Markus and Bagnall, Anthony and Ganesh, Sajaysurya and Kazakov, Viktor and Lines, Jason and Kiraly, Franz J, "sktime: A Unified Interface for Machine Learning with Time Series", Workshop on Systems for ML at NeurIPS 2019}](https://www.sktime.org/en/latest/)
 
 
-[3]: [The Scikit-learn development team, "Scikit-learn: Machine Learning in Python", Journal of Machine Learning Research 2011](https://scikit-learn.org/stable/)
+[2]: [The Scikit-learn development team, "Scikit-learn: Machine Learning in Python", Journal of Machine Learning Research 2011](https://scikit-learn.org/stable/)
 
 
-[4]: [The Numpy development team, "Array programming with NumPy", Nature 2020](https://numpy.org/)
+[3]: [The Numpy development team, "Array programming with NumPy", Nature 2020](https://numpy.org/)
 
