@@ -9,28 +9,39 @@ The package support Python 3.7 & 3.8. To install the package and run the example
 1. Clone the repository https://github.com/baraline/CST.git
 3. run `python3 setup.py install`
 
-This will install the package and the dependencies. We do not yet support installation via `pip` in the initial release.
-If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
+This will install the package and automaticaly look for the dependencies using `pip`. We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation.
+We do not yet support installation via `pip` in the initial release. If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
 
 An optional dependency that can help speed up numba, which is used in our implementation is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`
 
 ## Tutorial
-We give here a minimal example to run the `CST` algorithm on any dataset of the UCR/UEA archive:
+We give here a minimal example to run the `CST` algorithm on any univariate dataset of the UCR archive:
 
 ```python
+import numpy as np
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import RidgeClassifierCV
+from sklearn.metrics import accuracy_score
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 from CST.utils.dataset_utils import load_sktime_dataset_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score
-# Load Dataset by name, here we use 'GunPoint'
+
+# Load Dataset by name. Any name of the univariate UCR archive can work.
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
     'GunPoint', normalize=True)
-cst = ConvolutionalShapeletTransformer().fit(X_train, y_train)
-X_cst_train = cst.transform(X_train)
-X_cst_test = cst.transform(X_test)
-rf =  RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),normalize=True).fit(X_cst_train, y_train)
-pred = rf.predict(X_cst_test)
-print("F1-Score for CST RF : {}".format(f1_score(y_test, pred)))
+
+# First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time !
+# Put verbose = 1 to see some of the progression of the algorithm.
+
+cst = make_pipeline(
+    ConvolutionalShapeletTransformer(verbose=0),
+    RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
+                      normalize=True, class_weight='balanced')
+)
+
+cst.fit(X_train, y_train)
+pred = cst.predict(X_test)
+
+print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 ```
 
 We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yet extended the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform.
