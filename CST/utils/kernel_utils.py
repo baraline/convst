@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 29 09:46:14 2021
 
-@author: A694772
-"""
 __all__ = [
 	"apply_one_kernel_one_sample",
     "apply_one_kernel_all_sample"

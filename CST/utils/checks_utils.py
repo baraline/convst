@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 29 09:46:14 2021
 
-@author: A694772
-"""
 __all__ = [
 	"check_array_3D",
     "check_array_2D",
@@ -14,7 +10,7 @@ import numpy as np
 import pandas as pd
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 
-def check_array_3D(X, coerce_to_numpy=True):
+def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
     X = check_is_numpy_or_pd(X)
     if X.ndim != 3:
         raise ValueError(
@@ -29,6 +25,11 @@ def check_array_3D(X, coerce_to_numpy=True):
             )
         if coerce_to_numpy:
             X = from_nested_to_3d_numpy(X)
+    if is_univariate:
+        if X.shape[1] != 1:
+            raise ValueError(
+                "X must be a 3-dimensional array with dimension 1 equal to 1"
+            )
     return X
 
 def check_array_2D(X, coerce_to_numpy=True):

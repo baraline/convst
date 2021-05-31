@@ -1,26 +1,36 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 14 09:21:00 2021
 
-@author: A694772
-"""
 import pandas as pd
 import numpy as np
 
 from datetime import datetime
+
 from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
+from sktime.classification.shapelet_based import MrSEQLClassifier
+
 from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from sktime.classification.shapelet_based import MrSEQLClassifier
+
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
-from wildboar.ensemble import ShapeletForestClassifier
 from sklearn.metrics import accuracy_score
+
+from wildboar.ensemble import ShapeletForestClassifier
+
 from numba import set_num_threads
 #Can use this to resume to last dataset if a problem occured
 resume = False
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Modify this to your path to the UCR resamples, check README for how to get them. 
+# Another splitter is also provided in dataset_utils to make random resamples
+
+base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 print("Imports OK")
 #n_cv = 1 to test on original train test split.
@@ -31,16 +41,16 @@ P=80
 n_bins=11
 random_state = None
 
-run_RKT = False
-run_CST = False
-run_MrSEQL = False
+run_RKT = True
+run_CST = True
+run_MrSEQL = True
 run_SFC = True
 
-#Machine parameters
+#Machine parameters, to change with yours.
 available_memory_bytes = 60 * 1e9
 n_cores = 32
 
-def get_n_jobs_n_threads(nbytes, size_mult=4000):
+def get_n_jobs_n_threads(nbytes, size_mult=3000):
     nbytes *= size_mult
     n_jobs = min(max(available_memory_bytes//nbytes,1),n_cv//2)
     n_threads = min(max(n_cores//n_jobs,1),n_cores//2)
@@ -48,7 +58,6 @@ def get_n_jobs_n_threads(nbytes, size_mult=4000):
 
 csv_name = 'CV_{}_results_({},{})_{}_{}.csv'.format(
     n_cv, n_trees, max_ft, n_bins, P)
-base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
 dataset_names = return_all_dataset_names()
 
@@ -115,6 +124,9 @@ pipe_sfc = make_pipeline(ShapeletForestClassifier(n_estimators=n_trees,
 
 pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
 
+# Process the dataset by "size" (n bytes). This is not mandatory to do,
+# But you can launch a process going from high to low and another low to high
+# by changing the loop iteration.
 dataset_size = {}
 for name in dataset_names:
     
@@ -126,7 +138,7 @@ for name in dataset_names:
     dataset_size.update({name:size})
     
 dataset_size = {k: v for k, v in sorted(dataset_size.items(), key=lambda item: item[1])}
-    
+
 for name in dataset_size.keys():
     print(name)
     ds_path = base_UCR_resamples_path+"{}/{}".format(name, name)
@@ -186,4 +198,4 @@ for name in dataset_size.keys():
         df.loc[name, 'SFC_runtime'] = time
         df.to_csv(csv_name)
 
-print('---------------------')
+    print('---------------------')

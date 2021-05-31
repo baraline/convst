@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed May  5 10:51:59 2021
 
-@author: Antoine
-"""
-from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
-from CST.utils.dataset_utils import load_sktime_arff_file
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import RidgeClassifierCV
 import pandas as pd
 import numpy as np
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from sktime.classification.shapelet_based import MrSEQLClassifier
-from sklearn.pipeline import make_pipeline
-from datetime import datetime
-from wildboar.ensemble import ShapeletForestClassifier
 
+from datetime import datetime
+
+from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
+from sktime.classification.shapelet_based import MrSEQLClassifier
+
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import RidgeClassifierCV
+
+from CST.utils.dataset_utils import load_sktime_arff_file
+from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+
+from wildboar.ensemble import ShapeletForestClassifier
 
 """
 I did this "dummy" script to have more control over what was included in the 
-time measurments.
+time measurments. If you want to do things faster, using cross validate pipeline
+with parallel jobs could (didn't check source code of sklearn) lead to the same results.
 
 The datasets we use here are not directly available via the sktime interface.
 You must download them from the timeserieclassifcation website :
@@ -29,6 +29,7 @@ Link to full archive http://www.timeseriesclassification.com/Downloads/DucksAndG
 By placing the _TRAIN.arff and _TEST.arff in the folder specified by the path variable,
  you can simply change the name of the dataset in the functions bellow if you wish to 
  try it on other datasets, be sure in this case to change the lengths that are considered.
+ 
 """
 run_cst = True
 run_rkt = True
@@ -37,7 +38,7 @@ run_sql = True
 
 resume = False
 
-n_jobs=20
+n_jobs = 20
 csv_name = 'tslength_Benchmark.csv'
 lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 2.5e+4]).astype(int)
 if resume:
@@ -49,8 +50,8 @@ else:
     df['MiniRKT'] = pd.Series(0, index=df.index)
     df['MrSEQL'] = pd.Series(0, index=df.index)
     df['SFC'] = pd.Series(0, index=df.index)
-    
-    
+
+
 path = r"/home/prof/guillaume/Shapelets/ts_datasets/"
 X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
     path+"DucksAndGeese")
@@ -61,18 +62,15 @@ pipe_rkt = make_pipeline(MiniRKT(),
                                            normalize=True))
 
 
-pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(
-                                                          P=80,
-                                                          n_trees=100,
-                                                          max_ft=1.0,
-                                                          n_bins=11,
-                                                          n_jobs=n_jobs
-                                                          ),
-                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
+pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(P=80, n_trees=100,
+                                                          max_ft=1.0, n_bins=11,
+                                                          n_jobs=n_jobs),
+                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
+                                           normalize=True))
 
 pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_jobs))
 
-pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax','sfa']))
+pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax', 'sfa']))
 
 #Run all script a first time to avoid issues related to first numba run being slower
 pipe_cst.fit(X_train[0:100, :, 0:100], y_train[0:100])
@@ -163,16 +161,18 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('CST', n, i_cv))
-            timing.append(time_pipe(pipe_cst, X_train[x1], y_train[x1], X_test[x2]))
+            timing.append(
+                time_pipe(pipe_cst, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'CST'] = np.mean(timing)
         df.to_csv(csv_name)
-        
+
     # RKT
     if run_rkt and df.loc[n*n_classes, 'MiniRKT'] == 0:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('MiniRKT', n, i_cv))
-            timing.append(time_pipe(pipe_rkt, X_train[x1], y_train[x1], X_test[x2]))
+            timing.append(
+                time_pipe(pipe_rkt, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MiniRKT'] = np.mean(timing)
         df.to_csv(csv_name)
 
@@ -181,7 +181,8 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('MrSEQL', n, i_cv))
-            timing.append(time_pipe(pipe_MrSEQL, X_train[x1], y_train[x1], X_test[x2]))
+            timing.append(
+                time_pipe(pipe_MrSEQL, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'MrSEQL'] = np.mean(timing)
         df.to_csv(csv_name)
 
@@ -190,6 +191,7 @@ for n in n_per_class:
         timing = []
         for i_cv in range(n_cv):
             print("{}/{}/n_cv:{}".format('SFC', n, i_cv))
-            timing.append(time_pipe(pipe_sfc, X_train[x1], y_train[x1], X_test[x2]))
+            timing.append(
+                time_pipe(pipe_sfc, X_train[x1], y_train[x1], X_test[x2]))
         df.loc[n*n_classes, 'SFC'] = np.mean(timing)
         df.to_csv(csv_name)

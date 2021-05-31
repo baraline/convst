@@ -3,15 +3,16 @@ It compute a set of convolutional shapelets that match small parts of the input 
 
 ## Installation
 
-The repository was developped under Python 3.8. We will guarantee the support of Python 3.7 in future version, although the modifications might be minors or inexistant. 
-To install the package and run the example you must :
+The package support Python 3.7 & 3.8. To install the package and run the example you must :
 
 0. If you are making a new installation, first install python, pip and setuptools.
 1. Clone the repository https://github.com/baraline/CST.git
 3. run `python3 setup.py install`
 
 This will install the package and the dependencies. We do not yet support installation via `pip` in the initial release.
-If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file
+If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
+
+An optional dependency that can help speed up numba, which is used in our implementation is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`
 
 ## Tutorial
 We give here a minimal example to run the `CST` algorithm on any dataset of the UCR/UEA archive:

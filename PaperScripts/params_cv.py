@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 26 13:30:45 2021
 
-@author: A694772
-"""
 import pandas as pd
 import numpy as np
 
 from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
 from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
-
 # Can use this to resume to last dataset if a problem occured
-resume = True
+resume = False
 
 available_memory_bytes = 60 * 1e9
 max_cpu_cores = 32
@@ -24,7 +20,7 @@ size_mult = 3250
 
 
 max_process = max_cpu_cores//tree_jobs
-file_name = 'params_csv_all.csv'
+file_name = 'params_csv.csv'
 n_cv = 10
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
@@ -36,8 +32,6 @@ params = {'CST__P': P,
           'CST__n_trees': n_trees,
           'CST__n_bins':n_bins}
 
-
-
 print(params)
 
 if resume:
@@ -48,6 +42,7 @@ else:
 
 dataset_names = return_all_dataset_names()
 
+# TODO: extract dataset name to put them in the loop for reproductibility
 
 for name in dataset_names:
     results = {}

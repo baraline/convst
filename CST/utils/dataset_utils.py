@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 29 09:46:14 2021
 
-@author: A694772
-"""
 __all__ = [
     "load_sktime_dataset_split",
     "load_sktime_dataset",
