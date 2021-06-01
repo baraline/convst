@@ -46,7 +46,21 @@ print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 
 We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yet extended the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform.
 
-In the `Example` folder, you can find some other scripts/notebooks to help you get started and show you how to plot some results. Additional experiments mentioned in the paper are also found in this folder.
+In the `Example` folder, you can find some other scripts/notebooks to help you get started and show you how to plot some results. The `UCR_example.py` script allows you to run CST on any UCR dataset and plot interpretations of the results.
+Additional experiments mentioned in the paper are also found in this folder.
+
+## Current Work in Progress
+
+The package currently has some limitations that are being worked on, the mains ones being :
+
+0. Adaptation to the multivariate context. While you can feed a multivariate time series to CST, it will only look at the first feature for now.
+1. Adaptation to irregular frequencies. This one will take a bit more time to think through, but is on the list.
+2. Adaptation to unsupervised context. The ideal being to implement a clustering version of the algortihm using scikit-learn standards.
+3. Possibility to change the model used to extract partitions of the data in CST.
+4. Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
+5. Memory consumption optimization relative to input time series characteristics.
+6. Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
+
 
 ## Reproducing the paper results
 
