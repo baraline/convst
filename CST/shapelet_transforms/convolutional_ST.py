@@ -117,13 +117,21 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         del kernel_id; gc.collect()
         
         self._log("Discretizing {} shapelets ...".format(shp.shape[0]))
-        self.n_shapelets = 0
-        self.shapelets = {}
+        n_shapelets = 0
+        shps = {}
         for dil in np.unique(d):
             candidates = self._discretize(shp[d == dil])
-            self.n_shapelets += candidates.shape[0]
-            self.shapelets.update({dil: candidates})
+            n_shapelets += candidates.shape[0]
+            shps.update({dil: candidates})
+        self.shapelets = np.zeros((n_shapelets,9), dtype=np.float32)
+        self.dilation = np.zeros(n_shapelets, dtype=np.uint32)
+        prec = 0
+        for key in shps:
+            self.shapelets[prec:prec+shps[key].shape[0]] += shps[key]
+            self.dilation[prec:prec+shps[key].shape[0]] += key
+            prec+=shps[key].shape[0]
         del shp
+        del shps
         del d; gc.collect()
         return self
 
@@ -279,18 +287,18 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         """
         self._check_is_fited()
         X = check_array_3D(X)
-        distances = np.zeros((X.shape[0], self.n_shapelets), dtype=np.float32)
+        distances = np.zeros((X.shape[0], self.shapelets.shape[0]), dtype=np.float32)
         prev = 0
-        for i, dil in enumerate(self.shapelets.keys()):
-            self._log("Transforming for dilation {} ({}/{}) with {} shapelets ...".format(
-                dil, i, len(self.shapelets), len(self.shapelets[dil])))
-            dilation = dil
-            
+        for dilation in np.unique(self.dilation):
             X_strides = generate_strides_2D(X[:, 0, :], 9, dilation)
             X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                 X_strides.std(axis=-1, keepdims=True) + 1e-8)
+            mask = self.dilation==dilation
+            self._log("Transforming for dilation {} with {} shapelets ...".format(
+                dilation, self.shapelets[mask].shape[0]))
             
-            d = np.asarray([cdist(X_strides[j], self.shapelets[dil],
+            
+            d = np.asarray([cdist(X_strides[j], self.shapelets[mask],
                                   metric='sqeuclidean').min(axis=0)
                             for j in range(X.shape[0])])
             distances[:, prev:prev+d.shape[1]] = d
