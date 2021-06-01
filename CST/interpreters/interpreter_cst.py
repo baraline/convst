@@ -24,7 +24,7 @@ class interpeter_cst():
         self.X_train_cst = X_train_cst
         self.n_classes = np.unique(y_train).shape[0]
     
-    def interpret_sample(self, X, model="DecisionTree", sns_context='talk'):
+    def interpret_sample(self, X, model="DecisionTree", sns_context='paper'):
         sns.set(context=sns_context)
         if model == "DecisionTree":
             self._interpret_dt(X)
@@ -95,7 +95,11 @@ class interpeter_cst():
                 plt.show()
     
     def _interpret_ridge(self, X):
-        pass
+        rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
+                                normalize=True, class_weight='balanced')
+        rdg.fit(self.X_train_cst, self.y_train)
+        coefs = rdg.coef_
+        
     
     
         

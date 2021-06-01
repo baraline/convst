@@ -18,22 +18,33 @@ X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
 # First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time !
 # Put verbose = 1 to activate the verbose progression of the algorithm.
 
-cst = make_pipeline(
-    ConvolutionalShapeletTransformer(verbose=0),
-    RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                      normalize=True, class_weight='balanced')
-)
+cst = ConvolutionalShapeletTransformer(verbose=1)
+rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
+                        normalize=True, class_weight='balanced')
 
-cst.fit(X_train, y_train)
-pred = cst.predict(X_test)
+X_cst_train = cst.fit_transform(X_train, y_train)
+X_cst_test = cst.transform(X_test)
+
+rdg.fit(X_cst_train, y_train)
+pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 print("Accuracy Score for CST : {}".format(
     f1_score(y_test, pred, average='macro')))
 
 # In[]:
-X_cst = cst[0].transform(X_train)
-icst = interpeter_cst(cst[0], X_train, X_cst, y_train)
+    
+icst = interpeter_cst(cst, X_train, X_cst_train, y_train)
 
 # In[]:
 i_sample=0
 icst.interpret_sample(X_test[i_sample:i_sample+1])
+
+# In[]:
+
+x=X_cst_train[0]
+
+x = np.dot(x,rdg.coef_.T)é
+
+
+x += rdg.intercept_
+print(x)

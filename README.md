@@ -1,4 +1,4 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm. For now, time series data from ECG, EPG and Hemodynamics seems to be where we draw our main advantages compared to existing approaches, more details in the paper !
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
@@ -44,9 +44,9 @@ pred = cst.predict(X_test)
 print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 ```
 
-We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`, altought we didn't yet extended the approach to the multivariate context, one can use the `id_ft` parameter of CST to change on which feature the algorithm is computing the transform.
+We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`. Note that as only univariate is supported for now, CST will only process the first feature.
 
-In the `Example` folder, you can find some other scripts/notebooks to help you get started and show you how to plot some results. The `UCR_example.py` script allows you to run CST on any UCR dataset and plot interpretations of the results.
+In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results. The `UCR_example.py` script allows you to run CST on any UCR dataset and plot interpretations of the results.
 Additional experiments mentioned in the paper are also found in this folder.
 
 ## Current Work in Progress
@@ -60,7 +60,8 @@ The package currently has some limitations that are being worked on, the mains o
 4. Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
 5. Memory consumption optimization relative to input time series characteristics.
 6. Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
-
+7. Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
+8. Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
 
 ## Reproducing the paper results
 
