@@ -99,6 +99,12 @@ class interpeter_cst():
                                 normalize=True, class_weight='balanced')
         rdg.fit(self.X_train_cst, self.y_train)
         coefs = rdg.coef_
+        y = rdg.predict(X)
+        if self.n_classes == 2:
+            if y == 0:
+                
+        else:
+            
         
     
     
