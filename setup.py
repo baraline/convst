@@ -17,10 +17,10 @@ setup(
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
-	download_url = 'https://github.com/baraline/convst/archive/v0.1.1.tar.gz',
+	download_url = 'https://github.com/baraline/convst/archive/v0.1.2.tar.gz',
     version="0.1.1",
 	keywords = ['shapelets', 'time-series-classification', 'shapelet-transform','convolutional-kernels'],
-	url="https://github.com/baraline/CST",
+	url="https://github.com/baraline/convst",
     author_email="antoine.guillaume45@gmail.com",
 	python_requires='>=3.7',
     install_requires=[
