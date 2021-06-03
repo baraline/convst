@@ -3,13 +3,12 @@
 
 import matplotlib
 from sklearn.ensemble import RandomForestClassifier
-#from CST.base_transformers.shapelets import Convolutional_shapelet
 from matplotlib import gridspec
-from cst.base_transformers.convolutional_kernels import Rocket_kernel
-from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from cst.utils.dataset_utils import load_sktime_dataset_split
-from cst.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
-from cst.base_transformers.shapelets import Convolutional_shapelet
+from convst.base_transformers.convolutional_kernels import Rocket_kernel
+from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
+from convst.base_transformers.shapelets import Convolutional_shapelet
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns

@@ -5,9 +5,9 @@ import numpy as np
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.metrics import accuracy_score, f1_score
 
-from cst.interpreters.interpreter_cst import interpeter_cst
-from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from cst.utils.dataset_utils import load_sktime_dataset_split
+from convst.interpreters.interpreter_cst import interpeter_cst
+from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.utils.dataset_utils import load_sktime_dataset_split
 
 # Load Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(

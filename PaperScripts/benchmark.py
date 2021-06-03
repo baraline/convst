@@ -11,8 +11,8 @@ from sktime.classification.shapelet_based import MrSEQLClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 
-from cst.utils.dataset_utils import load_sktime_arff_file
-from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.utils.dataset_utils import load_sktime_arff_file
+from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 
 from wildboar.ensemble import ShapeletForestClassifier
 

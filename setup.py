@@ -10,15 +10,15 @@ with open(os.path.join(ROOT, 'README.md'), encoding="utf-8") as f:
     README = f.read()
 	
 setup(
-    name="cst",
+    name="convst",
     description="The Convolutional Shapelet Transform algorithm",
 	long_description=README,
     long_description_content_type='text/markdown',
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
-	download_url = 'https://github.com/baraline/cst/archive/v0.1.tar.gz',
-    version="0.1",
+	download_url = 'https://github.com/baraline/convst/archive/v0.1.1.tar.gz',
+    version="0.1.1",
 	keywords = ['shapelets', 'time-series-classification', 'shapelet-transform','convolutional-kernels'],
 	url="https://github.com/baraline/CST",
     author_email="antoine.guillaume45@gmail.com",
