@@ -123,6 +123,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+<<<<<<< Updated upstream
 *.csv
 
 *.arff
@@ -130,3 +131,8 @@ dmypy.json
 *.tex
 
 *.png
+=======
+csv_results/
+
+ts_datasets/
+>>>>>>> Stashed changes

@@ -17,7 +17,7 @@ setup(
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
-	download_url = 'https://github.com/baraline/cst/archive/v_01.tar.gz'
+	download_url = 'https://github.com/baraline/cst/archive/v0.1.tar.gz'
 	include_dirs=[numpy.get_include()],
     version="0.1",
 	keywords = ['shapelets', 'time-series-classification', 'shapelet-transform','convolutional-kernels']
