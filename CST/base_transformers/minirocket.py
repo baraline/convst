@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import pandas as pd
 
 from sktime.transformations.base import _PanelToTabularTransformer
 from sktime.utils.validation.panel import check_X
-from numba import njit
-from numba import prange
-from numba import vectorize
+
+from numba import njit, prange, vectorize
+
 from itertools import combinations
 
 # TODO : debug parralel numba errors

@@ -2,6 +2,7 @@
 
 from matplotlib import pyplot as plt
 import seaborn as sns
+import numpy as np
 import pandas as pd
 
 sns.set()
@@ -76,9 +77,14 @@ df_latex['MrSEQL'] = df_latex['MrSEQL_f1_mean'].str[0:5] + \
 df_latex['STC'] = df_latex['STC_f1_mean'].str[0:5] + \
     ' (+/- ' + df_latex['STC_f1_std'].str[0:5]+')'
 
-df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
-         ].to_latex(base_path+'CV_table_f1.tex', index=False)
 
+df_latex = df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']]
+amax = df_latex.values[:,1:].max(axis=1)
+for i in range(df_latex.shape[0]):
+    df_latex.loc[i,df_latex.columns[np.where(df_latex.loc[i] == amax[i])]] = r"\textbf{"+amax[i]+r"}"
+
+
+df_latex.to_latex(base_path+'CV_table_f1.tex', index=False)
 
 df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
 
@@ -159,6 +165,7 @@ df_latex2 = df_latex.set_index('Dataset')
 df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
 df_latex['STC_acc_mean'] = df_latex['STC_acc_mean'].apply(lambda x: '%.5f' % x)
 df_latex['STC_acc_std'] = df_latex['STC_acc_std'].apply(lambda x: '%.5f' % x)
+
 df_latex = df_latex.astype(str)
 
 df_latex['CST'] = df_latex['CST_acc_mean'].str[0:5] + \
@@ -172,8 +179,12 @@ df_latex['MrSEQL'] = df_latex['MrSEQL_acc_mean'].str[0:5] + \
 df_latex['STC'] = df_latex['STC_acc_mean'].str[0:5] + \
     ' (+/- ' + df_latex['STC_acc_std'].str[0:5]+')'
 
-df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']
-         ].to_latex(base_path+'CV_table_acc.tex', index=False)
+df_latex = df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']]
+amax = df_latex.values[:,1:].max(axis=1)
+for i in range(df_latex.shape[0]):
+    df_latex.loc[i,df_latex.columns[np.where(df_latex.loc[i] == amax[i])]] = r"\textbf{"+amax[i]+r"}"
+
+df_latex.to_latex(base_path+'CV_table_acc.tex', index=False)
 
 
 df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')

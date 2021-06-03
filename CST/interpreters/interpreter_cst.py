@@ -24,7 +24,7 @@ class interpeter_cst():
         self.X_train_cst = X_train_cst
         self.n_classes = np.unique(y_train).shape[0]
     
-    def interpret_sample(self, X, model="DecisionTree", sns_context='paper'):
+    def interpret_sample(self, X, model="DecisionTree", sns_context='talk'):
         sns.set(context=sns_context)
         if model == "DecisionTree":
             self._interpret_dt(X)
@@ -67,9 +67,9 @@ class interpeter_cst():
                 df_node = df.loc[X_split[node_id],[str(tree.feature[node_id]), "y"]]
                 df_long = pd.melt(df_node, "y", var_name=" ", value_name="")
                 ax[0].axhline(1/X_cst[0, tree.feature[node_id]],
-                                 color='red', linestyle='--',label='sample')
+                                 color='red', linestyle='--')
                 ax[0].axhline(1/tree.threshold[node_id],
-                                 color='black', linestyle='-.',label='threshold')
+                                 color='black', linestyle='-.')
                 sns.boxplot(x=" ", hue="y", y="",
                             palette=pal,
                             data=df_long, ax=ax[0], linewidth=2.5)
@@ -95,15 +95,12 @@ class interpeter_cst():
                 plt.show()
     
     def _interpret_ridge(self, X):
+        raise NotImplementedError()
         rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
                                 normalize=True, class_weight='balanced')
         rdg.fit(self.X_train_cst, self.y_train)
         coefs = rdg.coef_
-        y = rdg.predict(X)
-        if self.n_classes == 2:
-            if y == 0:
-                
-        else:
+
             
         
     

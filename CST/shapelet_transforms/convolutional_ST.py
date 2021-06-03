@@ -322,22 +322,32 @@ def is_unique(*lsts):
 
 @njit(cache=True, fastmath=True, parallel=True)
 def _fit(X, X_split, y_split, kernel_id, L, dils, P):
+    """
+    x_mask record for each split and each class (2) all tuples 
+    (sample, timestamp) that were extracted from a region
+    """
     x_mask = np.zeros(
         (X_split.shape[0], 2, X.shape[0]*X.shape[2]), dtype=np.bool_)
     for i_split in prange(X_split.shape[0]):
+        #Take data used in the current split
         x_indexes = np.where(X_split[i_split])[0]
         k_id = kernel_id[i_split]
         y_splt = y_split[i_split][x_indexes]
         dil = dils[k_id]
         classes = np.unique(y_splt)
         n_classes = classes.shape[0]
+        
+        #Generate L prime by unweighted convolution
         Lp = generate_strides_2D(L[x_indexes, k_id, :], 9, dil).sum(axis=-1)
+        #Compute class weights
         c_w = X[x_indexes].shape[0] / (n_classes * np.bincount(y_splt))
 
+        #Compute per class score
         LC = np.zeros((n_classes, Lp.shape[1]))
         for i_class in classes:
             LC[i_class] = c_w[i_class] * Lp[y_splt == i_class].sum(axis=0)
 
+        #Extract tuples (sample, timestamp) from each region in the differences of LC.
         for i_class in classes:
             if LC.sum() > 0:
                 D = LC[i_class] - LC[(i_class+1) % 2]
@@ -354,9 +364,12 @@ def _fit(X, X_split, y_split, kernel_id, L, dils, P):
                         x_mask[i_split, i_class, x_indexes[x_index]
                                * X.shape[2] + id_max_region] += 1
 
+    
     n_candidates = np.sum(x_mask)
     candidates = np.zeros((n_candidates, 9), dtype=np.float32)
     candidates_dil = np.zeros((n_candidates), dtype=np.uint16)
+    
+    #How much candidate are to be extracted from each split
     per_split_id = np.zeros((X_split.shape[0]+1), dtype=np.int32)
     for i_split in prange(X_split.shape[0]):
         per_split_id[i_split+1] = np.sum(x_mask[i_split])

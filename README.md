@@ -1,4 +1,4 @@
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm. For now, time series data from ECG, EPG and Hemodynamics seems to be where we draw our main advantages compared to existing approaches, more details in the paper !
+This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
 ## Installation
@@ -87,10 +87,9 @@ If you use our algorithm or publication in any work, please cite the following p
   publisher={}
 }
 ```
-## License
-[GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ## Citations
+
 Here are the code-related citations that were not made in the paper
 
 [1]: [Loning, Markus and Bagnall, Anthony and Ganesh, Sajaysurya and Kazakov, Viktor and Lines, Jason and Kiraly, Franz J, "sktime: A Unified Interface for Machine Learning with Time Series", Workshop on Systems for ML at NeurIPS 2019}](https://www.sktime.org/en/latest/)

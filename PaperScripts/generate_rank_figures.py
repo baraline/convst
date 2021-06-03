@@ -409,7 +409,32 @@ for col in df_means.columns.difference(['Dataset']):
 
 draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
 
+# In[]:
+cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
+cv_acc = base_path + r"TESTF1_MEANS.csv"
 
+df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
+df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTF1': 'Dataset'})
+
+df = df[(df['CST_f1_mean'] > 0)]
+df2 = df2[df2['Dataset'].isin(df['Dataset'])]
+
+df_means = pd.concat([df[['Dataset', 'CST_f1_mean']],
+                      df2[df2.columns.difference(['Dataset','Catch22'])]], axis=1).rename(columns={'CST_f1_mean': 'CST',
+                                                           'MiniRKT_acc_mean':'MiniRKT',
+                                                           'SFC_acc_mean':'SFC',
+                                                           'MrSEQL_acc_mean':'MrSEQL'}).reset_index(drop=True)
+
+df_res = pd.DataFrame()
+
+for col in df_means.columns.difference(['Dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
+    d['accuracy'] = df_means[col]
+    d['dataset_name'] = df_means['Dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
 # In[]:
 cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
 cv_acc = base_path + r"TESTACC_MEANS.csv"
