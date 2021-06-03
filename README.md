@@ -7,8 +7,7 @@ The package support Python 3.7 & 3.8.  You can install the package via pip using
 
 To install the package from sources you can download the latest release on github and run `python setup.py install`:
 
-This will install the package and automaticaly look for the dependencies using `pip`. We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation.
-We do not yet support installation via `pip` in the initial release. If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
+This will install the package and automaticaly look for the dependencies using `pip`. We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation. If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
 
 An optional dependency that can help speed up numba, which is used in our implementation is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`
 
