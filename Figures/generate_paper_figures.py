@@ -5,10 +5,11 @@ import matplotlib
 from sklearn.ensemble import RandomForestClassifier
 #from CST.base_transformers.shapelets import Convolutional_shapelet
 from matplotlib import gridspec
-from CST.base_transformers.convolutional_kernels import Rocket_kernel
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from CST.utils.dataset_utils import load_sktime_dataset_split
-from CST.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
+from cst.base_transformers.convolutional_kernels import Rocket_kernel
+from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from cst.utils.dataset_utils import load_sktime_dataset_split
+from cst.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
+from cst.base_transformers.shapelets import Convolutional_shapelet
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -19,9 +20,9 @@ sns.set_context("talk")
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
     'GunPoint', normalize=True)
 
-CST = ConvolutionalShapeletTransformer()
+ct = ConvolutionalShapeletTransformer()
 
-locs, dils, biases, weights = CST._generate_inputs(X_train, y_train)
+locs, dils, biases, weights = ct._generate_inputs(X_train, y_train)
 # In[]:
 
 # GunPoint data Figure

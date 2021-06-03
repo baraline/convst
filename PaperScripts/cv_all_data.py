@@ -8,8 +8,8 @@ from datetime import datetime
 from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
 from sktime.classification.shapelet_based import MrSEQLClassifier
 
-from CST.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from cst.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
+from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
 
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline

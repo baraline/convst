@@ -22,8 +22,8 @@ import numpy as np
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.metrics import accuracy_score
-from CST.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from CST.utils.dataset_utils import load_sktime_dataset_split
+from cst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from cst.utils.dataset_utils import load_sktime_dataset_split
 
 # Load Dataset by name. Any name of the univariate UCR archive can work.
 X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
@@ -48,6 +48,11 @@ We use the standard scikit-learn interface and expect as input a 3D matrix of sh
 
 In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results. The `UCR_example.py` script allows you to run CST on any UCR dataset and plot interpretations of the results.
 Additional experiments mentioned in the paper are also found in this folder.
+
+Requiered packages do not include packages not related to CST, the following packages could be useful if you want to run some other scripts in the archive:
+
+0. `wildboard` used for ShapeletForestClassifier
+1. `networkx` used to generate critical difference diagrams
 
 ## Current Work in Progress
 

@@ -19,9 +19,9 @@ from numba import set_num_threads
 
 from scipy.spatial.distance import cdist
 
-from CST.base_transformers.minirocket import MiniRocket
-from CST.utils.checks_utils import check_array_3D
-from CST.utils.shapelets_utils import generate_strides_2D
+from cst.base_transformers.minirocket import MiniRocket
+from cst.utils.checks_utils import check_array_3D
+from cst.utils.shapelets_utils import generate_strides_2D
 
 #TODO : When numba support sparse arrays, use sparse arrays !
 

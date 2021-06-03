@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.tree import _tree
 from scipy.spatial.distance import cdist
-from CST.utils.shapelets_utils import generate_strides_1D
+from cst.utils.shapelets_utils import generate_strides_1D
 
 class interpeter_cst():
     

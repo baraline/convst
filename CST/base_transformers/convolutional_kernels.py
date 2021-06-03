@@ -7,8 +7,8 @@ Created on Thu Apr  1 18:11:14 2021
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from CST.utils.kernel_utils import apply_one_kernel_one_sample, apply_one_kernel_all_sample
-from CST.utils.checks_utils import check_array_3D, check_array_1D
+from cst.utils.kernel_utils import apply_one_kernel_one_sample, apply_one_kernel_all_sample
+from cst.utils.checks_utils import check_array_3D, check_array_1D
 
 
 class kernel(BaseEstimator, TransformerMixin):

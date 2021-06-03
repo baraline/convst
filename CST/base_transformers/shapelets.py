@@ -9,8 +9,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
-from CST.utils.checks_utils import check_array_3D, check_array_1D
-from CST.utils.shapelets_utils import generate_strides_2D
+from cst.utils.checks_utils import check_array_3D, check_array_1D
+from cst.utils.shapelets_utils import generate_strides_2D
 
 
 class Convolutional_shapelet(BaseEstimator, TransformerMixin):
