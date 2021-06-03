@@ -3,11 +3,9 @@ It compute a set of convolutional shapelets that match small parts of the input 
 
 ## Installation
 
-The package support Python 3.7 & 3.8. To install the package and run the example you must :
+The package support Python 3.7 & 3.8.  You can install the package via pip using `pip install convst`
 
-0. If you are making a new installation, first install python, pip and setuptools.
-1. Clone the repository https://github.com/baraline/CST.git
-3. run `python3 setup.py install`
+To install the package from sources you can download the latest release on github and run `python setup.py install`:
 
 This will install the package and automaticaly look for the dependencies using `pip`. We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation.
 We do not yet support installation via `pip` in the initial release. If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
