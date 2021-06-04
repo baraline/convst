@@ -1,0 +1,2 @@
+sphinx_gallery >= 0.8
+numpydocs >= 1.1.0
