@@ -1,16 +1,33 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
-	"check_array_3D",
-    "check_array_2D",
-    "check_array_1D"
-]
-
 import numpy as np
 import pandas as pd
 from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
 
 def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
+    """
+    Perform checks on the input to verify if it is a 3D array.
+
+    Parameters
+    ----------
+    X : DataFrame or array, shape = (n_samples, n_features, n_timestamps)
+        Input Time series
+    coerce_to_numpy : boolean, optional
+        If input is a pandas DataFrame, will convert it to numpy. The default is True.
+    is_univariate : boolean, optional
+        If true, will raise an error if X as more than 1 feature. The default is False.
+
+    Raises
+    ------
+    ValueError
+        
+
+    Returns
+    -------
+    X : (n_samples, n_features, n_timestamps)
+        Input Time series.
+
+    """
     X = check_is_numpy_or_pd(X)
     if X.ndim != 3:
         raise ValueError(
@@ -33,6 +50,27 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
     return X
 
 def check_array_2D(X, coerce_to_numpy=True):
+    """
+    Perform checks on the input to verify if it is a 2D array.
+
+    Parameters
+    ----------
+    X : DataFrame or array, shape = (n_samples, n_timestamps)
+        Input Time series
+    coerce_to_numpy : boolean, optional
+        If input is a pandas DataFrame, will convert it to numpy. The default is True.
+
+    Raises
+    ------
+    ValueError
+        
+
+    Returns
+    -------
+    X : (n_samples, n_timestamps)
+        Input Time series.
+
+    """
     X = check_is_numpy_or_pd(X)
     if X.ndim != 2:
         raise ValueError(
@@ -45,6 +83,25 @@ def check_array_2D(X, coerce_to_numpy=True):
     return X
 
 def check_array_1D(X):
+    """
+    Perform checks on the input to verify if it is a 1D array.
+
+    Parameters
+    ----------
+    X : array, shape = (n_timestamps)
+        Input Time series
+
+    Raises
+    ------
+    ValueError
+        
+
+    Returns
+    -------
+    X : (n_timestamps)
+        Input Time series.
+
+    """
     X = check_is_numpy(X)
     if X.ndim != 1:
         raise ValueError(
@@ -55,6 +112,25 @@ def check_array_1D(X):
     return X
 
 def check_is_numpy_or_pd(X):
+    """
+    Check if the input is a numpy array or a pandas DataFrame, else raise
+    an error
+
+    Parameters
+    ----------
+    X : DataFrame or array
+        Input data
+
+    Raises
+    ------
+    ValueError
+
+    Returns
+    -------
+    X : DataFrame or array
+        Input data.
+
+    """
     if isinstance(X, pd.DataFrame):
         return X
     elif isinstance(X, np.ndarray):
@@ -66,6 +142,24 @@ def check_is_numpy_or_pd(X):
         )
 
 def check_is_numpy(X):
+    """
+    Check if the input is a numpy array, else raise an error
+
+    Parameters
+    ----------
+    X : array
+        Input data
+
+    Raises
+    ------
+    ValueError
+
+    Returns
+    -------
+    X : array
+        Input data.
+
+    """
     if isinstance(X, list):
         return np.asarray(X)
     elif isinstance(X, np.ndarray):

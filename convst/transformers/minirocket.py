@@ -9,34 +9,30 @@ from numba import njit, prange, vectorize
 
 from itertools import combinations
 
-# TODO : debug parralel numba errors
-
 
 class MiniRocket(_PanelToTabularTransformer):
-    """MINIROCKET
-    MINImally RandOm Convolutional KErnel Transform
-    **Univariate**
-    Unviariate input only.  Use class MiniRocketMultivariate for multivariate
-    input.
-    @article{dempster_etal_2020,
-      author  = {Dempster, Angus and Schmidt, Daniel F and Webb, Geoffrey I},
-      title   = {{MINIROCKET}: A Very Fast (Almost) Deterministic Transform for
-                 Time Series Classification},
-      year    = {2020},
-      journal = {arXiv:2012.08791}
-    }
+    """
+    MINImally RandOm Convolutional KErnel Transform (MINI ROCKET).
+    Univariate Only. For details and explanation on the algorithm, users are referred to [1]_.
+    
     Parameters
     ----------
-    num_features             : int, number of features (default 10,000)
-    max_dilations_per_kernel : int, maximum number of dilations per kernel (default 32)
-    random_state             : int, random seed (optional, default None)
+    num_features : int, optional
+        Number of features. The default is 10_000.
+    max_dilations_per_kernel : TYPE, optional
+        Maximum number of dilations per kernel. The default is 32.
+    random_state : int, optional
+        Random seed. The default is None.
+    
+    
+    Notes
+    -----
+    .. [1] "Dempster, Angus and Schmidt, Daniel F and Webb, Geoffrey I, MINIROCKET: A Very Fast (Almost) Deterministic Transform for Time Series Classification" (2020). arXiv:2012.08791
+    
     """
 
-    _tags = {"univariate-only": True}
-
-    def __init__(
-        self, num_features=10_000, max_dilations_per_kernel=32, random_state=None
-    ):
+    def __init__(self, num_features=10_000, 
+                 max_dilations_per_kernel=32, random_state=None):
         self.num_features = num_features
         self.max_dilations_per_kernel = max_dilations_per_kernel
         self.random_state = (
@@ -47,14 +43,20 @@ class MiniRocket(_PanelToTabularTransformer):
             [_ for _ in combinations(np.arange(9), 3)], dtype=np.int32)
 
     def fit(self, X, y=None):
-        """Fits dilations and biases to input time series.
+        """
+        Fits dilations and biases to input time series.
+        
         Parameters
         ----------
-        X : pandas DataFrame, input time series (sktime format)
-        y : array_like, target values (optional, ignored as irrelevant)
+        X : DataFrame or array, shape=(n_samples, n_features, n_timestamps) 
+            Input time series (sktime format).
+        y : array, shape=(n_samples) 
+            Target values (optional, ignored as irrelevant).
+        
         Returns
         -------
         self
+        
         """
         X = check_X(X, enforce_univariate=True, coerce_to_numpy=True)
         X = X[:, 0, :].astype(np.float32)
@@ -73,14 +75,21 @@ class MiniRocket(_PanelToTabularTransformer):
         return self
 
     def transform(self, X, y=None, return_locs=False):
-        """Transforms input time series.
+        """
+        Transforms input time series.
+        
         Parameters
         ----------
-        X : pandas DataFrame, input time series (sktime format)
-        y : array_like, target values (optional, ignored as irrelevant)
+        
+        X : DataFrame or array, shape=(n_samples, n_features, n_timestamps) 
+            Input time series (sktime format).
+        y : array, shape=(n_samples) 
+            Target values (optional, ignored as irrelevant).
+        
         Returns
         -------
-        pandas DataFrame, transformed features
+        array, shape=(n_samples, n_kernels)
+        
         """
         self.check_is_fitted()
         X = check_X(X, enforce_univariate=True, coerce_to_numpy=True)

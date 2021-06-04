@@ -12,27 +12,25 @@ from convst.utils.checks_utils import check_array_3D, check_array_1D
 
 
 class kernel(BaseEstimator, TransformerMixin):
+    """
+    Basic implementation of a convolutional kernel
+
+    Parameters
+    ----------
+    bias : float
+        Bias of the kernel.
+    dilation : int
+        Dilation of the kernel. 
+    padding : int
+        Padding of the kernel.
+    weights : array, shape = (length)
+        Weights of the kernel.
+
+
+    """
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None, id_ft=0):
-        """
-        Basic implementation of a convolutional kernel
 
-        Parameters
-        ----------
-        bias : float
-            Bias of the kernel.
-        dilation : int
-            Dilation of the kernel. 
-        padding : int
-            Padding of the kernel.
-        weights : array, shape = (length)
-            Weights of the kernel.
-
-        Returns
-        -------
-        None.
-
-        """
         self.bias = bias
         self.dilation = dilation
         self.padding = padding
@@ -204,28 +202,26 @@ class kernel(BaseEstimator, TransformerMixin):
 
 
 class Rocket_kernel(kernel):
+    """
+    Wrapper for kernels extracted from ROCKET.
+    Support multivariate in a basic way by convolving all features.
+
+    Parameters
+    ----------
+    bias : float
+        Bias of the kernel.
+    dilation : int
+        Dilation of the kernel.
+    padding : int
+        Padding of the kernel. 
+    weights : array, shape = (length)
+        Weights of the kernel. 
+
+
+    """
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None):
-        """
-        Wrapper for kernels extracted from ROCKET.
-        Support multivariate in a basic way by convolving all features.
 
-        Parameters
-        ----------
-        bias : float
-            Bias of the kernel.
-        dilation : int
-            Dilation of the kernel.
-        padding : int
-            Padding of the kernel. 
-        weights : array, shape = (length)
-            Weights of the kernel. 
-
-        Returns
-        -------
-        None.
-
-        """
         super().__init__(bias=bias, dilation=dilation,
                          padding=padding, weights=weights)
 
@@ -299,28 +295,26 @@ class Rocket_kernel(kernel):
 
 
 class MiniRocket_kernel(kernel):
+    """
+    Wrapper for kernels extracted from Mini-ROCKET.
+    Support multivariate in a basic way by convolving all features.
+
+    Parameters
+    ----------
+    bias : float
+        Bias of the kernel.
+    dilation : int
+        Dilation of the kernel.
+    padding : int
+        Padding of the kernel. 
+    weights : array, shape = (length)
+        Weights of the kernel. 
+
+
+    """
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None):
-        """
-        Wrapper for kernels extracted from Mini-ROCKET.
-        Support multivariate in a basic way by convolving all features.
 
-        Parameters
-        ----------
-        bias : float
-            Bias of the kernel.
-        dilation : int
-            Dilation of the kernel.
-        padding : int
-            Padding of the kernel. 
-        weights : array, shape = (length)
-            Weights of the kernel. 
-
-        Returns
-        -------
-        None.
-
-        """
         super().__init__(bias=bias, dilation=dilation,
                          padding=padding, weights=weights)
 

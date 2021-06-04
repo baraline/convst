@@ -22,8 +22,8 @@ import numpy as np
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.metrics import accuracy_score
-from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.transformers.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.utils import load_sktime_dataset_split
 
 # Load Dataset by name. Any name of the univariate UCR archive can work.
 X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(

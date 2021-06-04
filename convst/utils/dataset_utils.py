@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
-    "load_sktime_dataset_split",
-    "load_sktime_dataset",
-    "load_sktime_arff_file_resample_id",
-    "load_sktime_arff_file",
-    "return_all_dataset_names",
-    "load_sktime_ts_file",
-    "UCR_stratified_resample",
-    "stratified_resample"
-]
 import numpy as np
 from sktime.datasets.base import load_UCR_UEA_dataset
 from sklearn.preprocessing import LabelEncoder
@@ -19,11 +9,44 @@ from sktime.utils.data_io import load_from_arff_to_dataframe
 
 from sklearn.utils import resample
 class stratified_resample:
+    """
+    A random resampler used as a splitter for sklearn cross validation tools.
+
+    Parameters
+    ----------
+    n_splits : int
+        Number of cross validation step planed.
+    n_samples_train : int
+        Number of samples to include in the randomly generated 
+        training sets.
+
+
+    """
     def __init__(self, n_splits, n_samples_train):
+        
         self.n_splits=n_splits
         self.n_samples_train=n_samples_train
         
     def split(self, X, y=None, groups=None):
+        """
+        
+
+        Parameters
+        ----------
+        X : array, shape=(n_samples, n_features, n_timestamps)
+            Time series data to split
+        y : ignored
+
+        groups : ignored
+
+        Yields
+        ------
+        idx_Train : array, shape(n_samples_train)
+            Index of the training data in the original dataset X.
+        idx_Test : array, shape(n_samples_test)
+            Index of the testing data in the original dataset X.
+
+        """
         idx_X = np.asarray(range(X.shape[0]))
         for i in range(self.n_splits):
             if i == 0:
@@ -34,14 +57,70 @@ class stratified_resample:
             yield idx_train, idx_test
             
     def get_n_splits(self, X=None, y=None, groups=None):
+        """
+        Return the number of split made by the splitter. 
+        
+
+        Parameters
+        ----------
+        X : ignored
+            
+        y : ignored
+        
+        groups : ignored
+            
+
+        Returns
+        -------
+        n_splits : int
+            The n_splits attribute of the object.
+
+        """
         return self.n_splits
 
 class UCR_stratified_resample:
+    """
+    Class used as a splitter for sklearn cross validation tools. 
+    It will take previsouly resampled arff files at a location and
+    return a resample based on the identifier of the current cross
+    validation step. 
+    
+    It is used to reproduce the exact same splits made in the original UCR/UEA
+    archive. The arff files can be produced using the tsml java implementation.
+    
+    Parameters
+    ----------
+    n_splits : int
+        Number of cross validation step planed.
+    path : string
+        Path to the arff files.
+    
+    """
     def __init__(self, n_splits, path):
         self.n_splits=n_splits
         self.path=path
     
     def split(self, X, y=None, groups=None):
+        """
+        
+
+        Parameters
+        ----------
+        X : array, shape=(n_samples, n_features, n_timestamps)
+            Time series data to split
+        y : ignored
+            
+        groups : ignored
+            
+
+        Yields
+        ------
+        idx_Train : array, shape(n_samples_train)
+            Index of the training data in the original dataset X.
+        idx_Test : array, shape(n_samples_test)
+            Index of the testing data in the original dataset X.
+
+        """
         for i in range(self.n_splits):
             X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(self.path,i)
             idx_Train = [np.where((X == X_train[j]).all(axis=2))[0][0] for j in range(X_train.shape[0])]
@@ -49,9 +128,54 @@ class UCR_stratified_resample:
             yield idx_Train, idx_Test
     
     def get_n_splits(self, X=None, y=None, groups=None):
+        """
+        Return the number of split made by the splitter. 
+        
+
+        Parameters
+        ----------
+        X : ignored
+            
+        y : ignored
+        
+        groups : ignored
+            
+
+        Returns
+        -------
+        n_splits : int
+            The n_splits attribute of the object.
+
+        """
         return self.n_splits
 
 def load_sktime_dataset_split(name, normalize=True):
+    """
+    
+
+    Parameters
+    ----------
+    name : string
+        Name of the dataset to download.
+    normalize : boolean, optional
+        If True, time series will be z-normalized. The default is True.
+
+
+    Returns
+    -------
+    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
+        Training data from the dataset specified by path.
+    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
+        Testing data from the dataset specified by path.
+    y_train : array, shape=(n_samples_train)
+        Class of the training data.
+    y_test : array, shape=(n_samples_test)
+        Class of the testing data.
+    le : LabelEncoder
+        LabelEncoder object used to uniformize the class labels
+
+
+    """
     #Load datasets
     X_train, y_train = load_UCR_UEA_dataset(name, return_X_y=True, split='train')
     X_test, y_test = load_UCR_UEA_dataset(name, return_X_y=True, split='test')
@@ -76,6 +200,33 @@ def load_sktime_dataset_split(name, normalize=True):
 
 
 def load_sktime_arff_file(path, normalize=True):
+    """
+    Load a dataset  from .arff files.
+
+    Parameters
+    ----------
+    path : string
+        Path to the folder containing the .ts file. Dataset name
+        should be specified at the end of path to find files as
+        "dataset_TRAIN.arff" and "dataset_TEST.arff"
+    normalize : boolean, optional
+        If True, time series will be z-normalized. The default is True.
+
+
+    Returns
+    -------
+    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
+        Training data from the dataset specified by path.
+    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
+        Testing data from the dataset specified by path.
+    y_train : array, shape=(n_samples_train)
+        Class of the training data.
+    y_test : array, shape=(n_samples_test)
+        Class of the testing data.
+    le : LabelEncoder
+        LabelEncoder object used to uniformize the class labels
+
+    """
     #Load datasets
     X_train, y_train = load_from_arff_to_dataframe(path+'_TRAIN.arff')
     X_test, y_test = load_from_arff_to_dataframe(path+'_TEST.arff')
@@ -100,6 +251,36 @@ def load_sktime_arff_file(path, normalize=True):
 
 
 def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
+    """
+    Load a dataset resample from .arff files and the identifier of the 
+    resample.
+
+    Parameters
+    ----------
+    path : string
+        Path to the folder containing the .ts file. Dataset name
+        should be specified at the end of path to find files as
+        "dataset_{rs_id}_TRAIN.arff" and "dataset_{rs_id}_TEST.arff"
+    rs_id : int or str
+        Identifier of the resample.
+    normalize : boolean, optional
+        If True, time series will be z-normalized. The default is True.
+
+
+    Returns
+    -------
+    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
+        Training data from the dataset specified by path.
+    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
+        Testing data from the dataset specified by path.
+    y_train : array, shape=(n_samples_train)
+        Class of the training data.
+    y_test : array, shape=(n_samples_test)
+        Class of the testing data.
+    le : LabelEncoder
+        LabelEncoder object used to uniformize the class labels
+
+    """
     #Load datasets
     X_train, y_train = load_from_arff_to_dataframe(path+'_{}_TRAIN.arff'.format(rs_id))
     X_test, y_test = load_from_arff_to_dataframe(path+'_{}_TEST.arff'.format(rs_id))
@@ -123,6 +304,33 @@ def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
     return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
 
 def load_sktime_ts_file(path, normalize=True):
+    """
+    Load a dataset from .ts files
+
+    Parameters
+    ----------
+    path : string
+        Path to the folder containing the .ts file. Dataset name
+        should be specified at the end of path to find files as
+        "dataset_TRAIN.ts" and "dataset_TEST.ts"
+    normalize : boolean, optional
+        If True, time series will be z-normalized. The default is True.
+
+    Returns
+    -------
+    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
+        Training data from the dataset specified by path.
+    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
+        Testing data from the dataset specified by path.
+    y_train : array, shape=(n_samples_train)
+        Class of the training data.
+    y_test : array, shape=(n_samples_test)
+        Class of the testing data.
+    le : LabelEncoder
+        LabelEncoder object used to uniformize the class labels
+
+    """
+    
     #Load datasets
     X_train, y_train = load_from_tsfile_to_dataframe(path+'_TRAIN.ts')
     X_test, y_test = load_from_tsfile_to_dataframe(path+'_TEST.ts')
@@ -146,6 +354,27 @@ def load_sktime_ts_file(path, normalize=True):
     return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
 
 def load_sktime_dataset(name, normalize=True):
+    """
+    Load a dataset from the UCR/UEA archive by name using sktime API
+
+    Parameters
+    ----------
+    name : string
+        Name of the dataset to download.
+    normalize : boolean, optional
+        If True, time series will be z-normalized. The default is True.
+
+    Returns
+    -------
+    X : array, shape=(n_samples, n_features, n_timestamps)
+        Time series data from the dataset specified by name.
+    y : array, shape=(n_samples)
+        Class of the time series
+    le : LabelEncoder
+        LabelEncoder object used to uniformize the class labels
+        
+
+    """
     #Load datasets
     X, y = load_UCR_UEA_dataset(name, return_X_y=True)
 
@@ -165,7 +394,17 @@ def load_sktime_dataset(name, normalize=True):
 
 
 def return_all_dataset_names():
-    return ["ACSF1",
+    """
+    Return the names of the 108 univariate datasets of the UCR archive.
+
+    Returns
+    -------
+    array, shape=(108)
+        Names of the univariate UCR datasets.
+
+    """
+    return np.asarray([
+            "ACSF1",
             "Adiac",
             "ArrowHead",
             "Beef",
@@ -272,4 +511,4 @@ def return_all_dataset_names():
             "WordSynonyms",
             "Worms",
             "WormsTwoClass",
-            "Yoga"]
+            "Yoga"])

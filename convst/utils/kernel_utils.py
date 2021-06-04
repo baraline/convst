@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
-	"apply_one_kernel_one_sample",
-    "apply_one_kernel_all_sample"
-]
 from numba import njit, prange
 import numpy as np
 
@@ -11,35 +7,30 @@ import numpy as np
 def apply_one_kernel_one_sample(x, n_timestamps, weights, length, bias, 
                                 dilation, padding):
     """
-    Apply one kernel to one time series.
+    Apply the convolution operation given the parameters of a convolutional kernel
+    and one time series.
 
     Parameters
     ----------
-    x : array, shape = (n_timestamps,)
+    x : array, shape = (n_timestamps)
         One time series.
-
     n_timestamps : int
         Number of timestamps.
-
-    weights : array, shape = (length,)
+    weights : array, shape = (length)
         Weights of the kernel. Zero padding values are added.
-
     length : int
         Length of the kernel.
-
     bias : int
         Bias of the kernel.
-
     dilation : int
         Dilation of the kernel.
-
     padding : int
         Padding of the kernel.
 
     Returns
     -------
-    x_new : array, shape = (2,)
-        Extracted features using the kernel.
+    x_conv : array, shape = (n_convolution)
+        The convovled input time series x.
 
     """
     n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
@@ -59,14 +50,40 @@ def apply_one_kernel_one_sample(x, n_timestamps, weights, length, bias,
     return x_conv  
 
 @njit(parallel=True)
-def apply_one_kernel_all_sample(X, id_ft, weights, length, bias,
+def apply_one_kernel_all_sample(X, weights, length, bias,
                                 dilation, padding):
-    n_samples, _, n_timestamps = X.shape
+    """
+    Apply the convolution operation given the parameters of a convolutional kernel
+    and input time series.
+
+    Parameters
+    ----------
+    x : array, shape = (n_samples, n_features, n_timestamps)
+        Time series to transform.
+    weights : array, shape = (length)
+        Weights of the kernel.
+    length : int
+        Length of the kernel
+    bias : float
+        Bias of the kernel
+    dilation : int
+        Dilation of the kernel
+    padding : int
+        Padding of the kernel
+
+    Returns
+    -------
+    X_conv : (n_samples, n_features, n_convolution)
+        The convolved input time series.
+
+    """
+    n_samples, n_features, n_timestamps = X.shape
     n_conv = n_timestamps - ((length - 1) * dilation) + (2 * padding)
-    X_conv = np.zeros((n_samples, n_conv),dtype=np.float32)
+    X_conv = np.zeros((n_samples, n_features, n_conv),dtype=np.float32)
     for i in prange(n_samples):
-        X_conv[i,:] = apply_one_kernel_one_sample(X[i, id_ft], n_timestamps,
-                                                    weights, length, bias, 
-                                                    dilation, padding)
+        for j in prange(n_features):
+            X_conv[i,j,:] = apply_one_kernel_one_sample(X[i, j], n_timestamps,
+                                                        weights, length, bias, 
+                                                        dilation, padding)
     return X_conv
 

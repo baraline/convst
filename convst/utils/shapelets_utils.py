@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
-    "generate_strides_2D",
-    "generate_strides_1D",
-]
-
-
 from numba import njit
 from numpy.lib.stride_tricks import as_strided
 

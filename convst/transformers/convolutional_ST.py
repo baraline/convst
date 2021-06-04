@@ -14,59 +14,55 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from numba import njit, prange
-from numpy.lib.stride_tricks import as_strided
 from numba import set_num_threads
 
 from scipy.spatial.distance import cdist
 
-from convst.base_transformers.minirocket import MiniRocket
+from convst.transformers.minirocket import MiniRocket
 from convst.utils.checks_utils import check_array_3D
 from convst.utils.shapelets_utils import generate_strides_2D
 
-#TODO : When numba support sparse arrays, use sparse arrays !
 
 class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
+    """
+    Implementation of univariate Convolutional Shapelet Transform (CST).
+    For details and explanation on the algorithm, users are referred to [1]_:
+
+    Parameters
+    ----------
+    P : int, optional
+        Percentile used in the candidate selection. The default is 80.
+    n_trees : int, optional
+        Number of trees on which to extract the nodes. The default is 100.
+    max_ft : float or int, optional
+        Percentage of features to consider at each node. The default is 1.0.
+    use_class_weights : boolean, optional
+        Wheter or not to balance classes. The default is True.
+    verbose : int, optional
+        Control the level of verbosity output. The default is 0.
+    n_bins : int, optional
+        Number of bins used to discretize the shapelets. The default is 13.
+    n_jobs : int, optional
+        Number of parallel jobs to execute. The default is 3.
+    ccp_alpha : float, optional
+        Post pruning coefficient applied to trees. The default is 0.0.
+    random_state : int, optional
+        Value of the random state for trees. The default is None.
+
+
+      Attributes
+    ----------
+    
+    
+    Notes
+    -----
+    .. [1] Antoine Guillaume et al, "Convolutional Shapelet Transform: A new approach of time series shapelets" (2021)
+    
+    
+    """
 
     def __init__(self,  P=80, n_trees=100, max_ft=1.0, use_class_weights=True,
                  verbose=0, n_bins=11, n_jobs=3, ccp_alpha=0.0, random_state=None):
-        """
-        Implementation of univariate Convolutional Shapelet Transform (CST). 
-        For details and explanation on the algorithm, users are referred to the
-        following paper:
-            
-        @article{CST,
-          author  = {XXXXXX, XXXXXX, XXXXXX},
-          title   = {Convolutional Shapelet Transform: A new approach of time series shapelets},
-          year    = {2021},
-          journal = {}
-        }
-
-        Parameters
-        ----------
-        P : int, optional
-            Percentile used in the candidate selection. The default is 80.
-        n_trees : int, optional
-            Number of trees on which to extract the nodes. The default is 100.
-        max_ft : float or int, optional
-            Percentage of features to consider at each node. The default is 1.0.
-        use_class_weights : boolean, optional
-            Wheter or not to balance classes. The default is True.
-        verbose : int, optional
-            Control the level of verbosity output. The default is 0.
-        n_bins : int, optional
-            Number of bins used to discretize the shapelets. The default is 13.
-        n_jobs : int, optional
-            Number of parallel jobs to execute. The default is 3.
-        ccp_alpha : float, optional
-            Post pruning coefficient applied to trees. The default is 0.0.
-        random_state : int, optional
-            Value of the random state for trees. The default is None.
-
-        Returns
-        -------
-        None.
-
-        """
         self.verbose = verbose
         self.ccp_alpha = ccp_alpha
         self.P = P
@@ -96,26 +92,30 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Self
+        self
             Fitted instance of CST
+        
 
         """
-        X = check_array_3D(X, is_univariate=True)        
+        X = check_array_3D(X, is_univariate=True)
         ft, L, dils = self._init_rocket(X, y)
         X_split, y_split, kernel_id = self._generate_nodes(ft, y)
-        del ft; gc.collect()
-        
+        del ft
+        gc.collect()
+
         i_unique = is_unique(X_split, y_split, kernel_id.reshape(-1, 1))
         X_split = X_split[i_unique]
         y_split = y_split[i_unique]
         kernel_id = kernel_id[i_unique]
         del i_unique
-        self._log("Extracting shapelets from {} nodes ...".format(X_split.shape[0]))
+        self._log("Extracting shapelets from {} nodes ...".format(
+            X_split.shape[0]))
         shp, d = _fit(X, X_split, y_split, kernel_id, L, dils, self.P)
         del X_split
         del y_split
-        del kernel_id; gc.collect()
-        
+        del kernel_id
+        gc.collect()
+
         self._log("Discretizing {} shapelets ...".format(shp.shape[0]))
         n_shapelets = 0
         shps = {}
@@ -123,16 +123,17 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             candidates = self._discretize(shp[d == dil])
             n_shapelets += candidates.shape[0]
             shps.update({dil: candidates})
-        self.shapelets = np.zeros((n_shapelets,9), dtype=np.float32)
+        self.shapelets = np.zeros((n_shapelets, 9), dtype=np.float32)
         self.dilation = np.zeros(n_shapelets, dtype=np.uint32)
         prec = 0
         for key in shps:
             self.shapelets[prec:prec+shps[key].shape[0]] += shps[key]
             self.dilation[prec:prec+shps[key].shape[0]] += key
-            prec+=shps[key].shape[0]
+            prec += shps[key].shape[0]
         del shp
         del shps
-        del d; gc.collect()
+        del d
+        gc.collect()
         return self
 
     def _discretize(self, candidates):
@@ -195,7 +196,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         for i in range(dilations.shape[0]):
             dils[n:84*(num_features_per_dilation[i])+n] += dilations[i]
             n += 84*num_features_per_dilation[i]
-        return ft, L, dils 
+        return ft, L, dils
 
     def _generate_nodes(self, ft, y):
         """
@@ -220,23 +221,24 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             Indicate the kernel which was used to generate the ppv feature
             used to split the input data of a node.
 
+        
         """
         self._log("Fitting forest with {} kernels ...".format(ft.shape[1]))
         if self.use_class_weights:
             Forest = RandomForestClassifier(n_estimators=self.n_trees,
-                                        max_features=self.max_ft,
-                                        class_weight='balanced',
-                                        ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_jobs,
-                                        random_state=self.random_state)
+                                            max_features=self.max_ft,
+                                            class_weight='balanced',
+                                            ccp_alpha=self.ccp_alpha,
+                                            n_jobs=self.n_jobs,
+                                            random_state=self.random_state)
         else:
             Forest = RandomForestClassifier(n_estimators=self.n_trees,
-                                        max_features=self.max_ft,
-                                        ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_jobs,
-                                        random_state=self.random_state)
+                                            max_features=self.max_ft,
+                                            ccp_alpha=self.ccp_alpha,
+                                            n_jobs=self.n_jobs,
+                                            random_state=self.random_state)
         Forest.fit(ft, y)
-        
+
         n_nodes = np.asarray([Forest.estimators_[i_dt].tree_.node_count
                               for i_dt in range(self.n_trees)])
         n_leaves = np.asarray([Forest.estimators_[i_dt].tree_.n_leaves
@@ -262,7 +264,7 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
                 y_split[i_split_nodes[i_dt]+i, x_index_node] += (ft[
                     x_index_node, kernel_id[i_split_nodes[i_dt]+i]
                 ] <= tree.threshold[nodes_id[i]]) + 1
-                
+
         return X_split, y_split, kernel_id
 
     def transform(self, X, return_inverse=False):
@@ -283,21 +285,21 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         -------
         array, shape=(n_samples, n_shapelets)
             The shapelet distance between input time series and shapelets
-
+        
         """
         self._check_is_fited()
         X = check_array_3D(X)
-        distances = np.zeros((X.shape[0], self.shapelets.shape[0]), dtype=np.float32)
+        distances = np.zeros(
+            (X.shape[0], self.shapelets.shape[0]), dtype=np.float32)
         prev = 0
         for dilation in np.unique(self.dilation):
             X_strides = generate_strides_2D(X[:, 0, :], 9, dilation)
             X_strides = (X_strides - X_strides.mean(axis=-1, keepdims=True)) / (
                 X_strides.std(axis=-1, keepdims=True) + 1e-8)
-            mask = self.dilation==dilation
+            mask = self.dilation == dilation
             self._log("Transforming for dilation {} with {} shapelets ...".format(
                 dilation, self.shapelets[mask].shape[0]))
-            
-            
+
             d = np.asarray([cdist(X_strides[j], self.shapelets[mask],
                                   metric='sqeuclidean').min(axis=0)
                             for j in range(X.shape[0])])
@@ -307,11 +309,12 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
             return 1/(distances+1e-8)
         else:
             return distances
-        
+
     def _check_is_fited(self):
         if any(self.__dict__[attribute] is None for attribute in ['shapelets']):
             raise AttributeError("This instance of CST was not fited, "
                                  "call fit before trying to transform data")
+
 
 def is_unique(*lsts):
     arr = np.hstack(lsts)
@@ -320,12 +323,13 @@ def is_unique(*lsts):
     out[ind] = True
     return out
 
+
 @njit(cache=True, fastmath=True, parallel=True)
 def _fit(X, X_split, y_split, kernel_id, L, dils, P):
-    """
-    x_mask record for each split and each class (2) all tuples 
-    (sample, timestamp) that were extracted from a region
-    """
+
+    #x_mask record for each split and each class (2) all tuples
+    #(sample, timestamp) that were extracted from a region
+
     x_mask = np.zeros(
         (X_split.shape[0], 2, X.shape[0]*X.shape[2]), dtype=np.bool_)
     for i_split in prange(X_split.shape[0]):
@@ -336,7 +340,7 @@ def _fit(X, X_split, y_split, kernel_id, L, dils, P):
         dil = dils[k_id]
         classes = np.unique(y_splt)
         n_classes = classes.shape[0]
-        
+
         #Generate L prime by unweighted convolution
         Lp = generate_strides_2D(L[x_indexes, k_id, :], 9, dil).sum(axis=-1)
         #Compute class weights
@@ -364,11 +368,10 @@ def _fit(X, X_split, y_split, kernel_id, L, dils, P):
                         x_mask[i_split, i_class, x_indexes[x_index]
                                * X.shape[2] + id_max_region] += 1
 
-    
     n_candidates = np.sum(x_mask)
     candidates = np.zeros((n_candidates, 9), dtype=np.float32)
     candidates_dil = np.zeros((n_candidates), dtype=np.uint16)
-    
+
     #How much candidate are to be extracted from each split
     per_split_id = np.zeros((X_split.shape[0]+1), dtype=np.int32)
     for i_split in prange(X_split.shape[0]):

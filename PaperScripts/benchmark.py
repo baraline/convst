@@ -12,7 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 
 from convst.utils.dataset_utils import load_sktime_arff_file
-from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.transformers.convolutional_ST import ConvolutionalShapeletTransformer
 
 from wildboar.ensemble import ShapeletForestClassifier
 

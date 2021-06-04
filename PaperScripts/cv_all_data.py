@@ -9,7 +9,7 @@ from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
 from sktime.classification.shapelet_based import MrSEQLClassifier
 
 from convst.utils.dataset_utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
+from convst.transformers.convolutional_ST import ConvolutionalShapeletTransformer
 
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline

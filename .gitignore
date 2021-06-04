@@ -136,3 +136,7 @@ csv_results/
 
 ts_datasets/
 >>>>>>> Stashed changes
+
+docs/auto_examples/
+
+docs/generated/
