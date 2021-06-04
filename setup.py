@@ -35,7 +35,7 @@ setup(
         "sktime >= 0.5",
         "numpy >= 1.18.5",
 		"sphinx_gallery >= 0.8",
-		"numpydocs >= 1.0"
+		"numpydoc >= 1.0"
     ],
     zip_safe=False
 )
