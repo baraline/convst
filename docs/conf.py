@@ -87,7 +87,7 @@ copyright = u'2021, Antoine Guillaume'
 # built documents.
 #
 # The short X.Y version.
-from pyts import __version__
+from convst import __version__
 version = __version__
 # The full version, including alpha/beta/rc tags.
 release = __version__
@@ -125,7 +125,7 @@ exclude_patterns = ['_build', '_templates']
 pygments_style = 'sphinx'
 
 # Custom style
-#html_style = 'css/pyts.css'
+#html_style = 'css/convst.css'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
