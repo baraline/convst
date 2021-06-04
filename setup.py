@@ -1,4 +1,6 @@
 
+import convst
+
 from setuptools import setup, find_packages
 from codecs import open
 import numpy
@@ -18,7 +20,7 @@ setup(
     packages=find_packages(),
 	license='BSD 2',
 	download_url = 'https://github.com/baraline/convst/archive/v0.1.2.tar.gz',
-    version="0.1.2",
+    version=convst.__version__,
 	keywords = ['shapelets', 'time-series-classification', 'shapelet-transform','convolutional-kernels'],
 	url="https://github.com/baraline/convst",
     author_email="antoine.guillaume45@gmail.com",
@@ -30,7 +32,7 @@ setup(
         "scikit_learn >= 0.24",
         "scipy >= 1.5.0",
         "seaborn >= 0.11",
-        "sktime >= 0.5.3",
+        "sktime >= 0.5",
         "numpy >= 1.18.5"
     ],
     zip_safe=False
