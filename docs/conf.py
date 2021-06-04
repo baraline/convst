@@ -15,7 +15,6 @@
 import sys
 import os
 import warnings
-import sphinx_bootstrap_theme
 import sphinx_gallery
 
 # If extensions (or modules to document with autodoc) are in another directory,
