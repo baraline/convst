@@ -50,9 +50,14 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
         Value of the random state for trees. The default is None.
 
 
-      Attributes
+    Attributes
     ----------
-    
+    shapelets : array, shape=(n_shapelets, kernel_length)
+        Shapelets will be stored in this array after calling the fit method.
+    dilation : array, shape=(n_shapelets)
+        The dilation parameter of each shapelets will be stored in this
+        array after calling the fit method.
+        
     
     Notes
     -----
@@ -200,7 +205,8 @@ class ConvolutionalShapeletTransformer(BaseEstimator, TransformerMixin):
 
     def _generate_nodes(self, ft, y):
         """
-        
+        Fit a RandomForest and extract the input and output data from each
+        node in the forest.
 
         Parameters
         ----------

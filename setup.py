@@ -14,8 +14,8 @@ with open(os.path.join(ROOT, 'README.md'), encoding="utf-8") as f:
 setup(
     name="convst",
     description="The Convolutional Shapelet Transform algorithm",
+	long_description_content_type='text/markdown',
 	long_description=README,
-    long_description_content_type='text/markdown',
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
