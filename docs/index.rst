@@ -32,7 +32,7 @@ Welcome to convst documentation !
    citation
 
 
-**convst** is a Python package dedicated to time series classification.
+**convst** is a Python package dedicated to the Convolutional Shapelet Transform (CST).
 
 Minimal example
 ---------------
@@ -66,11 +66,7 @@ The following code snippet illustrates the basic usage of convst:
     
     print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 
-1. First we import:
-
-  - mutliple components from sklearn to build and evaluate a pipeline
-  - a function that will be used to load the *GunPoint* dataset.
-  - the Convolutional Shapelet Transform (CST)
+1. First we import sklearn components to build and evaluate a pipeline, CST, and a data loading function
 
 2. Then we load the training and test sets by calling the ``load_sktime_dataset_split`` function.
 
@@ -79,10 +75,8 @@ The following code snippet illustrates the basic usage of convst:
 4. Finally we fit the pipeline on the training set and evaluate its
    performance by computing the accuracy on the test set.
 
-People familiar with scikit-learn API should feel comfortable with convst as
-its API is heavily inspired from it, and convst estimators are compatible
-with scikit-learn tools like model selection and pipelines. For more
-information, please refer to the
+We try ou best to follow the guidelines of sklearn to ensure compatibility with 
+their numerous tools. For more information visit the
 `Scikit-learn compatibility <scikit_learn_compatibility.html>`_ page.
 
 
@@ -109,10 +103,3 @@ all functions, and all parameters available for the algorithms.
 
 A set of examples illustrating the use of the different algorithms. It
 complements the `User Guide <user_guide.html>`_.
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

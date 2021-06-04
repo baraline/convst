@@ -1,4 +1,4 @@
-This is my gallery
-==================
+Example Gallery
+===============
 
-Below is a gallery of examples
+Below is a gallery of multiple example using diverse functionalities of the `convst` package.

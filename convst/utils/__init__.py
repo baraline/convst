@@ -1,4 +1,6 @@
-"""Utilities.
+"""
+This module contains all utility functions or classes used in this package. Those functions will be used 
+to load data from multiple formats, to check inputs or perform strides extractions from arrays.
 """
 
 from .checks_utils import check_array_3D, check_array_2D, check_array_1D, check_is_numpy_or_pd, check_is_numpy

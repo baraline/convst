@@ -10,7 +10,7 @@ citations to the following paper
 Bibtex entry::
 
     @article{CST,
-      author  = {Antoine Guillaume},
+      author  = {Antoine Guillaume, Christel Vrain, Wael Elloumi},
       title   = {Convolutional Shapelet Transform},
       journal = {},
       year    = {2021},

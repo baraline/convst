@@ -9,6 +9,6 @@ User guide
    :maxdepth: 2
 
    introduction.rst
-   modules/interpreters.rst
    modules/transformers.rst
+   modules/interpreters.rst
    modules/utils.rst
