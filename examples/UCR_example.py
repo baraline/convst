@@ -2,7 +2,7 @@
 
 """
 Minimal example of CST with Interpreter
-=========================
+=======================================
 
 This example give the minimal setup to run CST and an interpreter
  on a dataset from the UCR archive.
@@ -18,8 +18,8 @@ from convst.transformers import ConvolutionalShapeletTransformer
 from convst.utils import load_sktime_dataset_split
 
 # %%
-# Load the dataset and run CST with Ridge.
-# ------------------------
+# Load the dataset and run CST with Ridge
+# ---------------------------------------
 #
 # We load a UCR dataset with its name, and initialise CST 
 # with a Ridge classifier. We then use CST to transform the inputs
@@ -43,7 +43,7 @@ print("F1 Score for CST : {}".format(
 
 # %%
 # Run the interpreter on a test sample
-# ------------------------
+# ------------------------------------
 #
 # To run the interpreter on a sample, we use the `interpret_sample`
 # function which take as input a 3D array, here of shape (1,1,n_timestamps)
