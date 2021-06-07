@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.metrics import accuracy_score, f1_score
 
-from convst.interpreters import cst_interpreter
+from convst.interpreters import CST_interpreter
 from convst.transformers import ConvolutionalShapeletTransformer
 from convst.utils import load_sktime_dataset_split
 
@@ -45,7 +45,7 @@ print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
 print("Accuracy Score for CST : {}".format(
     f1_score(y_test, pred, average='macro')))
 
-icst = cst_interpreter(cst, X_train, X_cst_train, y_train)
+icst = CST_interpreter(cst, X_train, X_cst_train, y_train)
 
 i_sample=0
 icst.interpret_sample(X_test[i_sample:i_sample+1])
