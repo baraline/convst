@@ -7,10 +7,12 @@ Created on Mon Jun  7 14:06:19 2021
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-
+import seaborn as sns
+sns.set()
 # Switched from Latex to Markdown for github display
 
-base_path = r"C:/git_projects/CST/benchmarks/"
+#base_path = r"C:/git_projects/CST/benchmarks/"
+base_path = r"C:/Users/Antoine/Documents/git_projects/CST/CST/benchmarks/"
 df_path = base_path+"df_perf.csv"
 df = pd.read_csv(df_path,index_col=0)
 tuples = np.asarray([df['Version'].unique(),df['Dataset'].unique()])
