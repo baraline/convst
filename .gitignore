@@ -124,8 +124,6 @@ dmypy.json
 .pyre/
 
 <<<<<<< Updated upstream
-*.csv
-
 *.arff
 
 *.tex
