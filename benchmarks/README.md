@@ -1,28 +1,8 @@
-|                                  | Acc Score Ridge   | Acc Score RF     |
-|:---------------------------------|:------------------|:-----------------|
-| ('0.1.3', 'Adiac')               | 0.652(+/- 0.027)  | 0.770(+/- 0.013) |
-| ('0.1.3', 'ShapeletSim')         | 0.578(+/- 0.048)  | 0.906(+/- 0.073) |
-| ('0.1.3', 'MedicalImages')       | 0.711(+/- 0.009)  | 0.681(+/- 0.017) |
-| ('0.1.3', 'Worms')               | 0.605(+/- 0.046)  | 0.698(+/- 0.051) |
-| ('0.1.3', 'Lightning2')          | 0.636(+/- 0.049)  | 0.596(+/- 0.038) |
-| ('0.1.3', 'EOGHorizontalSignal') | 0.662(+/- 0.060)  | 0.703(+/- 0.040) |
+# Benchmark results from current and previous version
 
+The markdown tables included in this folder can be used to trace the performance of CST between version, on 
+datasets where CST performed the worse compared to Mini Rocket.
 
-|                                  | F1 Score Ridge   | F1 Score RF      |
-|:---------------------------------|:-----------------|:-----------------|
-| ('0.1.3', 'Adiac')               | 0.609(+/- 0.035) | 0.755(+/- 0.014) |
-| ('0.1.3', 'ShapeletSim')         | 0.482(+/- 0.082) | 0.905(+/- 0.074) |
-| ('0.1.3', 'MedicalImages')       | 0.561(+/- 0.025) | 0.482(+/- 0.036) |
-| ('0.1.3', 'Worms')               | 0.494(+/- 0.084) | 0.648(+/- 0.066) |
-| ('0.1.3', 'Lightning2')          | 0.588(+/- 0.060) | 0.493(+/- 0.074) |
-| ('0.1.3', 'EOGHorizontalSignal') | 0.651(+/- 0.054) | 0.691(+/- 0.039) |
+Bellow are plots summurazing the mean performances metrics between versions.
 
-
-|                                  | RunTime Ridge    | RunTime RF       |
-|:---------------------------------|:-----------------|:-----------------|
-| ('0.1.3', 'Adiac')               | 55.23(+/- 16.36) | 39.97(+/- 1.534) |
-| ('0.1.3', 'ShapeletSim')         | 2.818(+/- 0.321) | 3.028(+/- 0.258) |
-| ('0.1.3', 'MedicalImages')       | 31.62(+/- 1.200) | 31.46(+/- 1.258) |
-| ('0.1.3', 'Worms')               | 98.10(+/- 7.653) | 97.32(+/- 9.907) |
-| ('0.1.3', 'Lightning2')          | 8.305(+/- 0.566) | 8.071(+/- 0.632) |
-| ('0.1.3', 'EOGHorizontalSignal') | 925.8(+/- 50.74) | 943.7(+/- 41.95) |
+![Plots of the mean performance metrcis](https://github.com/baraline/convst/blob/dev/benchmarks/perf_fig.png)

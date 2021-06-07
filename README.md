@@ -53,17 +53,17 @@ Additional experiments mentioned in the paper are also found in this folder.
 
 ## Current Work in Progress
 
-The package currently has some limitations that are being worked on, the mains ones being :
+The package currently has some limitations that are being worked on, the mains ones being:
 
-0. Adaptation to the multivariate context. While you can feed a multivariate time series to CST, it will only look at the first feature for now.
-1. Adaptation to irregular frequencies. This one will take a bit more time to think through, but is on the list.
-2. Adaptation to unsupervised context. The ideal being to implement a clustering version of the algortihm using scikit-learn standards.
-3. Possibility to change the model used to extract partitions of the data in CST.
-4. Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
-5. Memory consumption optimization relative to input time series characteristics.
-6. Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
-7. Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
-8. Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
+- [ ] Adaptation to the multivariate context. While you can feed a multivariate time series to CST, it will only look at the first feature for now.
+- [ ] Adaptation to irregular frequencies. This one will take a bit more time to think through, but is on the list.
+- [ ] Adaptation to unsupervised context. The ideal being to implement a clustering version of the algortihm using scikit-learn standards.
+- [ ] Possibility to change the model used to extract partitions of the data in CST.
+- [ ] Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
+- [ ] Memory consumption optimization relative to input time series characteristics.
+- [ ] Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
+- [ ] Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
+- [ ] Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
 
 ## Reproducing the paper results
 
