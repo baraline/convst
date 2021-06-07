@@ -29,10 +29,9 @@ df = pd.read_csv(df_path,index_col=0)
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"
 
 #Historic "Worse" datasets compared to Rocket.
-names = ['Adiac','ShapeletSim','MedicalImages','Worms','Lightning2','EOGHorizontalSignal','EOGVerticalSignal','FreezerSmallTrain',' WordSynonyms']
+names = ['Adiac','ShapeletSim','MedicalImages','Worms','Lightning2','EOGHorizontalSignal','EOGVerticalSignal','FreezerSmallTrain','WordSynonyms']
 
 def run_pipeline(pipeline, name, n_jobs):
-    
     ds_path = base_UCR_resamples_path+"{}/{}".format(name, name)
     X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(
         ds_path, 0, normalize=True)
