@@ -38,7 +38,7 @@ X_cst_test = cst.transform(X_test)
 rdg.fit(X_cst_train, y_train)
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
-print("Accuracy Score for CST : {}".format(
+print("F1 Score for CST : {}".format(
     f1_score(y_test, pred, average='macro')))
 
 # %%
