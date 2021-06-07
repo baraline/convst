@@ -31,7 +31,8 @@ from convst.utils import load_sktime_dataset_split
 X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
     'GunPoint', normalize=True)
 
-# First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time !
+# First run may be slow due to numba compilations on the first call. 
+# Run small dataset like GunPoint if this is the first time you call CST on your system.
 # Put verbose = 1 to see the progression of the algorithm.
 
 cst = make_pipeline(
