@@ -65,6 +65,8 @@ The package currently has some limitations that are being worked on, the mains o
 - [ ] Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
 - [ ] Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
 
+The `benchmark` folder offer visualisations of the performance change between release versions.
+
 ## Reproducing the paper results
 
 Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results.

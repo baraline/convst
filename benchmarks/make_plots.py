@@ -82,7 +82,7 @@ df_latex_time["RunTime RF"] = df_latex_time["RunTime RF"].apply(lambda x : float
 
 df_latex_time.groupby(level='version').mean().plot(title="Mean RunTime per version",ax=ax[2],
                                                         xlabel='Version')
-
-plt.show()
 plt.savefig(base_path+"perf_fig.png")
+plt.show()
+
 
