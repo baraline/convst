@@ -14,23 +14,23 @@ from convst.utils.shapelets_utils import generate_strides_2D
 
 
 class Convolutional_shapelet(BaseEstimator, TransformerMixin):
+    """
+    A Convolutional Shapelet transformer. It takes an array of values, with a
+    dilation parameter to slide itself on input time series.
+    The values returned by the transformation is the minimum z-normalised 
+    squarred euclidean distance from the shapelet to each sample.
 
+    Parameters
+    ----------
+    values : array, shape = (length,)
+        Values of the shapelet, those values will be z-normalised.
+        
+    dilation : int
+        Dilation parameter applied when computing distance to input subsequences. 
+        
+    """
     def __init__(self, values=None, dilation=None):
-        """
-        A Convolutional Shapelet transformer. It takes an array of values, with a
-        dilation parameter to slide itself on input time series.
-        The values returned by the transformation is the minimum z-normalised 
-        squarred euclidean distance from the shapelet to each sample.
-    
-        Attributes
-        ----------
-        values : array, shape = (length,)
-            Values of the shapelet, those values will be z-normalised.
-            
-        dilation : int
-            Dilation parameter applied when computing distance to input subsequences. 
-            
-        """
+       
         self.values = values
         self.dilation = dilation
 

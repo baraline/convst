@@ -34,6 +34,11 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
             "If passed as a np.array, X must be a 3-dimensional "
             "array, but found shape: {}".format(X.shape)
         )
+    if X.size == 0:
+        raise ValueError(
+            "Input is empty or have a dimension of size 0"
+            ", found shape: {}".format(X.shape)
+        )
     if isinstance(X, pd.DataFrame):
         if not is_nested_dataframe(X):
             raise ValueError(
@@ -47,6 +52,7 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
             raise ValueError(
                 "X must be a 3-dimensional array with dimension 1 equal to 1"
             )
+    
     return X
 
 def check_array_2D(X, coerce_to_numpy=True):
@@ -76,6 +82,11 @@ def check_array_2D(X, coerce_to_numpy=True):
         raise ValueError(
             "If passed as a np.array, X must be a 2-dimensional "
             "array, but found shape: {}".format(X.shape)
+        )
+    if X.size == 0:
+        raise ValueError(
+            "Input is empty or have a dimension of size 0"
+            ", found shape: {}".format(X.shape)
         )
     if isinstance(X, pd.DataFrame):
         if coerce_to_numpy:
@@ -108,6 +119,11 @@ def check_array_1D(X):
             "If passed as a np.array, X must be a 1-dimensional "
             "array, but found shape: {}".format(X.shape)
         )
+    if X.size == 0:
+        raise ValueError(
+            "Input is empty or have a dimension of size 0"
+            ", found shape: {}".format(X.shape)
+        )
     
     return X
 
@@ -131,13 +147,15 @@ def check_is_numpy_or_pd(X):
         Input data.
 
     """
+    if isinstance(X, list):
+        return np.asarray(X)
     if isinstance(X, pd.DataFrame):
         return X
     elif isinstance(X, np.ndarray):
         return X
     else:
         raise ValueError(
-            "Expected an pandas DataFrame or numpy array as input "
+            "Expected an pandas DataFrame or numpy array or python list as input "
             "but got {}".format(str(type(X)))
         )
 

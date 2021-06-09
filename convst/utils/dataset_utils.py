@@ -151,7 +151,8 @@ class UCR_stratified_resample:
 
 def load_sktime_dataset_split(name, normalize=True):
     """
-    
+    Load the original train and test splits of a dataset 
+    from the UCR/UEA archive by name using sktime API.
 
     Parameters
     ----------
@@ -201,7 +202,7 @@ def load_sktime_dataset_split(name, normalize=True):
 
 def load_sktime_arff_file(path, normalize=True):
     """
-    Load a dataset  from .arff files.
+    Load a dataset from .arff files.
 
     Parameters
     ----------

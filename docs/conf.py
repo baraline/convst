@@ -48,7 +48,7 @@ imgmath_image_format = 'svg'
 
 # this is needed for some reason...
 # see https://github.com/numpy/numpydoc/issues/69
-numpydoc_show_class_members = False
+numpydoc_show_class_members = True
 
 # pngmath / imgmath compatibility layer for different sphinx versions
 import sphinx

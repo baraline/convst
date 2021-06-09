@@ -3,17 +3,19 @@
 
 import matplotlib
 from sklearn.ensemble import RandomForestClassifier
-from matplotlib import gridspec
-from convst.base_transformers.convolutional_kernels import Rocket_kernel
-from convst.shapelet_transforms.convolutional_ST import ConvolutionalShapeletTransformer
-from convst.utils.dataset_utils import load_sktime_dataset_split
-from convst.utils.shapelets_utils import compute_distances, generate_strides_2D, generate_strides_1D
-from convst.base_transformers.shapelets import Convolutional_shapelet
+from convst.transformers import Rocket_kernel
+from convst.transformers import ConvolutionalShapeletTransformer
+from convst.utils import load_sktime_dataset_split
+from convst.utils import generate_strides_2D, generate_strides_1D
+from convst.transformers import Convolutional_shapelet
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set()
 sns.set_context("talk")
+
+
+# TODO : update script with newest API.
 
 # Load GunPoint Dataset
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
@@ -139,7 +141,7 @@ ax[2].plot(D, c='green', label='D')
 ax[2].axhline(np.percentile(D, 80), c='red', linestyle='--')
 
 id_w = np.where(D >= np.percentile(D, 80))[0]
-for i_r in CST._get_regions(id_w):
+for i_r in ct._get_regions(id_w):
     ax[2].fill_between(i_r, D[i_r], np.percentile(
         D, 80), color='red', alpha=0.75)
 ax[2].set_title('LC difference')
@@ -154,9 +156,9 @@ for r in region:
 ax[3].set_title('View in input space')
 plt.show()
 # In[]
-CST.fit(X_train, y_train)
-d_X_train = CST.transform(X_train)
-d_X_test = CST.transform(X_test)
+ct.fit(X_train, y_train)
+d_X_train = ct.transform(X_train)
+d_X_test = ct.transform(X_test)
 rf = RandomForestClassifier(n_estimators=400).fit(d_X_train, y_train)
 pred = rf.predict(d_X_test)
 
@@ -168,13 +170,13 @@ pred_x = pred[0]
 x_coef = np.zeros((np.unique(y_test).shape[0], x_test.shape[0]))
 n_coef = np.zeros((np.unique(y_test).shape[0], x_test.shape[0]))
 for i_class in np.unique(y_test):
-    for i, i_grp in enumerate(CST.shapelets_params.keys()):
-        dilation, _ = CST.shapelets_params[i_grp]
+    for i, i_grp in enumerate(ct.shapelets_params.keys()):
+        dilation, _ = ct.shapelets_params[i_grp]
         x_strides = generate_strides_1D(x_test, 9, dilation)
-        i_shp = np.where(CST.shapelets_class[i] == i_class)[0]
+        i_shp = np.where(ct.shapelets_class[i] == i_class)[0]
         for j in range(i_shp.shape[0]):
             d = np.abs(
-                x_strides - CST.shapelets_values[i][i_shp[j]]).sum(axis=1)
+                x_strides - ct.shapelets_values[i][i_shp[j]]).sum(axis=1)
             dists = d.min()
             loc = d.argmin()
             x_coef[i_class, loc] += dists

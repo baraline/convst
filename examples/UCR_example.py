@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-This is my example script
-=========================
+Minimal example of CST with Interpreter
+=======================================
 
-This example 
+This example give the minimal setup to run CST and an interpreter
+ on a dataset from the UCR archive.
 """
 
 import numpy as np
@@ -12,25 +13,20 @@ import numpy as np
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.metrics import accuracy_score, f1_score
 
-from convst.interpreters import cst_interpreter
+from convst.interpreters import CST_interpreter
 from convst.transformers import ConvolutionalShapeletTransformer
 from convst.utils import load_sktime_dataset_split
 
 # %%
-# This is a section header
-# ------------------------
+# Load the dataset and run CST with Ridge
+# ---------------------------------------
 #
-# In the built documentation, it will be rendered as rST. All rST lines
-# must begin with '# ' (note the space) including underlines below section
-# headers.
-
-# Load UCR Dataset by names
+# We load a UCR dataset with its name, and initialise CST 
+# with a Ridge classifier. We then use CST to transform the inputs
+# and feed it to the Ridge classifier
 
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
     'GunPoint', normalize=True)
-
-# First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time ! 
-# Put verbose = 1 to activate the verbose progression of the algorithm.
 
 cst = ConvolutionalShapeletTransformer(verbose=0)
 rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
@@ -42,10 +38,17 @@ X_cst_test = cst.transform(X_test)
 rdg.fit(X_cst_train, y_train)
 pred = rdg.predict(X_cst_test)
 print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
-print("Accuracy Score for CST : {}".format(
+print("F1 Score for CST : {}".format(
     f1_score(y_test, pred, average='macro')))
 
-icst = cst_interpreter(cst, X_train, X_cst_train, y_train)
+# %%
+# Run the interpreter on a test sample
+# ------------------------------------
+#
+# To run the interpreter on a sample, we use the `interpret_sample`
+# function which take as input a 3D array, here of shape (1,1,n_timestamps)
+
+icst = CST_interpreter(cst, X_train, X_cst_train, y_train)
 
 i_sample=0
 icst.interpret_sample(X_test[i_sample:i_sample+1])
