@@ -6,8 +6,9 @@ from .convolutional_kernels import kernel, Rocket_kernel, MiniRocket_kernel
 from .minirocket import MiniRocket
 from .convolutional_ST import ConvolutionalShapeletTransformer
 from .shapelets import Convolutional_shapelet
-
+from .convolutional_ST2 import ConvolutionalShapeletTransformer_onlyleaves
 __author__ = 'Antoine Guillaume antoine.guillaume45@gmail.com'
 
 __all__ = [ "MiniRocket","Convolutional_shapelet", "kernel",
- "Rocket_kernel", "MiniRocket_kernel", "ConvolutionalShapeletTransformer"]
+ "Rocket_kernel", "MiniRocket_kernel", "ConvolutionalShapeletTransformer",
+ "ConvolutionalShapeletTransformer_onlyleaves"]
