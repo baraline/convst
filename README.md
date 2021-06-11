@@ -64,7 +64,7 @@ The package currently has some limitations that are being worked on, the mains o
 - [ ] Memory consumption optimization relative to input time series characteristics.
 - [ ] Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
 - [ ] Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
-- [ ] Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
+- [X] ~~Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.~~ Changes will be available in next release (0.1.6). Huge increase in performance on previously problematic problems while retaining same performance on the others and improving runtime and memory consumption.
 
 The `benchmark` folder offer visualisations of the performance change between release versions.
 
