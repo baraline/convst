@@ -14,7 +14,7 @@ class MiniRocket(_PanelToTabularTransformer):
     """
     MINImally RandOm Convolutional KErnel Transform (MINI ROCKET).
     Univariate Only. For details and explanation on the algorithm, users are referred to [1]_.
-    
+
     Parameters
     ----------
     num_features : int, optional
@@ -23,15 +23,15 @@ class MiniRocket(_PanelToTabularTransformer):
         Maximum number of dilations per kernel. The default is 32.
     random_state : int, optional
         Random seed. The default is None.
-    
-    
+
+
     Notes
     -----
     .. [1] "Dempster, Angus and Schmidt, Daniel F and Webb, Geoffrey I, MINIROCKET: A Very Fast (Almost) Deterministic Transform for Time Series Classification" (2020). arXiv:2012.08791
-    
+
     """
 
-    def __init__(self, num_features=10_000, 
+    def __init__(self, num_features=10_000,
                  max_dilations_per_kernel=32, random_state=None):
         self.num_features = num_features
         self.max_dilations_per_kernel = max_dilations_per_kernel
@@ -45,18 +45,18 @@ class MiniRocket(_PanelToTabularTransformer):
     def fit(self, X, y=None):
         """
         Fits dilations and biases to input time series.
-        
+
         Parameters
         ----------
         X : DataFrame or array, shape=(n_samples, n_features, n_timestamps) 
             Input time series (sktime format).
         y : array, shape=(n_samples) 
             Target values (optional, ignored as irrelevant).
-        
+
         Returns
         -------
         self
-        
+
         """
         X = check_X(X, enforce_univariate=True, coerce_to_numpy=True)
         X = X[:, 0, :].astype(np.float32)
@@ -77,19 +77,19 @@ class MiniRocket(_PanelToTabularTransformer):
     def transform(self, X, y=None, return_locs=False):
         """
         Transforms input time series.
-        
+
         Parameters
         ----------
-        
+
         X : DataFrame or array, shape=(n_samples, n_features, n_timestamps) 
             Input time series (sktime format).
         y : array, shape=(n_samples) 
             Target values (optional, ignored as irrelevant).
-        
+
         Returns
         -------
         array, shape=(n_samples, n_kernels)
-        
+
         """
         self.check_is_fitted()
         X = check_X(X, enforce_univariate=True, coerce_to_numpy=True)

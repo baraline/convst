@@ -9,9 +9,10 @@ from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
 from sktime.classification.shapelet_based import MrSEQLClassifier
 
 from convst.utils import load_sktime_arff_file_resample_id, return_all_dataset_names, UCR_stratified_resample
-from convst.transformers import ConvolutionalShapeletTransformer
+from convst.transformers import ConvolutionalShapeletTransformer_onlyleaves as ConvolutionalShapeletTransformer
 
 from sklearn.linear_model import RidgeClassifierCV
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
@@ -22,7 +23,6 @@ from wildboar.ensemble import ShapeletForestClassifier
 from numba import set_num_threads
 #Can use this to resume to last dataset if a problem occured
 resume = False
-
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Modify this to your path to the UCR resamples, check README for how to get them. 
@@ -41,22 +41,22 @@ P=80
 n_bins=11
 random_state = None
 
-run_RKT = True
+run_RKT = False
 run_CST = True
-run_MrSEQL = True
-run_SFC = True
+run_MrSEQL = False
+run_SFC = False
 
 #Machine parameters, to change with yours.
 available_memory_bytes = 60 * 1e9
-n_cores = 32
+n_cores = 90
 
 def get_n_jobs_n_threads(nbytes, size_mult=3000):
     nbytes *= size_mult
-    n_jobs = min(max(available_memory_bytes//nbytes,1),n_cv//2)
-    n_threads = min(max(n_cores//n_jobs,1),n_cores//2)
+    n_jobs = min(max(available_memory_bytes//nbytes,1),10)
+    n_threads = max(n_cores//n_jobs,1)
     return int(n_jobs), int(n_threads)
 
-csv_name = 'CV_{}_results_({},{})_{}_{}.csv'.format(
+csv_name = 'CV_only_leaves_{}_results_({},{})_{}_{}.csv'.format(
     n_cv, n_trees, max_ft, n_bins, P)
 
 dataset_names = return_all_dataset_names()
@@ -68,26 +68,30 @@ if resume:
     df.to_csv(csv_name)
 else:
     df = pd.DataFrame(index=dataset_names)
-    df['CST_f1_mean'] = pd.Series(0, index=df.index)
-    df['CST_f1_std'] = pd.Series(0, index=df.index)
-    df['CST_acc_mean'] = pd.Series(0, index=df.index)
-    df['CST_acc_std'] = pd.Series(0, index=df.index)
-    df['CST_runtime'] = pd.Series(0, index=df.index)
-    df['MiniRKT_f1_mean'] = pd.Series(0, index=df.index)
-    df['MiniRKT_f1_std'] = pd.Series(0, index=df.index)
-    df['MiniRKT_acc_mean'] = pd.Series(0, index=df.index)
-    df['MiniRKT_acc_std'] = pd.Series(0, index=df.index)
-    df['MiniRKT_runtime'] = pd.Series(0, index=df.index)
-    df['MrSEQL_f1_mean'] = pd.Series(0, index=df.index)
-    df['MrSEQL_f1_std'] = pd.Series(0, index=df.index)
-    df['MrSEQL_acc_mean'] = pd.Series(0, index=df.index)
-    df['MrSEQL_acc_std'] = pd.Series(0, index=df.index)
-    df['MrSEQL_runtime'] = pd.Series(0, index=df.index)
-    df['SFC_f1_mean'] = pd.Series(0, index=df.index)
-    df['SFC_f1_std'] = pd.Series(0, index=df.index)
-    df['SFC_acc_mean'] = pd.Series(0, index=df.index)
-    df['SFC_acc_std'] = pd.Series(0, index=df.index)
-    df['SFC_runtime'] = pd.Series(0, index=df.index)
+    if run_CST:
+        df['CST_f1_mean'] = pd.Series(0, index=df.index)
+        df['CST_f1_std'] = pd.Series(0, index=df.index)
+        df['CST_acc_mean'] = pd.Series(0, index=df.index)
+        df['CST_acc_std'] = pd.Series(0, index=df.index)
+        df['CST_runtime'] = pd.Series(0, index=df.index)
+    if run_RKT:
+        df['MiniRKT_f1_mean'] = pd.Series(0, index=df.index)
+        df['MiniRKT_f1_std'] = pd.Series(0, index=df.index)
+        df['MiniRKT_acc_mean'] = pd.Series(0, index=df.index)
+        df['MiniRKT_acc_std'] = pd.Series(0, index=df.index)
+        df['MiniRKT_runtime'] = pd.Series(0, index=df.index)
+    if run_MrSEQL:
+        df['MrSEQL_f1_mean'] = pd.Series(0, index=df.index)
+        df['MrSEQL_f1_std'] = pd.Series(0, index=df.index)
+        df['MrSEQL_acc_mean'] = pd.Series(0, index=df.index)
+        df['MrSEQL_acc_std'] = pd.Series(0, index=df.index)
+        df['MrSEQL_runtime'] = pd.Series(0, index=df.index)
+    if run_SFC:
+        df['SFC_f1_mean'] = pd.Series(0, index=df.index)
+        df['SFC_f1_std'] = pd.Series(0, index=df.index)
+        df['SFC_acc_mean'] = pd.Series(0, index=df.index)
+        df['SFC_acc_std'] = pd.Series(0, index=df.index)
+        df['SFC_runtime'] = pd.Series(0, index=df.index)
     df.to_csv(csv_name)
 
 def run_pipeline(pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs):
@@ -116,7 +120,8 @@ pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(P=P,
                                                           max_ft=max_ft,
                                                           n_bins=n_bins,
                                                           random_state=random_state),
-                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), normalize=True))
+                          RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
+                                           normalize=True))
 
 pipe_sfc = make_pipeline(ShapeletForestClassifier(n_estimators=n_trees,
                                                   metric='scaled_euclidean',
@@ -139,6 +144,13 @@ for name in dataset_names:
     
 dataset_size = {k: v for k, v in sorted(dataset_size.items(), key=lambda item: item[1])}
 
+#Do first run for numba compilations:
+ds_path = base_UCR_resamples_path+"{}/{}".format(list(dataset_size.keys())[0], list(dataset_size.keys())[0])
+X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(
+    ds_path, 0, normalize=True)
+pipe_cst.fit(X_train, y_train)
+pipe_cst.predict(X_test)
+
 for name in dataset_size.keys():
     print(name)
     ds_path = base_UCR_resamples_path+"{}/{}".format(name, name)
@@ -159,10 +171,10 @@ for name in dataset_size.keys():
         df.to_csv(csv_name)
 
     if run_CST and df.loc[name, 'CST_f1_mean'] == 0:
-        n_jobs, n_threads = get_n_jobs_n_threads(dataset_size[name], size_mult=12500)
+        n_jobs, n_threads = get_n_jobs_n_threads(dataset_size[name], size_mult=3000)
         print("Processing CST with {} jobs and {} thread".format(n_jobs, n_threads))
         acc_mean, acc_std, f1_mean, f1_std, time = run_pipeline(
-            pipe_cst.set_params(convolutionalshapelettransformer__n_jobs=n_threads),
+            pipe_cst.set_params(convolutionalshapelettransformer_onlyleaves__n_jobs=n_threads),
             X_train, X_test, y_train, y_test, splitter, n_jobs)
         df.loc[name, 'CST_acc_mean'] = acc_mean
         df.loc[name, 'CST_acc_std'] = acc_std

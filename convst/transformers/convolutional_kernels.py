@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr  1 18:11:14 2021
 
-@author: Antoine
-"""
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -28,6 +24,7 @@ class kernel(BaseEstimator, TransformerMixin):
 
 
     """
+
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None, id_ft=0):
 
@@ -60,12 +57,12 @@ class kernel(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ignored
-        
+
         y : ignored, optional
-            
+
         normalise : ignored, optional
-            
-        
+
+
         Returns
         -------
         self
@@ -86,7 +83,7 @@ class kernel(BaseEstimator, TransformerMixin):
         normalise : boolean, optional
             If True, X will be normalised before applying the convolution.
             The default is True.
-        
+
         Returns
         -------
         array, shape = (n_samples, n_features, n_convolution)
@@ -219,6 +216,7 @@ class Rocket_kernel(kernel):
 
 
     """
+
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None):
 
@@ -232,11 +230,11 @@ class Rocket_kernel(kernel):
         Parameters
         ----------
         X : ignored
-        
+
         y : ignored, optional
-            
+
         normalise : ignored, optional
-            
+
 
         Returns
         -------
@@ -248,8 +246,9 @@ class Rocket_kernel(kernel):
 
     def transform(self, X, normalise=True, to_feature=True):
         """
-        Apply the kernel through a convolution operation on each time series of the input.
-        If the input is have multiple feature, it will apply the convolution to all of them.
+        Apply the kernel through a convolution operation on each time series
+        of the input. If the input is have multiple feature, it will apply the
+        convolution to all of them.
 
         Parameters
         ----------
@@ -306,12 +305,13 @@ class MiniRocket_kernel(kernel):
     dilation : int
         Dilation of the kernel.
     padding : int
-        Padding of the kernel. 
+        Padding of the kernel.
     weights : array, shape = (length)
-        Weights of the kernel. 
+        Weights of the kernel.
 
 
     """
+
     def __init__(self, bias=None, dilation=None, padding=None,
                  weights=None):
 
@@ -325,11 +325,11 @@ class MiniRocket_kernel(kernel):
         Parameters
         ----------
         X : ignored
-        
+
         y : ignored, optional
-            
+
         normalise : ignored, optional
-            
+
 
         Returns
         -------
@@ -358,8 +358,9 @@ class MiniRocket_kernel(kernel):
         Returns
         -------
         array, shape = (n_samples, n_features)
-            The convolved input time series on which the ppv feature was 
-            extracted if to_feature is True. Else it return the raw convolutions.
+            The convolved input time series on which the ppv feature was
+            extracted if to_feature is True. Else it return the raw
+            convolutions.
         """
         self._check_is_init()
         conv = super().transform(X, normalise=normalise)
