@@ -1,4 +1,4 @@
-[![Documentation Status](https://readthedocs.org/projects/convst/badge/?version=latest)](https://convst.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/convst/badge/?version=latest)](https://convst.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst)
 
 This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
