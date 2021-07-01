@@ -79,7 +79,7 @@ To obtain the same resampling data as the UCR archive, you muse use the [tsml](h
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
 For other question or to take contact with me, you can email me at XXXX (institutional email might change soon so i provide this as a temporary address)
 
-If you use our algorithm or publication in any work, please cite the following paper :
+If you use our algorithm or publication in any work, please cite the following paper (i'll upload an ArXiv version soon) :
 ```bibtex
 @article{CST,
   title={Convolutional Shapelet Transform: A new approach for time series shapelets},
