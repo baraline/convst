@@ -19,6 +19,7 @@ class Convolutional_shapelet(BaseEstimator, TransformerMixin):
     dilation parameter to slide itself on input time series.
     The values returned by the transformation is the minimum z-normalised 
     squarred euclidean distance from the shapelet to each sample.
+    Note that this is just a helper class for plotting, and is not used in CST.
 
     Parameters
     ----------

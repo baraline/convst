@@ -33,14 +33,16 @@ import sphinx_gallery
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
-    'numpydoc',
-    'sphinx_gallery.gen_gallery',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "numpydoc",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.imgconverter",
+    "sphinx_gallery.gen_gallery",
 ]
+
+
 
 # Use svg images for math stuff
 extensions.append('sphinx.ext.imgmath')
@@ -48,7 +50,7 @@ imgmath_image_format = 'svg'
 
 # this is needed for some reason...
 # see https://github.com/numpy/numpydoc/issues/69
-numpydoc_show_class_members = True
+numpydoc_show_class_members = False
 
 # pngmath / imgmath compatibility layer for different sphinx versions
 import sphinx
@@ -80,7 +82,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'convst'
-copyright = u'2021, Antoine Guillaume'
+copyright = u'2021, Antoine Guillaume and all convst contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -133,16 +135,41 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+html_theme_options = {
+    # Logo and description
+    'description': 'Python implementation of the Convolutional Shapelet Transform',
+    'logo': 'img/logo.png',
+    'logo_name': 'false',
+    'logo_text_align': 'center',
+
+    # GitHub stuff
+    'github_banner': 'true',
+    'github_repo': 'convst',
+    'github_type': 'star',
+    'github_user': 'baraline',
+
+    # Page and sidebar widths
+    'page_width': '1300px',
+    'body_max_width': '850px',
+    'sidebar_width': '250px',
+
+    # Related links
+    'show_related': 'true',
+    'show_relbar_bottom': 'true',
+
+    # Font sizes
+    'font_size': '15px',
+    'code_font_size': '13px'
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = [alabaster.get_path()]
@@ -182,8 +209,20 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+        'donate.html',
+    ]
+}
 
 # Custom CSS files
+html_css_files = [
+    'custom.css',
+]
 
 # HTML context
 #html_context = {}
@@ -285,7 +324,7 @@ man_pages = [
 texinfo_documents = [
   ('index', 'convst', u'convst Documentation',
    u'Antoine Guillaume', 'convst',
-   'A python package for time series transformation and classification',
+   'Python implementation of the Convolutional Shapelet Transform',
    'Miscellaneous'),
 ]
 
@@ -320,6 +359,10 @@ sphinx_gallery_conf = {
     'reference_url': {
         'convst': None}
 }
+
+def setup(app):
+    app.add_css_file('custom.css')
+    app.add_js_file('js/copybutton.js')
 
 
 # Filter Matplotlib warning

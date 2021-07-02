@@ -13,7 +13,9 @@ from itertools import combinations
 class MiniRocket(_PanelToTabularTransformer):
     """
     MINImally RandOm Convolutional KErnel Transform (MINI ROCKET).
-    Univariate Only. For details and explanation on the algorithm, users are referred to [1]_.
+    Univariate Only. For details and explanation on the algorithm, 
+    users are referred to [1]_. This is a modfied copy of the sktime
+    source code for MiniRocket to fit the needs of CST.
     
     Parameters
     ----------

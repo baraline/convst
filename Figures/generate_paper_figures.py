@@ -41,8 +41,8 @@ plt.show()
 
 i_kernel = 0
 
-k = Rocket_kernel(length=9, bias=biases[i_kernel], dilation=dils[i_kernel],
-                  padding=0, weights=weights[i_kernel], id_ft=0)
+k = Rocket_kernel(bias=biases[i_kernel], dilation=dils[i_kernel],
+                  padding=0, weights=weights[i_kernel])
 ft = k.get_features(X_train)
 fig, ax = plt.subplots(ncols=3, sharex=False, sharey=False, figsize=(15, 5))
 ax[0].plot(X_train[0, 0], c='orange')
@@ -77,8 +77,8 @@ sv0 = X_train[2, 0, 25:50]
 sv0 = (sv0 - sv0.mean())/sv0.std()
 sv1 = X_train[0, 0, 35:60]
 sv1 = (sv1 - sv1.mean())/sv1.std()
-s0 = Convolutional_shapelet(values=sv0, dilation=1, padding=0, input_ft_id=0)
-s1 = Convolutional_shapelet(values=sv1, dilation=1, padding=0, input_ft_id=0)
+s0 = Convolutional_shapelet(values=sv0, dilation=1)
+s1 = Convolutional_shapelet(values=sv1, dilation=1)
 
 ax00.plot(sv0, c='red',label='Shapelet 0 (S0)')
 ax00.plot(sv1, c='black',label='Shapelet 1 (S1)')
@@ -112,8 +112,8 @@ plt.tight_layout()
 
 i_kernel = 0
 
-k = Rocket_kernel(length=9, bias=biases[i_kernel], dilation=dils[i_kernel],
-                  padding=0, weights=weights[i_kernel], id_ft=0)
+k = Rocket_kernel(bias=biases[i_kernel], dilation=dils[i_kernel],
+                  padding=0, weights=weights[i_kernel])
 
 fig, ax = plt.subplots(ncols=4, sharex=True, sharey=True, figsize=(18, 5))
 
