@@ -75,10 +75,6 @@ The following code snippet illustrates the basic usage of convst:
 4. Finally we fit the pipeline on the training set and evaluate its
    performance by computing the accuracy on the test set.
 
-We try ou best to follow the guidelines of sklearn to ensure compatibility with 
-their numerous tools. For more information visit the
-`Scikit-learn compatibility <scikit_learn_compatibility.html>`_ page.
-
 
 `Getting started <install.html>`_
 ---------------------------------

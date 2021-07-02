@@ -1,35 +1,31 @@
-:mod:`{{module}}`.{{objname}}
-{{ underline }}==============
+{{ fullname | escape | underline}}
 
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
+   :members:                                    <-- add at least this line
+   :show-inheritance:                           <-- plus I want to show inheritance...
+   :inherited-members:                          <-- ...and inherited members too
 
-    {% block attributes %}
-    {% if attributes %}
-    .. rubric:: Attributes
+   {% block methods %}
 
-    .. autosummary::
-    {% for item in attributes %}
-       ~{{ name }}.{{ item }}
-    {%- endfor %}
-    {% endif %}
-    {% endblock %}
+   {% if methods %}
+   .. rubric:: {{ _('Methods') }}
 
-    {% block methods %}
-    {% if methods %}
-    .. rubric:: Methods
+   .. autosummary::
+   {% for item in methods %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
 
-    .. autosummary::
-    {% for item in methods %}
-       ~{{ name }}.{{ item }}
-    {%- endfor %}
-    .. automethod:: __init__
-    {% endif %}
-    {% endblock %}
+   {% block attributes %}
+   {% if attributes %}
+   .. rubric:: {{ _('Attributes') }}
 
-.. include:: {{module}}.{{objname}}.examples
-
-.. raw:: html
-
-    <div class="clearer"></div>
+   .. autosummary::
+   {% for item in attributes %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}

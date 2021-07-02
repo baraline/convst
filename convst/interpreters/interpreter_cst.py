@@ -103,7 +103,9 @@ class CST_interpreter():
 
     def _interpret_ridge(self, X):
         raise NotImplementedError()
+        """
         rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
                                 normalize=True, class_weight='balanced')
         rdg.fit(self.X_train_cst, self.y_train)
         coefs = rdg.coef_
+        """

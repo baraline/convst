@@ -137,3 +137,9 @@ ts_datasets/
 docs/auto_examples/
 
 docs/generated/
+
+doc/_build/doctrees/
+
+doc/_build/html/
+
+doc/generated/
