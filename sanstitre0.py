@@ -9,19 +9,15 @@ This example give the minimal setup to run CST and an interpreter
 """
 
 from xgboost import XGBClassifier
-from sklearn.ensemble import ExtraTreesClassifier, AdaBoostClassifier
-from sklearn.linear_model import LassoCV
+
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
-from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.pipeline import make_pipeline
-from matplotlib import pyplot as plt
+
 import numpy as np
 
 from sklearn.linear_model import RidgeClassifierCV
-from sklearn.metrics import accuracy_score, f1_score
-
-from convst.interpreters import CST_interpreter
 
 from convst.utils import load_sktime_dataset_split, stratified_resample
 
@@ -34,26 +30,26 @@ from convst.utils import load_sktime_dataset_split, stratified_resample
 # and feed it to the Ridge classifier
 
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'ShapeletSim', normalize=True)
+    'Adiac', normalize=True)
 
-st = stratified_resample(1, X_train.shape[0])
-X = np.concatenate((X_train, X_test), axis=0)
-y = np.concatenate((y_train, y_test), axis=0)
-for ix, ixx in st.split(np.concatenate(X)):
 
-    cst = ConvolutionalShapeletTransformer_onlyleaves(verbose=1)
-    rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                            normalize=True, class_weight='balanced')
+cst = ConvolutionalShapeletTransformer_onlyleaves(verbose=1,random_state=42,
+                                                  leaves_only=True)
 
-    X_cst_train = cst.fit_transform(X[ix], y[ix])
-    X_cst_test = cst.transform(X[ixx])
+from sklearn.ensemble import RandomForestClassifier
+rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
+                        normalize=True, class_weight='balanced')
 
-    rdg.fit(X_cst_train, y[ix])
-    pred = rdg.predict(X_cst_test)
-    print("Accuracy Score for CST : {}".format(accuracy_score(y[ixx], pred)))
-    print("F1 Score for CST : {}".format(
-        f1_score(y[ixx], pred, average='macro')))
-    print('----------------\n')
+X_cst_train = cst.fit_transform(X_train, y_train)
+X_cst_test = cst.transform(X_test)
+# In[]:
+rdg = RandomForestClassifier(class_weight='balanced',max_features=0.25,ccp_alpha=0.02)
+rdg.fit(X_cst_train, y_train)
+pred = rdg.predict(X_cst_test)
+print("F1 Score for CST : {}".format(
+    f1_score(y_test, pred, average='macro')))
+print('----------------\n')
+
 
 # %%
 # Run the interpreter on a test sample

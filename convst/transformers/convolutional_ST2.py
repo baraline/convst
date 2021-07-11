@@ -3,7 +3,6 @@
 import numpy as np
 import gc
 
-from sklearn.tree import _tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -13,7 +12,7 @@ from numba import set_num_threads
 
 from scipy.spatial.distance import cdist
 
-from convst.transformers import MiniRocket
+from convst.transformers import MiniRocket, ForestSplitter
 from convst.utils import check_array_3D
 from convst.utils import generate_strides_2D
 
@@ -31,12 +30,15 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
         Number of trees on which to extract the nodes. The default is 100.
     max_ft : float or int, optional
         Percentage of features to consider at each node. The default is 1.0.
-    use_class_weights : boolean, optional
-        Wheter or not to balance classes. The default is True.
+    n_bins : int, optional
+        Number of bins used to discretize the shapelets. The default is 11.
+    leaves_only : boolean, optional
+        Wheter or not to only use node with at least one leaf in direct childs
+    class_weights : str or dict, optional
+        Wheter or not to balance classes. The default is 'balanced'. None will
+        apply no balancing. This is passed to the random forest in fit.
     verbose : int, optional
         Control the level of verbosity output. The default is 0.
-    n_bins : int, optional
-        Number of bins used to discretize the shapelets. The default is 13.
     n_jobs : int, optional
         Number of parallel jobs to execute. The default is 3.
     ccp_alpha : float, optional
@@ -61,13 +63,15 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
 
     """
 
-    def __init__(self,  P=80, n_trees=100, max_ft=1.0, use_class_weights=True,
-                 verbose=0, n_bins=11, n_jobs=3, ccp_alpha=0.0, random_state=None):
+    def __init__(self,  P=80, n_trees=100, max_ft=1.0, class_weights='balanced',
+                 verbose=0, n_bins=11, n_jobs=3, leaves_only=True,
+                 ccp_alpha=0.0, random_state=None):
         self.verbose = verbose
         self.ccp_alpha = ccp_alpha
         self.P = P
         self.n_trees = n_trees
-        self.use_class_weights = use_class_weights
+        self.leaves_only = leaves_only
+        self.class_weights = class_weights
         self.max_ft = max_ft
         self.n_bins = n_bins
         self.n_jobs = n_jobs
@@ -118,7 +122,7 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
 
         del i_unique, u_kernels
         gc.collect()
-        self._log("Extracting shapelets from {} leaves ...".format(
+        self._log("Extracting shapelets from {} splits ...".format(
             id_X_leaves.shape[0]))
         shp, d = _extract_candidates(
             X, id_X_leaves, kernel_id, L, dils, self.P)
@@ -199,7 +203,7 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
 
         """
         self._log("Initializing kernels ...")
-        m = MiniRocket().fit(X)
+        m = MiniRocket(random_state=self.random_state).fit(X)
         self._log("Computing convolutions ...")
         ft, L = m.transform(X, return_locs=True)
         dilations, num_features_per_dilation, biases = m.parameters
@@ -224,7 +228,7 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
 
         Returns
         -------
-        id_X_leaves : array, shape=(n_leaves, n_samples)
+        id_X_split : array, shape=(n_leaves, n_samples)
             Indicate for each leaves of the forest which input
             time series was used as input in the parent node.
             The encoding is -1 for a non-used sample, 0 for a sample
@@ -236,48 +240,19 @@ class ConvolutionalShapeletTransformer_onlyleaves(BaseEstimator, TransformerMixi
 
         """
         self._log("Fitting forest with {} kernels ...".format(ft.shape[1]))
-        if self.use_class_weights:
-            rf = RandomForestClassifier(n_estimators=self.n_trees,
-                                        max_features=self.max_ft,
-                                        class_weight='balanced',
-                                        ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_jobs,
-                                        random_state=self.random_state)
-        else:
-            rf = RandomForestClassifier(n_estimators=self.n_trees,
-                                        max_features=self.max_ft,
-                                        ccp_alpha=self.ccp_alpha,
-                                        n_jobs=self.n_jobs,
-                                        random_state=self.random_state)
+        
+        rf = RandomForestClassifier(n_estimators=self.n_trees,
+                                    max_features=self.max_ft,
+                                    class_weight=self.class_weights,
+                                    ccp_alpha=self.ccp_alpha,
+                                    n_jobs=self.n_jobs,
+                                    random_state=self.random_state)
+
         rf.fit(ft, y)
-
-        n_leaves = np.asarray([rf.estimators_[tree_id].tree_.n_leaves
-                               for tree_id in range(self.n_trees)])
-
-        id_X_leaves = np.zeros(
-            (n_leaves.sum(), ft.shape[0]), dtype=np.int8) - 1
-        kernel_id = np.zeros((n_leaves.sum()), dtype=np.int32)
-
-        i_split_trees = np.zeros(self.n_trees+1, dtype=np.int32)
-        i_split_trees[1:] += n_leaves.cumsum()
-        # TODO : can use joblib here
-        for tree_id in range(self.n_trees):
-            tree = rf.estimators_[tree_id]
-            node_indicator = tree.decision_path(ft)
-            id_leaves = np.where(tree.tree_.feature == _tree.TREE_UNDEFINED)[0]
-            for i, id_leaf in enumerate(id_leaves):
-                parent_id = np.where((tree.tree_.children_right == id_leaf) | (
-                    tree.tree_.children_left == id_leaf))[0]
-                # Sometime trees were only composed of a leaf, can't reproduce and debug
-                # so left a if check for now
-                if parent_id.shape[0] > 0:
-                    id_X_leaves[i_split_trees[tree_id]+i,
-                                node_indicator[:, parent_id[0]].nonzero()[0]] += 2
-                    id_X_leaves[i_split_trees[tree_id]+i,
-                                node_indicator[:, id_leaf].nonzero()[0]] -= 1
-                    kernel_id[i_split_trees[tree_id] +
-                              i] += tree.tree_.feature[parent_id[0]]
-
+        
+        fs = ForestSplitter(rf, leaves_only=self.leaves_only)
+        id_X_leaves, kernel_id = fs.fit_transform(ft)
+        print(id_X_leaves.shape)
         return id_X_leaves, kernel_id
     
     def transform(self, X, return_inverse=False):
