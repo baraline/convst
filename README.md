@@ -57,14 +57,12 @@ Additional experiments mentioned in the paper are also found in this folder.
 The package currently has some limitations that are being worked on, the mains ones being:
 
 - [ ] Adaptation to the multivariate context. While you can feed a multivariate time series to CST, it will only look at the first feature for now.
-- [ ] Adaptation to irregular frequencies. This one will take a bit more time to think through, but is on the list.
 - [ ] Adaptation to unsupervised context. The ideal being to implement a clustering version of the algortihm using scikit-learn standards.
 - [ ] Possibility to change the model used to extract partitions of the data in CST.
 - [ ] Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
-- [ ] Memory consumption optimization relative to input time series characteristics.
 - [ ] Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
 - [ ] Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
-- [X] ~~Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.~~ Changes will be available in next release (0.1.5). Huge increase in performance on previously problematic problems while retaining same performance on the others and improving runtime and memory consumption.
+- [X] ~~Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.~~ Changes will be available in next release (0.1.5). Increase in performance on previously problematic problems while retaining same performance on the others and some improvments on runtime and memory consumption. 
 
 The `benchmark` folder offer visualisations of the performance change between release versions where CST was modified.
 
@@ -77,7 +75,7 @@ To obtain the same resampling data as the UCR archive, you muse use the [tsml](h
 ## Contributing, Citing and Contact
 
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
-For other question or to take contact with me, you can email me at XXXX (institutional email might change soon so i provide this as a temporary address)
+For other question, you can create an issue on this repository.
 
 If you use our algorithm or publication in any work, please cite the following paper (i'll upload an ArXiv version soon) :
 ```bibtex
