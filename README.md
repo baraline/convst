@@ -3,6 +3,8 @@
 This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
+!! The paper will be soon made available on ArXiv but will be reworked before publication to better explain the algorithm and results, and include our latest improvements !!
+
 ## Installation
 
 The package support Python 3.7 & 3.8 (3.9 untested).  You can install the package and its dependencies via pip using `pip install convst`. To install the package from sources you can download the latest release on github and run `python setup.py install`. This will install the package and automaticaly look for the dependencies using `pip`. 
