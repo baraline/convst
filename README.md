@@ -3,7 +3,7 @@
 This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
-!! The paper will be soon made available on ArXiv but will be reworked before publication to better explain the algorithm and results, and include our latest improvements !!
+!! The paper will be soon made available on ArXiv but will be reworked before publication to better explain the algorithm and results, and include our latest improvements. Change to the code are to be expected !!
 
 ## Installation
 
