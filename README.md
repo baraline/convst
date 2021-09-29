@@ -3,7 +3,7 @@
 This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
 
-!! The paper will be soon made available on ArXiv but will be reworked before publication to better explain the algorithm and results, and include our latest improvements. Change to the code are to be expected !!
+!! The paper will be reworked before publication to better explain the algorithm and results, and include our latest improvements. Change to the code are to be expected !!
 
 ## Installation
 
@@ -79,20 +79,18 @@ To obtain the same resampling data as the UCR archive, you muse use the [tsml](h
 If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
 For other question, you can create an issue on this repository.
 
-If you use our algorithm or publication in any work, please cite the following paper (i'll upload an ArXiv version soon) :
+If you use our algorithm or publication in any work, please cite the following paper https://arxiv.org/abs/2109.13514 :
 ```bibtex
-@article{CST,
+@misc{guillaume2021convolutional,
   title={Convolutional Shapelet Transform: A new approach for time series shapelets},
   author={Guillaume Antoine, Vrain Christel, Elloumi Wael},
-  journal={},
-  volume={},
-  number={},
-  pages={},
+  eprint={2109.13514},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
   year={2021}
   publisher={}
 }
 ```
-
 ## Citations
 
 Here are the code-related citations that were not made in the paper
