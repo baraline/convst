@@ -1,11 +1,10 @@
 [![Documentation Status](https://readthedocs.org/projects/convst/badge/?version=latest)](https://convst.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst)
 
-17/11/21 : Work on this project will now resume. The new paper and code version are expected to be live in Febuary 2022. As a TOTAL OVERHAUL of the algorithm is planned for a more efficient and accurate method, please do not use this current version for any publication as it will be inacurate with upcoming changes.
+30/01/22 : The new paper and code are currently under a double blind review process. This repository is expected to be updated at the end of the review process in March 2022. Expect a lot a improvements on memory consumption, computational time and accuracy !
+
 
 This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
 It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
-
-!! The paper will be reworked before publication to better explain the algorithm and results, and include our latest improvements. Change to the code are to be expected !!
 
 ## Installation
 
