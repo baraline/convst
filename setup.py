@@ -19,13 +19,13 @@ setup(
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
-	#download_url = 'https://github.com/baraline/convst/archive/v0.1.4.tar.gz',
+	download_url = 'https://github.com/baraline/convst/archive/v0.1.4.tar.gz',
     version=convst.__version__,
 	keywords = ['shapelets', 'time-series-classification',
              'shapelet-transform', 'time-series-transformations'],
 	url="https://github.com/baraline/convst",
     author_email="antoine.guillaume45@gmail.com",
-	python_requires='>=3.7',
+	python_requires='>=3.8',
     install_requires=[
         "matplotlib >= 3.5",
         "numba >= 0.55",
@@ -36,9 +36,10 @@ setup(
         "scipy >= 1.7",
         "seaborn >= 0.11",
         "sktime >= 0.10",
-        "numpy >= 1.21",
+        "numpy < 1.22, >=1.18",
         "networkx >= 2.6.3",
-        "pytest >= 7.0"
+        "pytest >= 7.0",
+        "sphinx"
     ],
     zip_safe=False
 )
