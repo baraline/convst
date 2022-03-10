@@ -9,7 +9,7 @@ Dependencies
 
 To be fully able to run the convst packages and the examples, the following packages are required:
 
-    - Python (>= 3.7)
+    - Python (>= 3.8)
     - NumPy (>= 1.18.5)
     - Pandas (>= 1.1.4)
     - SciPy (>= 1.5.0)
@@ -17,7 +17,7 @@ To be fully able to run the convst packages and the examples, the following pack
     - Numba (>=0.50.1)
     - Seaborn (>=0.11.1)
     - Matplotlib (>=3.2.2)
-    - Sktime (>= 0.5.3)
+    - Sktime (>= 0.)
 
 
 User installation

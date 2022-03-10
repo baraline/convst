@@ -1,54 +1,41 @@
 # -*- coding: utf-8 -*-
 
 """
-Minimal example of CST with Interpreter
-=======================================
+Minimal example of RDST with visualisation
+==========================================
 
-This example give the minimal setup to run CST and an interpreter
+This example give the minimal setup to run RDST and visualize the result
  on a dataset from the UCR archive.
 """
 
-import numpy as np
-
-from sklearn.linear_model import RidgeClassifierCV
-from sklearn.metrics import accuracy_score, f1_score
-
-from convst.interpreters import CST_interpreter
-from convst.transformers import ConvolutionalShapeletTransformer
-from convst.utils import load_sktime_dataset_split
+from convst.classifiers import R_DST_Ridge
+from convst.utils.dataset_utils import load_sktime_dataset_split
 
 # %%
-# Load the dataset and run CST with Ridge
-# ---------------------------------------
+# Load the dataset and run RDST with Ridge
+# ----------------------------------------
 #
-# We load a UCR dataset with its name, and initialise CST 
-# with a Ridge classifier. We then use CST to transform the inputs
-# and feed it to the Ridge classifier
+# We load a UCR dataset with its name, and initialise RDST 
+# with a Ridge classifier using the wrapper class R_DST_Ridge.
 
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
+X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
     'GunPoint', normalize=True)
 
-cst = ConvolutionalShapeletTransformer(verbose=0)
-rdg = RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
-                        normalize=True, class_weight='balanced')
+rdst = R_DST_Ridge()
 
-X_cst_train = cst.fit_transform(X_train, y_train)
-X_cst_test = cst.transform(X_test)
+rdst.fit(X_train, y_train)
+acc_score = rdst.score(X_test, y_test)
 
-rdg.fit(X_cst_train, y_train)
-pred = rdg.predict(X_cst_test)
-print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
-print("F1 Score for CST : {}".format(
-    f1_score(y_test, pred, average='macro')))
+print("Accuracy Score for RDST : {}".format(acc_score))
 
 # %%
-# Run the interpreter on a test sample
-# ------------------------------------
+# Visualize a shapelet 
+# --------------------
 #
-# To run the interpreter on a sample, we use the `interpret_sample`
-# function which take as input a 3D array, here of shape (1,1,n_timestamps)
+# To visualize a shapelet, we use the associated function in the RDST class.
+# We use the coefficients from the Ridge classifier to select a shapelet
+# that was important for the classification task for one class. 
 
-icst = CST_interpreter(cst, X_train, X_cst_train, y_train)
-
-i_sample=0
-icst.interpret_sample(X_test[i_sample:i_sample+1])
+i_class = 0
+ix = rdst.classifier['ridgeclassifiercv'].coef_[i_class].argsort()[0]
+rdst.transformer.visualise_one_shapelet(ix//3, X_test, y_test, i_class, figs=(17,12))

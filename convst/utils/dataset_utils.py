@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sktime.datasets.base import load_UCR_UEA_dataset
+from sktime.datasets import (load_UCR_UEA_dataset, 
+    load_from_tsfile_to_dataframe, load_from_arff_to_dataframe
+)
+from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
+
 from sklearn.preprocessing import LabelEncoder
-from sktime.utils.data_processing import from_nested_to_3d_numpy
-from sktime.utils.data_io import load_from_tsfile_to_dataframe
-from sktime.utils.data_io import load_from_arff_to_dataframe
 
 from sklearn.utils import resample
+
+from sktime.classification.hybrid import HIVECOTEV2
+
 class stratified_resample:
     """
     A random resampler used as a splitter for sklearn cross validation tools.
@@ -122,7 +126,7 @@ class UCR_stratified_resample:
 
         """
         for i in range(self.n_splits):
-            X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(self.path,i)
+            X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(self.path, i)
             idx_Train = [np.where((X == X_train[j]).all(axis=2))[0][0] for j in range(X_train.shape[0])]
             idx_Test = [np.where((X == X_test[j]).all(axis=2))[0][0] for j in range(X_test.shape[0])]
             yield idx_Train, idx_Test
@@ -197,7 +201,7 @@ def load_sktime_dataset_split(name, normalize=True):
         X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
             X_test.std(axis=-1, keepdims=True) + 1e-8)
 
-    return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
+    return X_train, X_test, y_train, y_test, le
 
 
 def load_sktime_arff_file(path, normalize=True):
@@ -248,7 +252,7 @@ def load_sktime_arff_file(path, normalize=True):
         X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
             X_test.std(axis=-1, keepdims=True) + 1e-8)
 
-    return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
+    return X_train, X_test, y_train, y_test, le
 
 
 def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
@@ -302,7 +306,7 @@ def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
         X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
             X_test.std(axis=-1, keepdims=True) + 1e-8)
 
-    return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
+    return X_train, X_test, y_train, y_test, le
 
 def load_sktime_ts_file(path, normalize=True):
     """
@@ -352,7 +356,7 @@ def load_sktime_ts_file(path, normalize=True):
         X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
             X_test.std(axis=-1, keepdims=True) + 1e-8)
 
-    return X_train.astype(np.float32), X_test.astype(np.float32), y_train, y_test, le
+    return X_train, X_test, y_train, y_test, le
 
 def load_sktime_dataset(name, normalize=True):
     """
@@ -391,16 +395,16 @@ def load_sktime_dataset(name, normalize=True):
         X = (X - X.mean(axis=-1, keepdims=True)) / (
             X.std(axis=-1, keepdims=True) + 1e-8)
 
-    return X.astype(np.float32), y, le
+    return X, y, le
 
 
 def return_all_dataset_names():
     """
-    Return the names of the 108 univariate datasets of the UCR archive.
+    Return the names of the 112 univariate datasets of the UCR archive.
 
     Returns
     -------
-    array, shape=(108)
+    array, shape=(112)
         Names of the univariate UCR datasets.
 
     """
@@ -441,6 +445,7 @@ def return_all_dataset_names():
             "FiftyWords",
             "Fish",
             "FordA",
+            "FordB",
             "FreezerRegularTrain",
             "FreezerSmallTrain",
             "GunPoint",
@@ -448,6 +453,7 @@ def return_all_dataset_names():
             "GunPointMaleVersusFemale",
             "GunPointOldVersusYoung",
             "Ham",
+            "HandOutlines",
             "Haptics",
             "Herring",
             "HouseTwenty",
@@ -468,6 +474,8 @@ def return_all_dataset_names():
             "MixedShapesRegularTrain",
             "MixedShapesSmallTrain",
             "MoteStrain",
+            "NonInvasiveFetalECGThorax1",
+            "NonInvasiveFetalECGThorax2",
             "OliveOil",
             "OSULeaf",
             "PhalangesOutlinesCorrect",

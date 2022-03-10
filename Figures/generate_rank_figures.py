@@ -266,12 +266,12 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, width=10, labels=False
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
     if p_values is not None:
         graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
-                    cd=None, reverse=True, width=width, textspace=1.5, labels=labels)
+                    cd=None, reverse=True, width=width, textspace=1.25, labels=labels)
 
         font = {'family': 'sans-serif',
                 'color':  'black',
                 'weight': 'normal',
-                'size': 22,
+                'size': 20,
                 }
         if title:
             plt.title(title, fontdict=font, y=0.9, x=0.5)
@@ -362,173 +362,80 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
     return p_values, average_ranks, max_nb_datasets
 
 
-def cv_col_clean_name(s):
-    if s == 'Unnamed: 0':
-        return "dataset_name"
-    for char in ["'", "{", "}", "CST", " ", ]:
-        s = s.replace(char, "")
-    s = s.split('__')
-    return s[1]+s[2]+s[3]
-
-
-def cv_col_clean_name2(s):
-    if s == 'Unnamed: 0':
-        return "dataset_name"
-    for char in ["'", "{", "}", "CST", " ", ]:
-        s = s.replace(char, "")
-    s = s.split('__')
-    return s[1]
-
-#base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-base_path = r"C:\git_projects\CST\csv_results\\"
-# In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_f1 = base_path + r"TESTF1_MEANS.csv"
-
-
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
-
-df = df[(df['CST_f1_mean'] > 0)]
-df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-
-df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'SFC_f1_mean', 'MrSEQL_f1_mean']],
-                      df2[['STC']]], axis=1).rename(columns={'CST_f1_mean': 'CST',
-                                                             'MiniRKT_f1_mean': 'MiniRKT',
-                                                             'SFC_f1_mean': 'SFC',
-                                                             'MrSEQL_f1_mean':'MrSEQL'}).reset_index(drop=True)
-
-df_res = pd.DataFrame()
-
-for col in df_means.columns.difference(['Dataset']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
-    d['accuracy'] = df_means[col]
-    d['dataset_name'] = df_means['Dataset']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
 
 # In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_acc = base_path + r"TESTF1_MEANS.csv"
 
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTF1': 'Dataset'})
 
-df = df[(df['CST_f1_mean'] > 0)]
-df2 = df2[df2['Dataset'].isin(df['Dataset'])]
+base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
 
-df_means = pd.concat([df[['Dataset', 'CST_f1_mean']],
-                      df2[df2.columns.difference(['Dataset','Catch22'])]], axis=1).rename(columns={'CST_f1_mean': 'CST',
-                                                           'MiniRKT_acc_mean':'MiniRKT',
-                                                           'SFC_acc_mean':'SFC',
-                                                           'MrSEQL_acc_mean':'MrSEQL'}).reset_index(drop=True)
+baseline_path = base_path + r"CV_30_results_Random_final_(5_10).csv"
+df = pd.read_csv(baseline_path, sep=',', index_col=0).rename(columns={"dataset":"Dataset"})
 
-df_res = pd.DataFrame()
+df = df[df['model']=='RDST']
 
-for col in df_means.columns.difference(['Dataset']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
-    d['accuracy'] = df_means[col]
-    d['dataset_name'] = df_means['Dataset']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
-# In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_acc = base_path + r"TESTACC_MEANS.csv"
-
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
-
-df = df[(df['CST_acc_mean'] > 0)]
-df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-
-df_means = pd.concat([df[['Dataset','MiniRKT_acc_mean', 'CST_acc_mean', 'SFC_acc_mean', 'MrSEQL_acc_mean']],
-                      df2['STC']], axis=1).rename(columns={'CST_acc_mean': 'CST',
-                                                           'MiniRKT_acc_mean':'MiniRKT',
-                                                           'SFC_acc_mean':'SFC',
-                                                           'MrSEQL_acc_mean':'MrSEQL'}).reset_index(drop=True)
-
-df_res = pd.DataFrame()
-
-for col in df_means.columns.difference(['Dataset']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
-    d['accuracy'] = df_means[col]
-    d['dataset_name'] = df_means['Dataset']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
-
+sota_path = base_path + r"SOTA-AverageOver30.csv"
+df2 = pd.read_csv(sota_path, sep=',').rename(columns={'TESTACC': 'Dataset'})
+    
+for m in ['RDST']:
+    df_perf = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])    
+    a = 0
+    for i, grp in df.groupby('Dataset'):
+        for j, d in grp.groupby('model'):
+            if j == m:
+                df_perf.loc[a,j] = d['acc_mean'].values[0]
+        
+        for j, serie in df2[df2['Dataset']==i].items():
+            df_perf.loc[a, j] = serie.values[0]
+        a+=1
+    
+    
+    df_perf.to_csv('Acc_comparison.csv', sep=',')
+    
+    df_res = pd.DataFrame()
+    
+    for col in df_perf.columns.difference(['Dataset']):
+        d = pd.DataFrame()
+        d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
+        d['accuracy'] = df_perf[col]
+        d['dataset_name'] = df_perf['Dataset']
+        df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+    
+    draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
+    plt.show()
 
 # In[]:
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_acc = base_path + r"TESTACC_MEANS.csv"
+#Ranks params
+base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
+csv_name = base_path + 'params_csv.csv'
 
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
-
-df = df[(df['CST_acc_mean'] > 0)]
-df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-
-df_means = pd.concat([df[['Dataset', 'CST_acc_mean']],
-                      df2[df2.columns.difference(['Dataset','Catch22'])]], axis=1).rename(columns={'CST_acc_mean': 'CST',
-                                                           'MiniRKT_acc_mean':'MiniRKT',
-                                                           'SFC_acc_mean':'SFC',
-                                                           'MrSEQL_acc_mean':'MrSEQL'}).reset_index(drop=True)
-
-df_res = pd.DataFrame()
-
-for col in df_means.columns.difference(['Dataset']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, df_means.shape[0]))
-    d['accuracy'] = df_means[col]
-    d['dataset_name'] = df_means['Dataset']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=10)
-
-
-# In[]:
-ranking_path = r"params_csv_all.csv"
-df = pd.read_csv(base_path+ranking_path)
-df = df.rename(columns=lambda x: cv_col_clean_name(x))
-
-df_res = pd.DataFrame()
-print(df.columns.difference(['dataset_name']).shape)
-for col in df.columns.difference(['dataset_name']):
-    d = pd.DataFrame()
-    d['classifier_name'] = pd.Series(col, index=range(0, df.shape[0]))
-    d['accuracy'] = df[col]
-    d['dataset_name'] = df['dataset_name']
-    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
-# In[]
-
-df_split = df_res.groupby([[x[0] for x in df_res['classifier_name'].str.split(
-    ",").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-
-plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='',
-                labels=False, path=base_path+'P.png')
-
-
-df_split = df_res.groupby([[x[1] for x in df_res['classifier_name'].str.split(
-    ",").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-
-plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
-                path=base_path+'n_bins.png')
-
-df_split = df_res.groupby([[x[2] for x in df_res['classifier_name'].str.split(
-    ",").values], 'dataset_name']).mean().reset_index()
-df_split = df_split.rename(columns={'level_0': 'classifier_name'})
-
-plt.figure(figsize=(5, 2))
-draw_cd_diagram(df_perf=df_split, alpha=0.05, title='', labels=False,
-                path=base_path+'n_trees.png')
-#In
+df=pd.read_csv(csv_name,index_col=0)
+df['n_shapelets'] = df['n_shapelets']
+"""
+Select for paper results 
+array(['ArrowHead', 'ECG5000', 'ToeSegmentation2',
+       'MiddlePhalanxOutlineAgeGroup', 'UWaveGestureLibraryZ',
+       'SonyAIBORobotSurface1', 'ScreenType', 'InsectWingbeatSound',
+       'FreezerRegularTrain', 'ECGFiveDays', 'Rock', 'ECG200',
+       'MedicalImages', 'TwoLeadECG', 'Beef', 'Earthquakes',
+       'WormsTwoClass', 'Adiac', 'Lightning7', 'SmoothSubspace',
+       'SwedishLeaf', 'GunPointOldVersusYoung', 'UWaveGestureLibraryX',
+       'FreezerSmallTrain', 'ACSF1', 'Wafer', 'PowerCons',
+       'ItalyPowerDemand', 'Herring', 'GunPointAgeSpan', 'Strawberry',
+       'HouseTwenty', 'SmallKitchenAppliances', 'PigCVP', 'Symbols',
+       'SyntheticControl', 'UMD', 'Fish', 'Trace', 'Coffee'], dtype=object)
+"""
+for col in ['n_shapelets','percentiles','p_norm','shapelet_sizes']:
+    df_res = pd.DataFrame()
+    j=0
+    for i, grp in df.groupby('Dataset'):
+        mask = grp[~pd.isna(grp[col])][[col,'acc_mean']]
+        for k in range(len(mask)):
+            df_res.loc[j,'classifier_name'] = mask.iloc[k][col]
+            df_res.loc[j,'accuracy'] = mask.iloc[k]['acc_mean']
+            df_res.loc[j,'dataset_name'] = i
+            j+=1
+    if col == 'n_shapelets':
+        df_res['classifier_name'] = df_res['classifier_name'].astype(int)
+    plt.figure(figsize=(5,3))
+    draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True, width=5)
+    plt.show()

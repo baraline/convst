@@ -8,233 +8,250 @@ import pandas as pd
 sns.set()
 sns.set_context("talk", font_scale=0.9)
 
-base_path = r"C:\Users\Antoine\Documents\git_projects\CST\CST\csv_results\\"
-#base_path = r"C:\git_projects\CST\csv_results\\"
+base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
 
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_path2 = base_path + r"CV_only_leaves_30_results_(200,1.0)_11_80.csv"
-cv_f1 = base_path + r"TESTF1_MEANS.csv"
-cv_f1_std = base_path + r"TESTF1_STDDEV.csv"
-
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_f1, sep=',').rename(columns={'TESTF1': 'Dataset'})
-df3 = pd.read_csv(cv_f1_std, sep=',').rename(
-    columns={'TESTF1STDDEVS': 'Dataset'})
-df4 = pd.read_csv(cv_path2, sep=',').rename(columns={'Unnamed: 0': 'Dataset',
-                                                     'CST_f1_mean':'CST2_f1_mean',
-                                                     'CST_f1_std':'CST2_f1_std',
-                                                     'CST_acc_mean':'CST2_acc_mean',
-                                                     'CST_acc_std':'CST2_acc_std'})
-
-df = df[(df4['CST2_f1_mean'] > 0)]
-df4 = df4[(df4['CST2_f1_mean'] > 0)]
+baseline_path = base_path + r"CV_30_results_Random_final_(5_10).csv"
+df = pd.read_csv(baseline_path, sep=',', index_col=0).rename(columns={"dataset":"Dataset"})
+df = df[df['Dataset']!='0']
+sota_path = base_path + r"SOTA-AverageOver30.csv"
+df2 = pd.read_csv(sota_path, sep=',').rename(columns={'TESTACC': 'Dataset'})
 df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-df3 = df3[df3['Dataset'].isin(df['Dataset'])]
+"""
+others = ["CV_30_results_Random_no_norm_(5_15).csv",
+          "CV_30_results_Random_v3_(5_15).csv",
+          "CV_30_results_Random_norm(0.9)_(5_15).csv",
+          "CV_30_results_Random_no_norm_(5_15)_CID.csv",
+          "CV_30_results_Random_norm(0.9)_(5_15)_CID.csv"]
 
-df_means = pd.concat([df[['Dataset', 'MiniRKT_f1_mean', 'CST_f1_mean', 'MrSEQL_f1_mean']],
-                      df4[['CST2_f1_mean']],
-                      df2['STC']], axis=1).rename(columns={'CST_f1_mean': 'CST',
-                                                           'CST2_f1_mean':'CST2',
-                                                            'MiniRKT_f1_mean': 'MiniRKT',
-                                                            'MrSEQL_f1_mean':'MrSEQL'})
+others=[]
 
-competitors = ['MiniRKT', 'CST', 'STC', 'MrSEQL']
+for r in others:
+    cv_path = base_path + r
+    df3 = pd.read_csv(cv_path, sep=',', index_col=0).rename(columns={"dataset":"Dataset"})
+    
+    df3 = df3[df3['Dataset']!='0']
+    print(df3.shape)
+    df = pd.concat([df,df3],axis=0,ignore_index=True)
+    "
+to_keep = []
+for i, grp in df.groupby('Dataset'):
+    if grp.shape[0] == len(others)+2:
+        to_keep.append(i)
+    
+df = df[df['Dataset'].isin(to_keep)].reset_index(drop=True)
+df2 = df2[df2['Dataset'].isin(to_keep)].reset_index(drop=True)
+"""
+df_info = pd.read_csv(base_path+'TSC_dataset_info.csv')
+
+df_perf = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])
+df_perf_time = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])
+d_cols = df_info.columns.difference(['Dataset'])
+a = 0
+for i, grp in df.groupby('Dataset'):
+    df_perf.loc[a,'Dataset'] = i
+    df_perf_time.loc[a,'Dataset'] = i
+    df_perf_time.loc[a,d_cols] = df_info.loc[df_info['Dataset']==i, d_cols].values[0]
+    df_perf.loc[a,d_cols] = df_info.loc[df_info['Dataset']==i, d_cols].values[0]
+    for j, d in grp.groupby('model'):
+        df_perf_time.loc[a,j] = d['time_mean'].values[0]
+        df_perf.loc[a,j] = d['acc_mean'].values[0]
+
+    for j, serie in df2[df2['Dataset']==i].items():
+        df_perf.loc[a, j] = serie.values[0]
+    a+=1
+    
+    
+df_perf['total_len'] = df_perf['Train size'] * df_perf['Length']
+"""
+d_cols = df_perf.columns.difference(['Dataset'])
+df_win_top = pd.DataFrame(index=df_perf['Dataset'], columns=['1','2','3'])
+for i, grp in df_perf.groupby('Dataset'):
+    grp = grp[d_cols]
+    g = grp.values[0]
+    top = np.argpartition(g, -3)[-3:]
+    df_win_top.loc[i, '1'] = grp.columns[top[2]] + '({})'.format(str(g[top[2]])[0:5])
+    df_win_top.loc[i, '2'] = grp.columns[top[1]] + '({})'.format(str(g[top[1]])[0:5])
+    df_win_top.loc[i, '3'] = grp.columns[top[0]] + '({})'.format(str(g[top[0]])[0:5])
+"""
+# In[]:
+m0 = 'RS Ridge v2'
+m1 = 'TS-CHIEF'
+margin=0.05
+margin/=2
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
+for f in ['total_len', 'Type']:
+    fig, ax = plt.subplots(ncols=2, figsize=(15,5),sharey=True,sharex=True)
+    ax[0].scatter(df_perf[f], df_perf[m0])
+    ax[0].set_title(m0)
+    ax[1].scatter(df_perf[f], df_perf[m1])
+    ax[1].set_title(m1)
+    if f=='Type':
+        ax[0].set_xticks(df_perf[f].unique())
+        ax[0].set_xticklabels(df_perf[f].unique(), rotation=-70)
+        ax[1].set_xticks(df_perf[f].unique())
+        ax[1].set_xticklabels(df_perf[f].unique(), rotation=-70)
+        
+    fig.suptitle(f)
+    plt.show()
+    diff = df_perf[m0]-df_perf[m1]
+    plt.figure(figsize=(10,5))
+    plt.scatter(df_perf[f], diff)
+    for j in range(df_perf.shape[0]):
+        if abs(diff.loc[j])>0.05:
+            plt.annotate(
+                df_perf.loc[j,'Dataset'],
+                (df_perf.loc[j,f], diff[j]),
+                fontsize=14,
+                bbox=dict(boxstyle="round", alpha=0.1), 
+            )
+    plt.title('diff {}'.format(f))
+    textstr = 'W - D - L\n{} - {} - {}'.format(sum(diff > margin), sum((-margin<=diff) &(diff<=margin)), sum(diff<-margin))
+    plt.hlines(0,df_perf[f].min(), df_perf[f].max(),color='red')
+    plt.text(0., 0.125, textstr, fontsize=14, verticalalignment='top', bbox=props)
+    if f=='Type':
+        plt.xticks(df_perf[f].unique(), rotation=-70)
+    plt.show()
+# In[]:
+
+baseline = 'RDST'
+competitors = ['HC2','TS-CHIEF','HC1','InceptionTime']
+#competitors = ['HIVE-COTE v1.0', 'RS Ridge', 'STC', 'InceptionTime']
 ncols = 2
 nrows = 2
-fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(10, 10), sharey=True)
+limit_min=0.2
+limit_max=1.0
+margin=0.05
+margin/=2
+show_names=True
+fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 10), sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
 for i, comp in enumerate(competitors):
-    ax[i // ncols,i % ncols].plot([0, 1], [0, 1], color='r')
-    #ax[i%ncols].plot([0.0, 0.95], [0.05, 1.0], color='orange', linestyle='--', alpha=0.75)
-    #ax[i%ncols].plot([0.05, 1.0], [0.0, 0.95], color='orange', linestyle='--', alpha=0.75)
-    x = df_means[comp].values
-    y = df_means['CST2'].values
-    ax[i // ncols,i % ncols].scatter(x, y, s=25, alpha=0.75)
-    if i % ncols == 0:
-        ax[i // ncols,i % ncols].set_ylabel('CST2')
-    ax[i // ncols,i % ncols].set_xlabel(comp)
-    #textstr = 'W - D - L (+/- 5%)\n{} - {} - {}'.format(sum(x*1.05 < y), sum((x*0.95<= y) & (y <= x*1.05)), sum(x > y*1.05))
-    textstr = 'W - D - L\n{} - {} - {}'.format(
-        sum(x < y), sum((x <= y) & (y <= x)), sum(x > y))
-    ax[i // ncols,i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols,i % ncols].transAxes, fontsize=14,
-                       verticalalignment='top', bbox=props)
+    if nrows>1:
+        limp = (limit_max-limit_min)*0.05
+        ax[i // ncols,i % ncols].set_xlim(limit_min-limp, limit_max+limp)
+        ax[i // ncols,i % ncols].set_ylim(limit_min-limp, limit_max+limp)
+        ax[i // ncols,i % ncols].plot([limit_min, limit_max], [limit_min, limit_max], color='r')
+        ax[i // ncols,i % ncols].plot([limit_min,limit_max-margin], [limit_min + margin,limit_max], color='orange', linestyle='--', alpha=0.75)
+        ax[i // ncols,i % ncols].plot([limit_min + margin,limit_max], [limit_min,limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+        ax[i // ncols,i % ncols].annotate(
+            '{}'.format(margin), 
+            (limit_min + margin/2 +0.0125, limit_min+margin/2 -0.01),
+            fontsize=12
+        )
+        x = df_perf[comp].values
+        y = df_perf[baseline].values
+        ax[i // ncols,i % ncols].scatter(x, y, s=15, alpha=0.75,zorder=2)
+        if show_names:
+            for j in range(df_perf.shape[0]):
+                x1 = df_perf.loc[j,comp]
+                y1 = df_perf.loc[j,baseline]
+                if abs(x1 - y1)>margin*5:
+                    ax[i // ncols,i % ncols].annotate(
+                        "{} ({})".format(df_perf.loc[j,'Dataset'],df_perf.loc[j,'Type']),
+                        (x1, y1),
+                        fontsize=14,
+                        bbox=dict(boxstyle="round", alpha=0.1), 
+                    )
+        if i % ncols == 0:
+            ax[i // ncols,i % ncols].set_ylabel(baseline)
+        ax[i // ncols,i % ncols].set_xlabel(comp)
+        
+        textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum((x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+        ax[i // ncols,i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols,i % ncols].transAxes, fontsize=14,
+                           verticalalignment='top', bbox=props)
+    elif ncols>1:
+        limp = (1-limit_min)*0.05
+        ax[i % ncols].set_xlim(limit_min-limp,limit_max+limp)
+        ax[i % ncols].set_ylim(limit_min-limp,limit_max+limp)
+        ax[i % ncols].plot([limit_min,limit_max], [limit_min,limit_max], color='r')
+        ax[i % ncols].plot([limit_min,limit_max-margin], [limit_min + margin,limit_max], color='orange', linestyle='--', alpha=0.75)
+        ax[i % ncols].plot([limit_min + margin,limit_max], [limit_min,limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+        ax[i % ncols].annotate(
+            '{}'.format(margin), 
+            (limit_min + margin/2 +0.0125, limit_min+margin/2 -0.01),
+            fontsize=12
+        )
+        x = df_perf[comp].values
+        y = df_perf[baseline].values
+        ax[i % ncols].scatter(x, y, s=15, alpha=0.75,zorder=2)
+        if show_names:
+            for j in range(df_perf.shape[0]):
+                x1 = df_perf.loc[j,comp]
+                y1 = df_perf.loc[j,baseline]
+                if abs(x1 - y1)>margin:
+                    ax[i % ncols].annotate(
+                        df_perf.loc[j,'Dataset'],
+                        (x1, y1),
+                        fontsize=14,
+                        bbox=dict(boxstyle="round", alpha=0.1), 
+                    )
+        if i % ncols == 0:
+            ax[i % ncols].set_ylabel(baseline)
+        ax[i % ncols].set_xlabel(comp)
+        
+        textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum((x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+        ax[i % ncols].text(0.05, 0.95, textstr, transform=ax[i % ncols].transAxes, fontsize=14,
+                           verticalalignment='top', bbox=props)
+    else:
+        limp = (1-limit_min)*0.05
+        ax.set_xlim(limit_min-limp,limit_max+limp)
+        ax.set_ylim(limit_min-limp,limit_max+limp)
+        ax.plot([limit_min,limit_max], [limit_min,limit_max], color='r')
+        ax.plot([limit_min,limit_max-margin], [limit_min + margin,limit_max], color='orange', linestyle='--', alpha=0.75)
+        ax.plot([limit_min + margin,limit_max], [limit_min,limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+        ax.arrow(limit_min + margin,limit_min, -margin/2,+margin/2, length_includes_head=True,color='orange', alpha=0.75, head_width=0.0075)
+        ax.annotate(
+            '{}'.format(margin), 
+            (limit_min + margin/2 +0.0125, limit_min+margin/2 -0.01),
+            fontsize=12
+        )
+        x = df_perf[comp].values
+        y = df_perf[baseline].values
+        ax.scatter(x, y, s=15, alpha=0.75,zorder=2)
+        if show_names:
+            for j in range(df_perf.shape[0]):
+                x1 = df_perf.loc[j,comp]
+                y1 = df_perf.loc[j,baseline]
+                if abs(x1 - y1)>margin:
+                    ax.annotate(
+                        "{} ({})".format(df_perf.loc[j,'Dataset'],df_perf.loc[j,'Type']),
+                        (x1, y1),
+                        fontsize=14,
+                        bbox=dict(boxstyle="round", alpha=0.1), 
+                    )
+        if i % ncols == 0:
+            ax.set_ylabel(baseline)
+        ax.set_xlabel(comp)
+        
+        textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum((x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+                           verticalalignment='top', bbox=props)
+# In[]:
+    
+model_cols = df_perf.columns.difference(['min','max','Dataset','total_len','Length', 'Test size', 'Train size', 'Type', 'n_classes'])
+df_perf['min'] = df_perf[model_cols].min(axis=1)
+df_perf['max'] = df_perf[model_cols].max(axis=1)
+df_perf = df_perf.sort_values('Type').reset_index(drop=True)
+df_perf.loc[df_perf['Type'] == 'HEMODYNAMICS','Type'] = 'HEMO'
 
-                                                           
 # In[]
-ranking_path = r"params_csv_all.csv"
-df_params = pd.read_csv(base_path+ranking_path).rename(columns={'Unnamed: 0': 'Dataset'})
-
-#df2['STC'] = df2['STC'].apply(lambda x: '%.5f' % x)
-#df3['STC'] = df3['STC'].apply(lambda x: '%.5f' % x)
-df_latex = df[['Dataset', 'CST_f1_mean', 'CST_f1_std', 'MiniRKT_f1_mean',
-               'MiniRKT_f1_std', 'SFC_f1_mean', 'SFC_f1_std','MrSEQL_f1_mean','MrSEQL_f1_std']]
-df_latex['STC_f1_mean'] = df2['STC']
-df_latex['STC_f1_std'] = df3['STC']
-
-df_latex2 = df_latex.set_index('Dataset')
-df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
-df_latex['STC_f1_mean'] = df_latex['STC_f1_mean'].apply(lambda x: '%.5f' % x)
-df_latex['STC_f1_std'] = df_latex['STC_f1_std'].apply(lambda x: '%.5f' % x)
-df_latex = df_latex.astype(str)
-
-df_latex['CST'] = df_latex['CST_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['CST_f1_std'].str[0:5]+')'
-df_latex['Mini-ROCKET'] = df_latex['MiniRKT_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['MiniRKT_f1_std'].str[0:5]+')'
-df_latex['SFC'] = df_latex['SFC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['SFC_f1_std'].str[0:5]+')'
-df_latex['MrSEQL'] = df_latex['MrSEQL_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['MrSEQL_f1_std'].str[0:5]+')'
-df_latex['STC'] = df_latex['STC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['STC_f1_std'].str[0:5]+')'
-
-
-df_latex = df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']]
-amax = df_latex.values[:,1:].max(axis=1)
-for i in range(df_latex.shape[0]):
-    df_latex.loc[i,df_latex.columns[np.where(df_latex.loc[i] == amax[i])]] = r"\textbf{"+amax[i]+r"}"
-
-
-df_latex.to_latex(base_path+'CV_table_f1.tex', index=False)
-
-df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
-
-df_latex2['Type'] = df_type[' Type']
-counts = df_latex2.groupby('Type').count()['CST_f1_mean']
-df_latex3 = df_latex2.groupby('Type').std()
-df_latex2 = df_latex2.groupby('Type').mean()
-
-df_latex2 = df_latex2.reset_index()
-df_latex3 = df_latex3.reset_index()
-
-df_latex2['Type'] = df_latex2['Type'].apply(lambda x : x + ' (' +str(counts.loc[x])+ ')')
-df_latex2['STC_f1_mean'] = df_latex2['STC_f1_mean'].apply(lambda x: '%.5f' % x)
-df_latex2['STC_f1_std'] = df_latex2['STC_f1_std'].apply(lambda x: '%.5f' % x)
-df_latex2 = df_latex2.astype(str)
-df_latex3 = df_latex3.astype(str)
-
-df_latex2['CST'] = df_latex2['CST_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['CST_f1_mean'].str[0:5]+')'
-df_latex2['SFC'] = df_latex2['SFC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['SFC_f1_mean'].str[0:5]+')'
-df_latex2['MrSEQL'] = df_latex2['MrSEQL_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['MrSEQL_f1_mean'].str[0:5]+')'
-df_latex2['STC'] = df_latex2['STC_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['STC_f1_mean'].str[0:5]+')'
-df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_f1_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['MiniRKT_f1_mean'].str[0:5]+')'
-df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCKET','STC','SFC','MrSEQL']),axis=1)
-df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)
-# In[]:
-
-cv_path = base_path + r"CV_30_results_(200,1.0)_11_80.csv"
-cv_path2 = base_path + r"CV_only_leaves_30_results_(200,1.0)_11_80.csv"
-cv_acc = base_path + r"TESTACC_MEANS.csv"
-#cv_acc_std = base_path + r"TESTACC_STDDEV.csv"
-
-df = pd.read_csv(cv_path, sep=';').rename(columns={'Unnamed: 0': 'Dataset'})
-df2 = pd.read_csv(cv_acc, sep=',').rename(columns={'TESTACC': 'Dataset'})
-#df3 = pd.read_csv(cv_acc_std, sep=',').rename(columns={'TESTACCSTDDEVS': 'Dataset'})
-df4 = pd.read_csv(cv_path2, sep=',').rename(columns={'Unnamed: 0': 'Dataset',
-                                                     'CST_acc_mean':'CST2_acc_mean',
-                                                     'CST_acc_std':'CST2_acc_std',
-                                                     'CST_acc_mean':'CST2_acc_mean',
-                                                     'CST_acc_std':'CST2_acc_std'})
-
-df = df[(df4['CST2_acc_mean'] > 0)]
-df4 = df4[(df4['CST2_acc_mean'] > 0)]
-df2 = df2[df2['Dataset'].isin(df['Dataset'])]
-df3 = df3[df3['Dataset'].isin(df['Dataset'])]
-
-df_means = pd.concat([df[['Dataset', 'MiniRKT_acc_mean', 'CST_acc_mean', 'MrSEQL_acc_mean']],
-                      df4[['CST2_acc_mean']],
-                      df2['STC']], axis=1).rename(columns={'CST_acc_mean': 'CST',
-                                                           'CST2_acc_mean':'CST2',
-                                                            'MiniRKT_acc_mean': 'MiniRKT',
-                                                            'MrSEQL_acc_mean':'MrSEQL'})
-
-competitors = ['MiniRKT', 'CST', 'STC', 'MrSEQL']
-ncols = 2
-nrows = 2
-fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(10, 10), sharey=True)
-props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
-for i, comp in enumerate(competitors):
-    ax[i // ncols,i % ncols].plot([0, 1], [0, 1], color='r')
-    #ax[i%ncols].plot([0.0, 0.95], [0.05, 1.0], color='orange', linestyle='--', alpha=0.75)
-    #ax[i%ncols].plot([0.05, 1.0], [0.0, 0.95], color='orange', linestyle='--', alpha=0.75)
-    x = df_means[comp].values
-    y = df_means['CST2'].values
-    ax[i // ncols,i % ncols].scatter(x, y, s=25, alpha=0.75)
-    if i % ncols == 0:
-        ax[i // ncols,i % ncols].set_ylabel('CST2')
-    ax[i // ncols,i % ncols].set_xlabel(comp)
-    #textstr = 'W - D - L (+/- 5%)\n{} - {} - {}'.format(sum(x*1.05 < y), sum((x*0.95<= y) & (y <= x*1.05)), sum(x > y*1.05))
-    textstr = 'W - D - L\n{} - {} - {}'.format(
-        sum(x < y), sum((x <= y) & (y <= x)), sum(x > y))
-    ax[i // ncols,i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols,i % ncols].transAxes, fontsize=14,
-                       verticalalignment='top', bbox=props)
-
-# In[]:  
-df_latex = df[['Dataset', 'CST_acc_mean', 'CST_acc_std', 'MiniRKT_acc_mean',
-               'MiniRKT_acc_std', 'SFC_acc_mean', 'SFC_acc_std','MrSEQL_acc_mean','MrSEQL_acc_std']]
-df_latex['STC_acc_mean'] = df2['STC']
-df_latex['STC_acc_std'] = df3['STC']
-
-df_latex2 = df_latex.set_index('Dataset')
-df_latex['Dataset'] = df_latex['Dataset'].apply(lambda x: x+'*' if x in df_params['Dataset'].values else x)
-df_latex['STC_acc_mean'] = df_latex['STC_acc_mean'].apply(lambda x: '%.5f' % x)
-df_latex['STC_acc_std'] = df_latex['STC_acc_std'].apply(lambda x: '%.5f' % x)
-
-df_latex = df_latex.astype(str)
-
-df_latex['CST'] = df_latex['CST_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['CST_acc_std'].str[0:5]+')'
-df_latex['Mini-ROCKET'] = df_latex['MiniRKT_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['MiniRKT_acc_std'].str[0:5]+')'
-df_latex['SFC'] = df_latex['SFC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['SFC_acc_std'].str[0:5]+')'
-df_latex['MrSEQL'] = df_latex['MrSEQL_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['MrSEQL_acc_std'].str[0:5]+')'
-df_latex['STC'] = df_latex['STC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex['STC_acc_std'].str[0:5]+')'
-
-df_latex = df_latex[['Dataset', 'CST', 'Mini-ROCKET', 'SFC', 'MrSEQL', 'STC']]
-amax = df_latex.values[:,1:].max(axis=1)
-for i in range(df_latex.shape[0]):
-    df_latex.loc[i,df_latex.columns[np.where(df_latex.loc[i] == amax[i])]] = r"\textbf{"+amax[i]+r"}"
-
-df_latex.to_latex(base_path+'CV_table_acc.tex', index=False)
-
-
-df_type = pd.read_csv(base_path+'dataset_type.csv').set_index('Dataset')
-# In[]:
-df_latex2['Type'] = df_type[' Type']
-df_latex2.loc['CinCECGTorso','Type'] = ' ECG'
-df_latex2.loc['StarLightCurves','Type'] = ' SENSOR'
-df_latex2.loc['Phoneme','Type'] = ' AUDIO'
-# In[]:
-counts = df_latex2.groupby('Type').count()['CST_acc_mean']
-df_latex3 = df_latex2.groupby('Type').std().fillna(0)
-df_latex2 = df_latex2.groupby('Type').mean()
-
-df_latex2 = df_latex2.reset_index()
-df_latex3 = df_latex3.reset_index()
-
-df_latex2['Type'] = df_latex2['Type'].apply(lambda x : x + ' (' +str(counts.loc[x])+ ')')
-df_latex2['STC_acc_mean'] = df_latex2['STC_acc_mean'].apply(lambda x: '%.5f' % x)
-df_latex2['STC_acc_std'] = df_latex2['STC_acc_std'].apply(lambda x: '%.5f' % x)
-df_latex2 = df_latex2.astype(str)
-df_latex3 = df_latex3.astype(str)
-
-df_latex2['CST'] = df_latex2['CST_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['CST_acc_mean'].str[0:5]+')'
-df_latex2['SFC'] = df_latex2['SFC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['SFC_acc_mean'].str[0:5]+')'
-df_latex2['MrSEQL'] = df_latex2['MrSEQL_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['MrSEQL_acc_mean'].str[0:5]+')'
-df_latex2['STC'] = df_latex2['STC_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['STC_acc_mean'].str[0:5]+')'
-df_latex2['Mini-ROCKET'] = df_latex2['MiniRKT_acc_mean'].str[0:5] + \
-    ' (+/- ' + df_latex3['MiniRKT_acc_mean'].str[0:5]+')'
-df_latex2 = df_latex2.drop(df_latex2.columns.difference(['Type','CST','Mini-ROCKET','STC','SFC','MrSEQL']),axis=1)
-df_latex2.to_latex(base_path+'CV_table_type.tex', index=False)
+target = 'RDST'
+comp = 'HC2'
+plt.figure(figsize=(40,10))
+plt.plot(df_perf['Dataset'],df_perf[target], c='C1',label=target)
+plt.plot(df_perf['Dataset'],df_perf[comp], c='C4',label=comp)
+plt.fill_between(df_perf['Dataset'], df_perf['min'],df_perf['max'], alpha=0.4)
+plt.xticks(rotation=-90)
+plt.ylim(df_perf['min'].min(),1.2)
+plt.tick_params(axis='x', which='major', labelsize=20)
+b=0.05
+for ib, t in enumerate(df_perf['Type'].unique()):
+    d = df_perf[df_perf['Type']==t]
+    plt.bar(d.index.values[0]-0.5, 1.2, width=0.25, linestyle='-.',color='C2',alpha=0.75)    
+    plt.bar(d.index.values[-1]+0.5, 1.2, width=0.25, linestyle='-.',color='C2',alpha=0.75)    
+    xi = (d.index.values[-1] - d.index.values[0])/2 
+    plt.text(d.index.values[0]+xi, 1.1+(b*(ib%2)), t,  ha="center", va="center", size=20)
+mask = df_perf['max']==df_perf[target]
+#plt.scatter(df_perf.loc[mask,'Dataset'], df_perf.loc[mask,target], color='red')
+plt.legend(loc='lower center')
+plt.tight_layout()

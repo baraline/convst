@@ -10,5 +10,5 @@ User guide
 
    introduction.rst
    modules/transformers.rst
-   modules/interpreters.rst
+   modules/classifiers.rst
    modules/utils.rst

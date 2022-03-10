@@ -3,195 +3,117 @@
 import pandas as pd
 import numpy as np
 
-from datetime import datetime
-
-from sktime.transformations.panel.rocket import MiniRocket as MiniRKT
-from sktime.classification.shapelet_based import MrSEQLClassifier
-
+from sklearn.base import clone
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import RidgeClassifierCV
 
-from convst.utils import load_sktime_arff_file
-from convst.transformers import ConvolutionalShapeletTransformer
+from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.transformers import R_DST
 
-from wildboar.ensemble import ShapeletForestClassifier
+from sktime.classification.hybrid import HIVECOTEV1, HIVECOTEV2
+from sktime.classification.interval_based import DrCIF
+from sktime.classification.shapelet_based import ShapeletTransformClassifier
+from sktime.transformations.panel.rocket import Rocket
 
-"""
-I did this "dummy" script to have more control over what was included in the 
-time measurments. If you want to do things faster, using cross validate pipeline
-with parallel jobs could (didn't check source code of sklearn) lead to the same results.
+from timeit import default_timer as timer
 
-The datasets we use here are not directly available via the sktime interface.
-You must download them from the timeserieclassifcation website :
-    
-Link to full archive http://www.timeseriesclassification.com/Downloads/DucksAndGeese.zip
-
-By placing the _TRAIN.arff and _TEST.arff in the folder specified by the path variable,
- you can simply change the name of the dataset in the functions bellow if you wish to 
- try it on other datasets, be sure in this case to change the lengths that are considered.
- 
-"""
-run_cst = True
-run_rkt = True
-run_sfc = True
-run_sql = True
-
-resume = False
-
-n_jobs = 20
-csv_name = 'tslength_Benchmark.csv'
-lengths = np.asarray([1e+1, 1e+2, 1e+3, 1e+4, 2.5e+4]).astype(int)
-if resume:
-    df = pd.read_csv(csv_name)
-    df = df.set_index('Unnamed: 0')
-else:
-    df = pd.DataFrame(index=lengths)
-    df['CST'] = pd.Series(0, index=df.index)
-    df['MiniRKT'] = pd.Series(0, index=df.index)
-    df['MrSEQL'] = pd.Series(0, index=df.index)
-    df['SFC'] = pd.Series(0, index=df.index)
-
-
-path = r"/home/prof/guillaume/Shapelets/ts_datasets/"
-X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
-    path+"DucksAndGeese")
-n_cv = 10
-
-pipe_rkt = make_pipeline(MiniRKT(),
-                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                                           normalize=True))
-
-
-pipe_cst = make_pipeline(ConvolutionalShapeletTransformer(P=80, n_trees=100,
-                                                          max_ft=1.0, n_bins=11,
-                                                          n_jobs=n_jobs),
-                         RidgeClassifierCV(alphas=np.logspace(-6, 6, 20), 
-                                           normalize=True))
-
-pipe_sfc = make_pipeline(ShapeletForestClassifier(n_jobs=n_jobs))
-
-pipe_MrSEQL = make_pipeline(MrSEQLClassifier(symrep=['sax', 'sfa']))
-
-#Run all script a first time to avoid issues related to first numba run being slower
-pipe_cst.fit(X_train[0:100, :, 0:100], y_train[0:100])
-pipe_cst.predict(X_train[0:100, :, 0:100])
-pipe_sfc.fit(X_train[0:100, :, 0:100], y_train[0:100])
-pipe_sfc.predict(X_train[0:100, :, 0:100])
-pipe_rkt.fit(X_train[0:100, :, 0:100], y_train[0:100])
-pipe_rkt.predict(X_train[0:100, :, 0:100])
-pipe_MrSEQL.fit(X_train[0:100, :, 0:100], y_train[0:100])
-pipe_MrSEQL.predict(X_train[0:100, :, 0:100])
-
-
-def time_pipe(pipeline, X_train, y_train, X_test):
-    t0 = datetime.now()
+# Define timining function
+def time_pipe(pipeline, X_train, y_train):
+    t0 = timer()
     pipeline.fit(X_train, y_train)
-    pipeline.predict(X_test)
-    t1 = datetime.now()
-    return (t1-t0).total_seconds()
+    t1 = timer()
+    return t1-t0
 
+# Number of validation step
+n_cv = 10
+# Number of parallel threads for each method
+n_jobs=90
+
+pipe_RDST = make_pipeline(
+    R_DST(n_jobs=n_jobs),
+    StandardScaler(with_mean=False),
+    RidgeClassifierCV()
+)
+
+pipe_RKT = make_pipeline(
+    Rocket(n_jobs=n_jobs),
+    StandardScaler(with_mean=False),
+    RidgeClassifierCV()
+)
+
+models = {'RDST':pipe_RDST, 'Rocket':pipe_RKT,
+          'DrCIF':DrCIF(n_jobs=n_jobs),'HC1':HIVECOTEV1(n_jobs=n_jobs),
+          'STC':ShapeletTransformClassifier(n_jobs=n_jobs),
+          'HC2':HIVECOTEV2(n_jobs=n_jobs)}
+
+# Execute all model once for possible numba compilations
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("SmoothSubspace")
+X_train = X_train.astype(np.float64)
+X_test = X_test.astype(np.float64)
+for name in models:
+    time_pipe(clone(models[name]), X_train, y_train)
+
+# In[Samples benchmarks]:
+csv_name = 'n_samples_benchmarks.csv'    
+
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Crop")
+X_train = X_train.astype(np.float64)
+X_test = X_test.astype(np.float64)
+
+stp = X_train.shape[0]//8
+lengths = np.arange(stp,(X_train.shape[0])+stp,stp)
+df = pd.DataFrame(index=lengths)
+df['RDST'] = pd.Series(0, index=df.index)
+df['Rocket'] = pd.Series(0, index=df.index)
+df['DrCIF'] =  pd.Series(0, index=df.index)
+df['HC1'] = pd.Series(0, index=df.index)
+df['HC2'] = pd.Series(0, index=df.index)
+df['STC'] = pd.Series(0, index=df.index)
+
+
+from sklearn.utils import resample
 
 for l in lengths:
-    x1 = X_train[:, :, :l]
-    x2 = X_test[:, :, :l]
+    x1 = resample(X_train, replace=False, n_samples=l, stratify=y_train, random_state=0)
+    y1 = resample(y_train, replace=False, n_samples=l, stratify=y_train, random_state=0)
     print(x1.shape)
-    # CST
-    if run_cst and df.loc[l, 'CST'] == 0:
+    for name in models:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('CST', l, i_cv))
-            timing.append(time_pipe(pipe_cst, x1, y_train, x2))
-        df.loc[l, 'CST'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format(name, l, i_cv))
+            mod = clone(models[name])
+            timing.append(time_pipe(mod, x1, y1))
+        df.loc[l, name] = np.mean(timing)
+        df.loc[l, name+'_std'] = np.std(timing)
         df.to_csv(csv_name)
 
-    # RKT
-    if run_rkt and df.loc[l, 'MiniRKT'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MiniRKT', l, i_cv))
-            timing.append(time_pipe(pipe_rkt, x1, y_train, x2))
-        df.loc[l, 'MiniRKT'] = np.mean(timing)
-        df.to_csv(csv_name)
+# In[Timepoints benchmarks]:
+csv_name = 'n_timepoints_benchmarks_HC2.csv'    
 
-    # MrSEQL
-    if run_sql and df.loc[l, 'MrSEQL'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MrSEQL', l, i_cv))
-            timing.append(time_pipe(pipe_MrSEQL, x1, y_train, x2))
-        df.loc[l, 'MrSEQL'] = np.mean(timing)
-        df.to_csv(csv_name)
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Rock")
+X_train = X_train.astype(np.float64)
+X_test = X_test.astype(np.float64)
 
-    # SFC
-    if run_sfc and df.loc[l, 'SFC'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('SFC', l, i_cv))
-            timing.append(time_pipe(pipe_sfc, x1, y_train, x2))
-        df.loc[l, 'SFC'] = np.mean(timing)
-        df.to_csv(csv_name)
+stp = X_train.shape[2]//8
+lengths = np.arange(stp,X_train.shape[2]+stp,stp)
+df = pd.DataFrame(index=lengths)
+df['RDST'] = pd.Series(0, index=df.index)
+df['Rocket'] = pd.Series(0, index=df.index)
+df['DrCIF'] =  pd.Series(0, index=df.index)
+df['HC1'] = pd.Series(0, index=df.index)
+df['HC2'] = pd.Series(0, index=df.index)
+df['STC'] = pd.Series(0, index=df.index)
 
-# In[]:
-resume = False
-
-X_train, X_test, y_train, y_test, le = load_sktime_arff_file(
-    path+"InsectSound")
-n_classes = np.bincount(y_train).shape[0]
-n_per_class = np.asarray([10, 50, 100, 250, 400]).astype(int)
-csv_name = 'n_samples_Benchmark.csv'
-
-if resume:
-    df = pd.read_csv(csv_name)
-    df = df.set_index('Unnamed: 0')
-else:
-    df = pd.DataFrame(index=n_per_class*n_classes)
-    df['CST'] = pd.Series(0, index=df.index)
-    df['MiniRKT'] = pd.Series(0, index=df.index)
-    df['MrSEQL'] = pd.Series(0, index=df.index)
-    df['SFC'] = pd.Series(0, index=df.index)
-
-n_cv = 10
-for n in n_per_class:
-    x1 = np.asarray([np.random.choice(np.where(y_train == i)[
-                    0], n, replace=False) for i in np.unique(y_train)]).reshape(-1)
-    x2 = np.asarray([np.random.choice(np.where(y_test == i)[0],
-                                      n, replace=False) for i in np.unique(y_train)]).reshape(-1)
+for l in lengths:
+    x1 = X_train[:,:,:l]
     print(x1.shape)
-    if run_cst and df.loc[n*n_classes, 'CST'] == 0:
+    for name in models:
         timing = []
         for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('CST', n, i_cv))
-            timing.append(
-                time_pipe(pipe_cst, X_train[x1], y_train[x1], X_test[x2]))
-        df.loc[n*n_classes, 'CST'] = np.mean(timing)
-        df.to_csv(csv_name)
-
-    # RKT
-    if run_rkt and df.loc[n*n_classes, 'MiniRKT'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MiniRKT', n, i_cv))
-            timing.append(
-                time_pipe(pipe_rkt, X_train[x1], y_train[x1], X_test[x2]))
-        df.loc[n*n_classes, 'MiniRKT'] = np.mean(timing)
-        df.to_csv(csv_name)
-
-    # MrSEQL
-    if run_sql and df.loc[n*n_classes, 'MrSEQL'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('MrSEQL', n, i_cv))
-            timing.append(
-                time_pipe(pipe_MrSEQL, X_train[x1], y_train[x1], X_test[x2]))
-        df.loc[n*n_classes, 'MrSEQL'] = np.mean(timing)
-        df.to_csv(csv_name)
-
-    # SFC
-    if run_sfc and df.loc[n*n_classes, 'SFC'] == 0:
-        timing = []
-        for i_cv in range(n_cv):
-            print("{}/{}/n_cv:{}".format('SFC', n, i_cv))
-            timing.append(
-                time_pipe(pipe_sfc, X_train[x1], y_train[x1], X_test[x2]))
-        df.loc[n*n_classes, 'SFC'] = np.mean(timing)
+            print("{}/{}/n_cv:{}".format(name, l, i_cv))
+            mod = clone(models[name])
+            timing.append(time_pipe(mod, x1, y_train))
+        df.loc[l, name] = np.mean(timing)
+        df.loc[l, name+'_std'] = np.std(timing)
         df.to_csv(csv_name)

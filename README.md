@@ -1,107 +1,83 @@
-[![Documentation Status](https://readthedocs.org/projects/convst/badge/?version=latest)](https://convst.readthedocs.io/en/latest/?badge=latest)
-
-This repository contains the implementation of the `Convolutional Shapelet Transform (CST)`, a state-of-the-art shapelet algorithm.
-It compute a set of convolutional shapelets that match small parts of the input space with highly discriminative points in multiple convolutional spaces.
+Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 
 ## Installation
 
-The package support Python 3.7 & 3.8.  You can install the package and its dependencies via pip using `pip install convst`. To install the package from sources you can download the latest release on github and run `python setup.py install`. This will install the package and automaticaly look for the dependencies using `pip`. 
+The package was built and is using Python 3.8+ as default. If inquieries are made for support of earlier version of Python, i will make the adjustements.
 
-We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation. If you wish to install dependencies individually, you can the strict dependencies used in the `requierements.txt` file.
+The recommended way to install the latest stable version is to use pip with `pip install convst`. To install the package from sources you can download the latest version on github and run `python setup.py install`. This should install the package and automaticaly look for the dependencies using `pip`. 
 
-An optional dependency that can help speed up numba, which is used in our implementation is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`
+We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation. If you wish to install dependencies individually, you can see dependencies in the `requierements.txt` file.
 
-Requiered packages do not include packages not related to CST, the following packages could be useful if you want to run some other scripts in the archive:
-
-0. `wildboard` used for ShapeletForestClassifier
-1. `networkx` used to generate critical difference diagrams
+An optional dependency that can help speed up numba, which is used in our implementation, is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`. I didn't test the behavior with AMD processors but i suspect it won't work.
 
 ## Tutorial
-We give here a minimal example to run the `CST` algorithm on any univariate dataset of the UCR archive:
+We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the sktime API to fect dataset:
 
 ```python
-import numpy as np
-from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import RidgeClassifierCV
-from sklearn.metrics import accuracy_score
-from convst.transformers.convolutional_ST import ConvolutionalShapeletTransformer
-from convst.utils import load_sktime_dataset_split
 
-# Load Dataset by name. Any name of the univariate UCR archive can work.
+from convst.classifiers import R_DST_Ridge
+from convst.utils.dataset_utils import load_sktime_dataset_split
+
 X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
-
-# First run may be slow due to numba compilations on the first call. 
-# Run small dataset like GunPoint if this is the first time you call CST on your system.
-# Put verbose = 1 to see the progression of the algorithm.
-
-cst = make_pipeline(
-    ConvolutionalShapeletTransformer(verbose=0),
-    RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                      normalize=True, class_weight='balanced')
+    'GunPoint', normalize=True
 )
 
-cst.fit(X_train, y_train)
-pred = cst.predict(X_test)
+# First run may be slow due to numba compilations on the first call. 
+# Run small dataset like GunPoint if this is the first time you call RDST on your system.
+# You can change n_shapelets to 1 to make this process faster.
 
-print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
+rdst = R_DST_Ridge(n_shapelets=10_000).fit(X_train, y_train)
+
+print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
 ```
 
-We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`. Note that as only univariate is supported for now, CST will only process the first feature.
+## Suported inputs
 
-In the `Example` folder, you can find some other scripts to help you get started and show you how to plot some results. The `UCR_example.py` script allows you to run CST on any UCR dataset and plot interpretations of the results.
-Additional experiments mentioned in the paper are also found in this folder.
+We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`. Note that as only univariate is supported in version 0.15.0, RDST will only process the first feature.
 
-## Current Work in Progress
-
-The package currently has some limitations that are being worked on, the mains ones being:
-
-- [ ] Adaptation to the multivariate context. While you can feed a multivariate time series to CST, it will only look at the first feature for now.
-- [ ] Adaptation to irregular frequencies. This one will take a bit more time to think through, but is on the list.
-- [ ] Adaptation to unsupervised context. The ideal being to implement a clustering version of the algortihm using scikit-learn standards.
-- [ ] Possibility to change the model used to extract partitions of the data in CST.
-- [ ] Parallel implementation of the remaining sequential parts of CST and global optimizations to speed-up CST.
-- [ ] Memory consumption optimization relative to input time series characteristics.
-- [ ] Use of more diverse set of features extracted from the convolutions, notably those from Catch-22.
-- [ ] Redisgn interpretability tool to be more resilient to context (supervised or not) and high number of "class", currently graphs are really messy with high number of classes.
-- [ ] Special case testing show a potential issue when class difference can only be made by value at a particular timepoint (with noise), a fix is in progress.
-
-The `benchmark` folder offer visualisations of the performance change between release versions.
+A generalized version of the algorithm will be available in next release, allowing to classify multivariate and/or uneven length time series.
 
 ## Reproducing the paper results
 
 Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results.
 
-To obtain the same resampling data as the UCR archive, you muse use the [tsml](https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/examples/DataHandling.java) java repository, then from the class `DataHandling` in the package examples, use the function `resamplingData` and change where to read and write the data from. The function assumes the input is in arff format, they can be obtained on the [time serie classification website](http://www.timeseriesclassification.com/)
+To obtain the same resampling data as the UCR archive, you must use the [tsml](https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/examples/DataHandling.java) java repository, then from the class `DataHandling` in the package examples, use the function `resamplingData` and change where to read and write the data from. The function assumes the input is in arff format, they can be obtained on the [time serie classification website](http://www.timeseriesclassification.com/)
 
 ## Contributing, Citing and Contact
 
-If you are experiencing bugs in the CST implementation, or would like to contribute in any way, please create an issue or pull request in this repository
-For other question or to take contact with me, you can email me at XXXX (institutional email might change soon so i provide this as a temporary address)
+If you are experiencing bugs in the RDST implementation, or would like to contribute in any way, please create an issue or pull request in this repository.
+For other question or to take contact with me, you can email me at antoine.guillaume45@gmail.com
 
-If you use our algorithm or publication in any work, please cite the following paper :
+If you use our algorithm or publication in any work, please cite the following paper (ArXiv version will be up soon):
+
 ```bibtex
-@article{CST,
-  title={Convolutional Shapelet Transform: A new approach for time series shapelets},
-  author={Guillaume Antoine, Vrain Christel, Elloumi Wael},
+@article{RDST,
+  title={Random Dilated Shapelet Transform: A new approach for time series shapelets},
+  author={Antoine Guillaume, Christel Vrain, Wael Elloumi},
   journal={},
   volume={},
   number={},
   pages={},
-  year={2021}
+  year={2022}
   publisher={}
 }
 ```
+This paper is set to appear in the proceedings of ICPRAI 2022, published by Springer in Lecture Notes in Computer Science. The bibtex reference will be updated accordingly.
+
+## TODO for relase 1.0:
+
+- [ ] Finish Numpy docs in all python files
+- [ ] Update documentation and examples
+- [ ] Enhance interface for interpretability tools
+- [ ] Add the Generalised version of RDST
+- [ ] Continue unit tests and code coverage/quality
 
 ## Citations
 
 Here are the code-related citations that were not made in the paper
 
-[1]: [Loning, Markus and Bagnall, Anthony and Ganesh, Sajaysurya and Kazakov, Viktor and Lines, Jason and Kiraly, Franz J, "sktime: A Unified Interface for Machine Learning with Time Series", Workshop on Systems for ML at NeurIPS 2019}](https://www.sktime.org/en/latest/)
+[1]: [The Scikit-learn development team, "Scikit-learn: Machine Learning in Python", Journal of Machine Learning Research 2011](https://scikit-learn.org/stable/)
 
 
-[2]: [The Scikit-learn development team, "Scikit-learn: Machine Learning in Python", Journal of Machine Learning Research 2011](https://scikit-learn.org/stable/)
-
-
-[3]: [The Numpy development team, "Array programming with NumPy", Nature 2020](https://numpy.org/)
+[2]: [The Numpy development team, "Array programming with NumPy", Nature 2020](https://numpy.org/)
 

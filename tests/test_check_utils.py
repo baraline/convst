@@ -1,4 +1,4 @@
-from convst.utils import check_array_3D, check_array_2D, check_array_1D
+from convst.utils.checks_utils import check_array_3D, check_array_2D, check_array_1D
 import numpy as np
 import pytest
 

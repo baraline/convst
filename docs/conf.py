@@ -80,7 +80,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'convst'
-copyright = u'2021, Antoine Guillaume'
+copyright = u'2022, Antoine Guillaume'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

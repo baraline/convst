@@ -13,29 +13,32 @@ with open(os.path.join(ROOT, 'README.md'), encoding="utf-8") as f:
 	
 setup(
     name="convst",
-    description="The Convolutional Shapelet Transform algorithm",
+    description="The Random Dilation Shapelet Transform algorithm",
 	long_description_content_type='text/markdown',
 	long_description=README,
     author="Antoine Guillaume",
     packages=find_packages(),
 	license='BSD 2',
-	download_url = 'https://github.com/baraline/convst/archive/v0.1.4.tar.gz',
+	#download_url = 'https://github.com/baraline/convst/archive/v0.1.4.tar.gz',
     version=convst.__version__,
-	keywords = ['shapelets', 'time-series-classification', 'shapelet-transform','convolutional-kernels'],
+	keywords = ['shapelets', 'time-series-classification',
+             'shapelet-transform', 'time-series-transformations'],
 	url="https://github.com/baraline/convst",
     author_email="antoine.guillaume45@gmail.com",
 	python_requires='>=3.7',
     install_requires=[
-        "matplotlib >= 3.1",
-        "numba >= 0.50",
-        "pandas >= 1.1",
-        "scikit_learn >= 0.24",
-        "scipy >= 1.5.0",
-        "seaborn >= 0.11",
-        "sktime >= 0.5",
-        "numpy >= 1.18.5",
-		"sphinx_gallery >= 0.8",
-		"numpydoc >= 1.0"
+        "matplotlib >= 3.5",
+        "numba >= 0.54.1",
+        "pandas >= 1.3.4",
+        "scikit_learn >= 1.0.2",
+        "joblib >= 1.1.0",
+        "pyts >= 0.12"
+        "scipy >= 1.7.2",
+        "seaborn >= 0.11.2",
+        "sktime >= 0.9",
+        "numpy >= 1.19.3",
+        "networkx >= 2.6.3",
+        "pytest >= 6.2.5"
     ],
     zip_safe=False
 )

@@ -41,39 +41,28 @@ The following code snippet illustrates the basic usage of convst:
 
 .. code-block:: python
 
-    import numpy as np
-    from sklearn.pipeline import make_pipeline
-    from sklearn.linear_model import RidgeClassifierCV
-    from sklearn.metrics import accuracy_score
-    from convst.transformers import ConvolutionalShapeletTransformer
-    from convst.utils import load_sktime_dataset_split
-    
-    # Load Dataset by name. Any name of the univariate UCR archive can work.
-    X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
-        'GunPoint', normalize=True)
-    
-    # First run will be slow due to numba compilations on the first call. Run small dataset like GunPoint the first time !
-    # Put verbose = 1 to see the progression of the algorithm.
-    
-    cst = make_pipeline(
-        ConvolutionalShapeletTransformer(verbose=0),
-        RidgeClassifierCV(alphas=np.logspace(-6, 6, 20),
-                          normalize=True, class_weight='balanced')
-    )
-    
-    cst.fit(X_train, y_train)
-    pred = cst.predict(X_test)
-    
-    print("Accuracy Score for CST : {}".format(accuracy_score(y_test, pred)))
+    from convst.classifiers import R_DST_Ridge
+    from convst.utils.dataset_utils import load_sktime_dataset_split
 
-1. First we import sklearn components to build and evaluate a pipeline, CST, and a data loading function
+    X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
+        'GunPoint', normalize=True
+    )
+
+    # First run may be slow due to numba compilations on the first call. 
+    # Run small dataset like GunPoint if this is the first time you call RDST on your system.
+    # You can change n_shapelets to 1 to make this process faster.
+
+    rdst = R_DST_Ridge(n_shapelets=10_000).fit(X_train, y_train)
+
+    print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
+
+
+1. First we import the ``R_DST_Ridge`` class that containt a wrapper for R_DST using a Ridge classifier. We also import a data loading function
 
 2. Then we load the training and test sets by calling the ``load_sktime_dataset_split`` function.
 
-3. Next we define a pipeline using CST and a Ridge classifier.
-
-4. Finally we fit the pipeline on the training set and evaluate its
-   performance by computing the accuracy on the test set.
+3. Finally we fit the model on the training set and evaluate its
+   performance by computing the accuracy on the test set using the score function.
 
 We try ou best to follow the guidelines of sklearn to ensure compatibility with 
 their numerous tools. For more information visit the

@@ -1,4 +1,4 @@
-from convst.utils import generate_strides_2D, generate_strides_1D
+from convst.utils.shapelets_utils import generate_strides_2D, generate_strides_1D
 import numpy as np
 import pytest
 

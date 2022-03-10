@@ -2,9 +2,9 @@
 
 import numpy as np
 import pandas as pd
-from sktime.utils.data_processing import from_nested_to_3d_numpy, is_nested_dataframe
+from sktime.datatypes._panel._convert import from_nested_to_3d_numpy, is_nested_dataframe
 
-def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
+def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=2):
     """
     Perform checks on the input to verify if it is a 3D array.
 
@@ -39,6 +39,11 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
             "Input is empty or have a dimension of size 0"
             ", found shape: {}".format(X.shape)
         )
+    if X.shape[2] <= min_timestamps:
+        raise ValueError(
+            "Input should have more than {} timestamp"
+            ", found only: {}".format(min_timestamps,X.shape[2])
+        )
     if isinstance(X, pd.DataFrame):
         if not is_nested_dataframe(X):
             raise ValueError(
@@ -52,7 +57,6 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False):
             raise ValueError(
                 "X must be a 3-dimensional array with dimension 1 equal to 1"
             )
-    
     return X
 
 def check_array_2D(X, coerce_to_numpy=True):
