@@ -28,17 +28,17 @@ setup(
 	python_requires='>=3.7',
     install_requires=[
         "matplotlib >= 3.5",
-        "numba >= 0.54.1",
-        "pandas >= 1.3.4",
-        "scikit_learn >= 1.0.2",
+        "numba >= 0.55",
+        "pandas >= 1.3",
+        "scikit_learn >= 1.0",
         "joblib >= 1.1.0",
-        "pyts >= 0.12"
-        "scipy >= 1.7.2",
-        "seaborn >= 0.11.2",
-        "sktime >= 0.9",
-        "numpy >= 1.19.3",
+        "pyts >= 0.12",
+        "scipy >= 1.7",
+        "seaborn >= 0.11",
+        "sktime >= 0.10",
+        "numpy >= 1.21",
         "networkx >= 2.6.3",
-        "pytest >= 6.2.5"
+        "pytest >= 7.0"
     ],
     zip_safe=False
 )
