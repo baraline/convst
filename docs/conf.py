@@ -82,7 +82,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'convst'
-copyright = u'2021, Antoine Guillaume and all convst contributors'
+copyright = u'2022, Antoine Guillaume and all convst contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -146,7 +146,7 @@ html_theme = 'alabaster'
 # documentation.
 html_theme_options = {
     # Logo and description
-    'description': 'Python implementation of the Convolutional Shapelet Transform',
+    'description': 'Python implementation of the Random Dilated Shapelet Transform',
     'logo': 'img/logo.png',
     'logo_name': 'false',
     'logo_text_align': 'center',
