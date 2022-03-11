@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import matplotlib.patches as patches
 from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd

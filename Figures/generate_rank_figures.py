@@ -9,7 +9,6 @@ import numpy as np
 import operator
 import math
 import networkx
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib import pyplot as plt
 from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare

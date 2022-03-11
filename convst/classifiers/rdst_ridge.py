@@ -78,6 +78,9 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     def __repr__(self):
         return self.transformer.__repr__() + " " + self.classifier.__repr__()
     
+    def _more_tags(self):
+        return ["R_DST"]
+    
     def fit(self, X, y):
         """
         Fit method. Random shapelets are generated using the parameters

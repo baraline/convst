@@ -38,4 +38,4 @@ print("Accuracy Score for RDST : {}".format(acc_score))
 
 i_class = 0
 ix = rdst.classifier['ridgeclassifiercv'].coef_[i_class].argsort()[0]
-rdst.transformer.visualise_one_shapelet(ix//3, X_test, y_test, i_class, figs=(17,12))
+rdst.transformer.visualise_one_shapelet(ix//3, X_test, y_test, i_class, figsize=(17,12))
