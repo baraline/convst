@@ -53,8 +53,8 @@ Full API documentation of the *convst* Python package.
   :toctree: generated/
   :template: class.rst
   
-  utils.UCR_stratified_resample
-  utils.stratified_resample
+  utils.dataset_utils.UCR_stratified_resample
+  utils.dataset_utils.stratified_resample
   
   :template: function.rst
 

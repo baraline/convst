@@ -410,7 +410,7 @@ class R_DST(BaseEstimator, TransformerMixin):
             raise ValueError("n_jobs parameter should be a int superior to 0 or equal to -1 but got {}".format(self.n_jobs))
             
             
-    def fit(self, X, y=None):
+    def fit(self, X, y):
         """
         Fit method. Random shapelets are generated using the parameters
         supplied during initialisation. Then, the class attributes are filled 
@@ -419,14 +419,10 @@ class R_DST(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : array, shape=(n_samples, n_features, n_timestamps)
+            Input time series.
             
-        y : TYPE, optional
-            DESCRIPTION. The default is None.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
+        y : array, shape=(n_samples)
+            Class of the input time series.
 
         """
         X = check_array_3D(X, is_univariate=True).astype(np.float64)
@@ -450,6 +446,23 @@ class R_DST(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        """
+        Transform the input time series using previously fitted shapelets. 
+        We compute a distance vector between each shapelet and each time series
+        and extract the min, argmin, and shapelet occurence features based on
+        the lambda threshold of each shapelet.
+
+        Parameters
+        ----------
+        X : array, shape=(n_samples, n_features, n_timestamps)
+            Input time series.
+
+        Returns
+        -------
+        X : array, shape=(n_samples, 3*n_shapelets)
+            Transformed input time series.
+
+        """
         X = check_array_3D(X, is_univariate=True).astype(np.float64)
         check_is_fitted(self, ['values_', 'length_',
                         'dilation_', 'threshold_', 'normalize_'])
@@ -493,13 +506,41 @@ class R_DST(BaseEstimator, TransformerMixin):
                 self.dilation_[id_shp], self.threshold_[id_shp],
                 self.normalize_[id_shp])
 
-    def visualise_one_shapelet(self, id_shp, X, y, target_class,figs=(15, 10)):
+    def visualise_one_shapelet(self, id_shp, X, y, target_class, figsize=(15, 10)):
+        """
+        A function used to generate a visualization of a shapelet. The fit 
+        function must be called before to generate shapelets, then, by giving
+        the identifier (between [0, n_shapelets-1]), a visualization of the
+        shapelet is produced, giving boxplot of the features it generate on 
+        passed data, and a visualization on two randomly choosed samples
+        between the target class and the other classes.
+        
+        Parameters
+        ----------
+        id_shp : int
+            Identifier of the shapelet, must be between 0 and n_shapelets-1
+        X : array, shape=(n_samples, n_features, n_timestamps)
+            Input time series.
+        y : array, shape=(n_samples)
+            Class of the input time series.
+        target_class : int
+            Class to visualize. Will influence boxplot generation and sample
+            choice.
+        figsize : tuple, optional
+            A tuple of int indicating the size of the generated figure.
+            The default is (15, 10).
+
+        Returns
+        -------
+        None.
+
+        """
         # For visualisation, if argmin is important, draw a bar on x axis
         # If min, highligh on series (red)
         # If #match, hihgligh all parts which match on series (blue)
         sns.set()
         sns.set_context('talk')
-        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figs)
+        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figsize)
         values, length, dilation, r, norm = self._get_shp_params(id_shp)
         values = values[:length]
         X_new = np.zeros((X.shape[0], 3))
