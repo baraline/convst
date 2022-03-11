@@ -31,7 +31,7 @@ rdst = R_DST_Ridge(n_shapelets=10_000).fit(X_train, y_train)
 print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
 ```
 You can also visualize a shapelet using the visualisation tool to obtain such visualisation :
-![Example of shapelet visualisation](https://github.com/baraline/convst/tree/main/docs/_static/img/shp_vis.png)
+![Example of shapelet visualisation](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/shp_vis.png)
 
 To know more about all the interpretability tools, check the documentation on readthedocs.
 
