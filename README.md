@@ -6,13 +6,13 @@ Welcome to the convst repository. It contains the implementation of the `Random 
 
 ## Installation
 
-The package was built and is using Python 3.8+ as default. If inquieries are made for support of earlier version of Python, i will make the adjustements.
+The package was built and is using Python 3.8+ as default. If inquiries are made for support of earlier version of Python, i will make the adjustments.
 
-The recommended way to install the latest stable version is to use pip with `pip install convst`. To install the package from sources you can download the latest version on github and run `python setup.py install`. This should install the package and automaticaly look for the dependencies using `pip`. 
+The recommended way to install the latest stable version is to use pip with `pip install convst`. To install the package from sources, you can download the latest version on GitHub and run `python setup.py install`. This should install the package and automatically look for the dependencies using `pip`. 
 
 We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation. If you wish to install dependencies individually, you can see dependencies in the `requierements.txt` file.
 
-An optional dependency that can help speed up numba, which is used in our implementation, is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`. I didn't test the behavior with AMD processors but i suspect it won't work.
+An optional dependency that can help speed up numba, which is used in our implementation, is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`. I didn't test the behavior with AMD processors, but I suspect it won't work.
 
 ## Tutorial
 We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the sktime API to fect dataset:
@@ -27,16 +27,16 @@ X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
 )
 
 # First run may be slow due to numba compilations on the first call. 
-# Run small dataset like GunPoint if this is the first time you call RDST on your system.
+# Run a small dataset like GunPoint if this is the first time you call RDST on your system.
 # You can change n_shapelets to 1 to make this process faster.
 
 rdst = R_DST_Ridge(n_shapelets=10_000).fit(X_train, y_train)
 
 print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
 ```
-You can also visualize a shapelet using the visualisation tool to obtain such visualisation :
+You can also visualize a shapelet using the visualization tool to obtain such visualization :
 
-![Example of shapelet visualisation](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/shp_vis.png)
+![Example of shapelet visualization](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/shp_vis.png)
 
 To know more about all the interpretability tools, check the documentation on readthedocs.
 
