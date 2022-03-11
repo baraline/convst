@@ -4,14 +4,13 @@ Created on Thu Nov 18 13:17:07 2021
 
 @author: a694772
 """
-from numba import njit, prange, guvectorize, vectorize
+from numba import njit, prange
 import numpy as np
 import seaborn as sns
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
-from numba import set_num_threads
 import pandas as pd
 from matplotlib import pyplot as plt
 

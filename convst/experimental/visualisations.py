@@ -69,4 +69,5 @@ def report(shp, ridge, X, y, xt=None, k=1, only_global=True):
                                       s=45, alpha=0.85, label=j_class)
                         ax[1].legend()
                 plt.show()
-report(c, rf['ridgeclassifiercv'], X_test, y_test, rf['standardscaler'].transform(xt))
+
+#report(c, rf['ridgeclassifiercv'], X_test, y_test, rf['standardscaler'].transform(xt))

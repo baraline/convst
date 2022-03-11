@@ -10,8 +10,6 @@ from sklearn.preprocessing import LabelEncoder
 
 from sklearn.utils import resample
 
-from sktime.classification.hybrid import HIVECOTEV2
-
 class stratified_resample:
     """
     A random resampler used as a splitter for sklearn cross validation tools.

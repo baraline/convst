@@ -3,7 +3,7 @@
 Created on Fri Dec 10 15:00:13 2021
 DSTEC
 @author: a694772
-"""
+
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -100,4 +100,4 @@ class CST_C_Random(BaseEstimator, ClassifierMixin):
         check_is_fitted(self, ['BaseClassifier', 'transformers'])
         X = self.transform(X)
         return self.BaseClassifier.predict(X)
-
+"""

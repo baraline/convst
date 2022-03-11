@@ -3,7 +3,7 @@
 Created on Fri Dec 10 15:00:13 2021
 
 @author: a694772
-"""
+
 from sklearn.metrics import accuracy_score, make_scorer
 
 import numpy as np
@@ -14,7 +14,6 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
 
 from convst.transformers import Raw, CST_Random
 from joblib import Parallel, delayed
@@ -123,3 +122,4 @@ class CST_EC(BaseEstimator, ClassifierMixin):
 
     def get_shapelet_importances(self):
         pass        
+"""

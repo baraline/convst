@@ -14,6 +14,9 @@ from sklearn.metrics import accuracy_score
 class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     """
     
+    
+    Attributes
+    ----------
 
     Parameters
     ----------
@@ -34,7 +37,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     fit_intercept : TYPE, optional
         DESCRIPTION. The default is True.
     alphas : TYPE, optional
-        DESCRIPTION. The default is np.logspace(-6,6,20).
+        DESCRIPTION. The default is np.logspace(-4,4,10).
 
     Returns
     -------
@@ -45,7 +48,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     def __init__(self, n_shapelets=10000, shapelet_sizes=[11], p_norm=0.8,
                  percentiles=[5, 10], n_jobs=-1, random_state=None,
                  class_weight=None, fit_intercept=True,
-                 alphas=np.logspace(-6,6,20)):
+                 alphas=np.logspace(-4,4,10)):
 
         self.classifier = make_pipeline(
             StandardScaler(with_mean=False),

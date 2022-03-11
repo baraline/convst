@@ -9,15 +9,22 @@ Dependencies
 
 To be fully able to run the convst packages and the examples, the following packages are required:
 
-    - Python (>= 3.8)
-    - NumPy (>= 1.18.5)
-    - Pandas (>= 1.1.4)
-    - SciPy (>= 1.5.0)
-    - Scikit-Learn (>=0.24.0)
-    - Numba (>=0.50.1)
-    - Seaborn (>=0.11.1)
-    - Matplotlib (>=3.2.2)
-    - Sktime (>= 0.)
+    - matplotlib >= 3.5,
+    - numba >= 0.55,
+    - pandas >= 1.3,
+    - scikit_learn >= 1.0,
+    - joblib >= 1.1.0,
+    - pyts >= 0.12,
+    - scipy >= 1.7,
+    - seaborn >= 0.11,
+    - sktime >= 0.10,
+    - numpy < 1.22, >=1.18,
+    - networkx >= 2.6.3,
+    - pytest >= 7.0,
+    - sphinx >= 4.2.0,
+    - sphinx_gallery >= 0.10.1,
+    - numpydoc >= 1.1.0,
+    - alabaster >= 0.7.12,
 
 
 User installation

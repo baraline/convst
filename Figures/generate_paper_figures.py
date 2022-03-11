@@ -85,7 +85,6 @@ X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
     'Coffee', normalize=True)
 X_train = X_train.astype(np.float64)
 X_test = X_test.astype(np.float64)
-y_train = y_train
 print(X_train.shape)
 print(X_test.shape)
 # In[]: RD-ST

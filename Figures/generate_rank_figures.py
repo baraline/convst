@@ -84,11 +84,11 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
             for a in range(*index):
                 for b in mxrange(lr[1:]):
                     yield tuple([a] + list(b))
-
+    """
     def print_figure(fig, *args, **kwargs):
         canvas = FigureCanvasAgg(fig)
         canvas.print_figure(*args, **kwargs)
-
+    """
     sums = avranks
 
     nnames = names
@@ -102,8 +102,6 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
     cline = 0.4
 
     k = len(sums)
-
-    lines = None
 
     linesblank = 0
     scalewidth = width - 2 * textspace
@@ -203,6 +201,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
              ha="left", va="center", size=16)
 
     # no-significance lines
+    """
     def draw_lines(lines, side=0.05, height=0.1):
         start = cline + 0.2
 
@@ -212,8 +211,9 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
                  linewidth=linewidth_sign)
             start += height
             print('drawing: ', l, r)
-
-    # draw_lines(lines)
+    draw_lines(lines)
+    """
+    
     start = cline + 0.2
     side = -0.02
     height = 0.1
@@ -221,7 +221,6 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
     # draw no significant lines
     # get the cliques
     cliques = form_cliques(p_values, nnames)
-    i = 1
     achieved_half = False
     print(nnames)
     for clq in cliques:

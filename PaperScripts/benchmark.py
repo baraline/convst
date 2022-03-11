@@ -48,18 +48,14 @@ models = {'RDST':pipe_RDST, 'Rocket':pipe_RKT,
           'HC2':HIVECOTEV2(n_jobs=n_jobs)}
 
 # Execute all model once for possible numba compilations
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("SmoothSubspace")
-X_train = X_train.astype(np.float64)
-X_test = X_test.astype(np.float64)
+X_train, _, y_train, _, _ = load_sktime_dataset_split("SmoothSubspace")
 for name in models:
     time_pipe(clone(models[name]), X_train, y_train)
 
 # In[Samples benchmarks]:
 csv_name = 'n_samples_benchmarks.csv'    
 
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Crop")
-X_train = X_train.astype(np.float64)
-X_test = X_test.astype(np.float64)
+X_train, _, y_train, _, _ = load_sktime_dataset_split("Crop")
 
 #Add to cut number of samples to get results on our cluster.
 n_samples = X_train.shape[0]//4
@@ -94,10 +90,7 @@ for l in lengths:
 # In[Timepoints benchmarks]:
 csv_name = 'n_timepoints_benchmarks.csv'    
 
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Rock")
-X_train = X_train.astype(np.float64)
-X_test = X_test.astype(np.float64)
-
+X_train, _, y_train, _, _ = load_sktime_dataset_split("Rock")
 #Add to cut number of samples to get results on our cluster.
 n_timestamps = X_train.shape[2]//4
 

@@ -11,7 +11,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
-from numba import set_num_threads
 from matplotlib import pyplot as plt
 
 @njit(fastmath=True, cache=True, error_model='numpy')
@@ -222,7 +221,6 @@ class R_DST_NN(BaseEstimator, TransformerMixin):
         # If #match, hihgligh all parts which match on series (blue)
         sns.set()
         sns.set_context('talk')
-        n_classes = np.unique(y).shape[0]
         fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(15,15))
         values, length, dilation, r, norm = self._get_shp_params(id_shp)
         X_new = np.zeros((X.shape[0], 3))
