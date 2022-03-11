@@ -61,8 +61,11 @@ X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Crop")
 X_train = X_train.astype(np.float64)
 X_test = X_test.astype(np.float64)
 
-stp = X_train.shape[0]//8
-lengths = np.arange(stp,(X_train.shape[0])+stp,stp)
+#Add to cut number of samples to get results on our cluster.
+n_samples = X_train.shape[0]//4
+
+stp = n_samples//8
+lengths = np.arange(stp,(n_samples)+stp,stp)
 df = pd.DataFrame(index=lengths)
 df['RDST'] = pd.Series(0, index=df.index)
 df['Rocket'] = pd.Series(0, index=df.index)
@@ -89,14 +92,17 @@ for l in lengths:
         df.to_csv(csv_name)
 
 # In[Timepoints benchmarks]:
-csv_name = 'n_timepoints_benchmarks_HC2.csv'    
+csv_name = 'n_timepoints_benchmarks.csv'    
 
 X_train, X_test, y_train, y_test, le = load_sktime_dataset_split("Rock")
 X_train = X_train.astype(np.float64)
 X_test = X_test.astype(np.float64)
 
-stp = X_train.shape[2]//8
-lengths = np.arange(stp,X_train.shape[2]+stp,stp)
+#Add to cut number of samples to get results on our cluster.
+n_timestamps = X_train.shape[2]//4
+
+stp = n_timestamps//8
+lengths = np.arange(stp,n_timestamps+stp,stp)
 df = pd.DataFrame(index=lengths)
 df['RDST'] = pd.Series(0, index=df.index)
 df['Rocket'] = pd.Series(0, index=df.index)

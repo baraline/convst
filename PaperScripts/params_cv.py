@@ -5,13 +5,12 @@ import numpy as np
 
 from convst.utils.dataset_utils import (load_sktime_arff_file_resample_id,
     return_all_dataset_names, UCR_stratified_resample, load_sktime_dataset_split)
-from itertools import combinations
+
 from convst.transformers import R_DST
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV, ParameterGrid
-from sklearn.model_selection import cross_validate, ParameterGrid
+from sklearn.model_selection import cross_validate
 from sklearn.metrics import f1_score, make_scorer
 from sklearn.metrics import accuracy_score
 from datetime import datetime

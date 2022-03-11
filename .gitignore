@@ -137,3 +137,7 @@ ts_datasets/
 docs/auto_examples/
 
 docs/generated/
+
+Acc_comparison.csv
+
+cd-diagram.png

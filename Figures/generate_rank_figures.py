@@ -364,9 +364,10 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
 
 
 # In[]:
+df = pd.read_csv('results\params_csv.csv',index_col=0)
+dataset_names = df['Dataset'].unique()
 
-
-base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
+base_path = r"..\convst\results\\"
 
 baseline_path = base_path + r"CV_30_results_Random_final_(5_10).csv"
 df = pd.read_csv(baseline_path, sep=',', index_col=0).rename(columns={"dataset":"Dataset"})
@@ -375,7 +376,7 @@ df = df[df['model']=='RDST']
 
 sota_path = base_path + r"SOTA-AverageOver30.csv"
 df2 = pd.read_csv(sota_path, sep=',').rename(columns={'TESTACC': 'Dataset'})
-    
+
 for m in ['RDST']:
     df_perf = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])    
     a = 0
@@ -387,8 +388,8 @@ for m in ['RDST']:
         for j, serie in df2[df2['Dataset']==i].items():
             df_perf.loc[a, j] = serie.values[0]
         a+=1
-    
-    
+        
+    df_perf = df_perf.dropna()
     df_perf.to_csv('Acc_comparison.csv', sep=',')
     
     df_res = pd.DataFrame()
@@ -400,12 +401,74 @@ for m in ['RDST']:
         d['dataset_name'] = df_perf['Dataset']
         df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
     
-    draw_cd_diagram(df_perf=df_res, alpha=0.05, title='', labels=True)
+    draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                    labels=True, width=10)
+    plt.show()
+
+for m in ['RDST']:
+    df_perf = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])    
+    a = 0
+    for i, grp in df.groupby('Dataset'):
+        if np.isin(i,dataset_names):
+            for j, d in grp.groupby('model'):
+                if j == m:
+                    df_perf.loc[a,j] = d['acc_mean'].values[0]
+            
+            for j, serie in df2[df2['Dataset']==i].items():
+                df_perf.loc[a, j] = serie.values[0]
+            a+=1
+        
+    df_perf = df_perf.dropna()
+    df_perf.to_csv('Acc_comparison.csv', sep=',')
+    
+    df_res = pd.DataFrame()
+    
+    for col in df_perf.columns.difference(['Dataset']):
+        d = pd.DataFrame()
+        d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
+        d['accuracy'] = df_perf[col]
+        d['dataset_name'] = df_perf['Dataset']
+        df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+    
+    draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                    title='Results for sensitivity datasets', 
+                    labels=True, width=5)
+    plt.show()
+
+    
+for m in ['RDST']:
+    df_perf = pd.DataFrame(index=np.arange(df2.shape[0]), columns=['Dataset'])    
+    a = 0
+    for i, grp in df.groupby('Dataset'):
+        if not np.isin(i,dataset_names):
+            for j, d in grp.groupby('model'):
+                if j == m:
+                    df_perf.loc[a,j] = d['acc_mean'].values[0]
+            
+            for j, serie in df2[df2['Dataset']==i].items():
+                df_perf.loc[a, j] = serie.values[0]
+            a+=1
+        
+    df_perf = df_perf.dropna()
+    df_perf.to_csv('Acc_comparison.csv', sep=',')
+    
+    df_res = pd.DataFrame()
+    
+    for col in df_perf.columns.difference(['Dataset']):
+        d = pd.DataFrame()
+        d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
+        d['accuracy'] = df_perf[col]
+        d['dataset_name'] = df_perf['Dataset']
+        df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+    
+    draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                    title='Results for other datasets', 
+                    labels=True, width=5)
     plt.show()
 
 # In[]:
 #Ranks params
-base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
+
 csv_name = base_path + 'params_csv.csv'
 
 df=pd.read_csv(csv_name,index_col=0)
