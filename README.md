@@ -1,3 +1,5 @@
+[https://img.shields.io/pypi/dm/convst]
+
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 
 ### !! Starting from version 0.15, backward compatibility with convst < 0.15 will be broken due to a total overhaul of the method. !!
