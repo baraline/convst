@@ -57,7 +57,7 @@ csv_name = 'n_samples_benchmarks.csv'
 
 X_train, _, y_train, _, _ = load_sktime_dataset_split("Crop")
 
-#Add to cut number of samples to get results on our cluster.
+#Had to cut number of samples to get results on our cluster.
 n_samples = X_train.shape[0]//4
 
 stp = n_samples//8
@@ -91,7 +91,7 @@ for l in lengths:
 csv_name = 'n_timepoints_benchmarks.csv'    
 
 X_train, _, y_train, _, _ = load_sktime_dataset_split("Rock")
-#Add to cut number of samples to get results on our cluster.
+#Had to cut number of samples to get results on our cluster.
 n_timestamps = X_train.shape[2]//4
 
 stp = n_timestamps//8
