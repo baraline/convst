@@ -92,7 +92,7 @@ csv_name = 'n_timepoints_benchmarks.csv'
 
 X_train, _, y_train, _, _ = load_sktime_dataset_split("Rock")
 #Had to cut number of samples to get results on our cluster.
-n_timestamps = X_train.shape[2]//4
+n_timestamps = X_train.shape[2]
 
 stp = n_timestamps//8
 lengths = np.arange(stp,n_timestamps+stp,stp)
