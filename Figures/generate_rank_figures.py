@@ -185,7 +185,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
             text(textspace + 0.3, chei - 0.075,
                  format(ssums[i], '.4f'), ha="right", va="center", size=10)
         text(textspace - 0.2, chei,
-             filter_names(nnames[i]), ha="right", va="center", size=16)
+             filter_names(nnames[i]), ha="right", va="center", size=18)
 
     for i in range(math.ceil(k / 2), k):
         chei = cline + minnotsignificant + (k - i - 1) * space_between_names
@@ -197,7 +197,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
             text(textspace + scalewidth - 0.3, chei - 0.075,
                  format(ssums[i], '.4f'), ha="left", va="center", size=10)
         text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
-             ha="left", va="center", size=16)
+             ha="left", va="center", size=18)
 
     # no-significance lines
     """
@@ -269,14 +269,12 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, width=10, labels=False
         font = {'family': 'sans-serif',
                 'color':  'black',
                 'weight': 'normal',
-                'size': 20,
+                'size': 18,
                 }
         if title:
             plt.title(title, fontdict=font, y=0.9, x=0.5)
         if path is None:
             plt.savefig('cd-diagram.png', bbox_inches='tight')
-        else:
-            plt.savefig(path, bbox_inches='tight')
 
 
 def wilcoxon_holm(alpha=0.05, df_perf=None):
@@ -430,7 +428,7 @@ for m in ['RDST']:
     
     draw_cd_diagram(df_perf=df_res, alpha=0.05,
                     title='Results for sensitivity datasets', 
-                    labels=True, width=5)
+                    labels=True, width=5.5)
     plt.show()
 
     
@@ -461,7 +459,7 @@ for m in ['RDST']:
     
     draw_cd_diagram(df_perf=df_res, alpha=0.05,
                     title='Results for other datasets', 
-                    labels=True, width=5)
+                    labels=True, width=5.5)
     plt.show()
 
 # In[]:
