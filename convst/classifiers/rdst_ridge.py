@@ -140,4 +140,3 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         """
         preds = self.predict(X)
         return accuracy_score(y, preds)
-

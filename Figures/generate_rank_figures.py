@@ -60,8 +60,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
         """
         if n < 0:
             return len(l[0]) + n
-        else:
-            return n
+        return n
 
     def mxrange(lr):
         """
@@ -73,7 +72,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
         >>> mxrange([[3,5,1],[9,0,-3]])
         [(3, 9), (3, 6), (3, 3), (4, 9), (4, 6), (4, 3)]
         """
-        if not len(lr):
+        if len(lr):
             yield ()
         else:
             # it can work with single numbers
@@ -83,11 +82,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
             for a in range(*index):
                 for b in mxrange(lr[1:]):
                     yield tuple([a] + list(b))
-    """
-    def print_figure(fig, *args, **kwargs):
-        canvas = FigureCanvasAgg(fig)
-        canvas.print_figure(*args, **kwargs)
-    """
+
     sums = avranks
 
     nnames = names
@@ -198,20 +193,6 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
                  format(ssums[i], '.4f'), ha="left", va="center", size=10)
         text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
              ha="left", va="center", size=18)
-
-    # no-significance lines
-    """
-    def draw_lines(lines, side=0.05, height=0.1):
-        start = cline + 0.2
-
-        for l, r in lines:
-            line([(rankpos(ssums[l]) - side, start),
-                  (rankpos(ssums[r]) + side, start)],
-                 linewidth=linewidth_sign)
-            start += height
-            print('drawing: ', l, r)
-    draw_lines(lines)
-    """
     
     start = cline + 0.2
     side = -0.02
@@ -295,12 +276,6 @@ def wilcoxon_holm(alpha=0.05, df_perf=None):
         np.array(df_perf.loc[df_perf['classifier_name'] == c]['accuracy'])
         for c in classifiers))[1]
     print(friedman_p_value)
-    """
-    if friedman_p_value >= alpha:
-        # then the null hypothesis over the entire classifiers cannot be rejected
-        print('the null hypothesis over the entire classifiers cannot be rejected')
-        return None,None,None
-    """
 
     # get the number of classifiers
     m = len(classifiers)

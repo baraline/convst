@@ -486,15 +486,11 @@ class R_DST(BaseEstimator, TransformerMixin):
                              "greater than or equal to 1 ({} < 1)."
                              .format(shapelet_sizes.min()))
             
-        if not np.all(shapelet_sizes <= n_timestamps//2):
-            shapelet_sizes = shapelet_sizes[shapelet_sizes <= n_timestamps//2]
-            if shapelet_sizes.shape[0] == 0:
-                shapelet_sizes = np.array([3])
-            """
+        if not np.all(shapelet_sizes <= n_timestamps):
             raise ValueError("All the values in 'shapelet_sizes' must be lower "
-                             "than or equal to 'n_timestamps//2' ({} > {})."
-                             .format(shapelet_sizes.max(), n_timestamps//2))
-            """
+                             "than or equal to 'n_timestamps' (got {} > {})."
+                             .format(shapelet_sizes.max(), n_timestamps))
+
         rng = check_random_state(self.random_state)
         seed = rng.randint(np.iinfo(np.uint32).max, dtype='u8')
 
@@ -601,12 +597,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         ax[1, 0].scatter(ix, v, c='C1', alpha=0.75)
 
         ax[1, 2].axhline(r, c='C2', linestyle='--')
-        """
-        ax[i,1].set_xticks(np.arange(length), rotation=70)
-        ax[i,1].set_xticklabels(np.arange(length)*dilation, rotation=70)
-        ax[i,2].plot(x_conv, color = 'C'+str(i))
-        ax[i,2].axhline(r)
-        """
+
         ax[1, 0].plot(X[i1, 0], c='C1', alpha=0.75, 
                       label='sample of class {}'.format(target_class))
         ax[1, 0].plot(X[i0, 0], c='C0', alpha=0.75,

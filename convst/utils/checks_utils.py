@@ -155,13 +155,13 @@ def check_is_numpy_or_pd(X):
         return np.asarray(X)
     if isinstance(X, pd.DataFrame):
         return X
-    elif isinstance(X, np.ndarray):
+    if isinstance(X, np.ndarray):
         return X
-    else:
-        raise ValueError(
-            "Expected an pandas DataFrame or numpy array or python list as input "
-            "but got {}".format(str(type(X)))
-        )
+    
+    raise ValueError(
+        "Expected an pandas DataFrame or numpy array or python list as input "
+        "but got {}".format(str(type(X)))
+    )
 
 def check_is_numpy(X):
     """
@@ -184,13 +184,9 @@ def check_is_numpy(X):
     """
     if isinstance(X, list):
         return np.asarray(X)
-    elif isinstance(X, np.ndarray):
+    if isinstance(X, np.ndarray):
         return X
-    else:
-        raise ValueError(
-            "Expected an python list or numpy array as input "
-            "but got {}".format(str(type(X)))
-        )
-
-
-        
+    raise ValueError(
+        "Expected an python list or numpy array as input "
+        "but got {}".format(str(type(X)))
+    )   
