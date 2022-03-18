@@ -18,7 +18,7 @@ div.topic ul{
   background-color: rgba(255, 0, 0, 0.2);
   border: 1px solid;
   border-color: rgba(255, 0, 0, 1);
-  padding: 8px 8px 0px 8px;
+  padding: 8px 8px 0;
   border-radius: 5px;
   margin-bottom: 8px;
 }
@@ -102,7 +102,7 @@ div.body code:hover {
 /* Properties for inline code */
 
 div.body code {
-  padding: 1px 3px 1px 3px;
+  padding: 1px 3px;
 }
 
 /* Font properties for level-1 headers */
@@ -111,7 +111,7 @@ div.body h1 {
   text-align: center;
   font-size: 30px;
   line-height: 50px;
-  border-radius: 0px 10px 0px 10px;
+  border-radius: 0 10px;
   background-color: rgba(47, 79, 79, 0.3);
 }
 
@@ -220,7 +220,7 @@ div.highlight pre {
 /* Properties for tables */
 
 table.docutils.citation {
-  margin: 0px !important;
+  margin: 0 !important;
 }
 
 table.docutils col.field-name {
@@ -288,7 +288,7 @@ div.section#multivariate-time-series,
 div.section#preprocessing-tools,
 div.section#transformation-algorithms {
   display: block;
-  padding: 0px 0px 10px 0px;
+  padding: 0 0 10px;
 }
 
 div.sphx-glr-thumbcontainer {
@@ -299,7 +299,7 @@ div.sphx-glr-thumbcontainer p.caption {
   font-size: 15px;
   text-align: center;
   white-space: normal;
-  padding: 0px;
+  padding: 0;
 }
 
 
