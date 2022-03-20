@@ -40,7 +40,7 @@ You can also visualize a shapelet using the visualization tool to obtain such vi
 
 To know more about all the interpretability tools, check the documentation on readthedocs.
 
-## Suported inputs
+## Supported inputs
 
 We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`. Note that as only univariate is supported in version 0.15.0, RDST will only process the first feature.
 
