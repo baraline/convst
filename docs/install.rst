@@ -31,11 +31,11 @@ User installation
 -----------------
 
 If you already have a working installation of numpy, scipy, scikit-learn,
-joblib and numba, you can easily install pyts using ``pip``::
+joblib and numba, you can easily install convst using ``pip``::
 
     pip install convst
 
-You can also get the latest version of pyts by cloning the repository::
+You can also get the latest version of convst by cloning the repository::
 
     git clone https://github.com/baraline/convst.git
     cd convst
