@@ -6,7 +6,7 @@ import numpy as np
 from convst.utils.dataset_utils import (return_all_dataset_names,
     load_sktime_arff_file_resample_id)
 from convst.utils.experiments_utils import UCR_stratified_resample, run_pipeline
-from convst.transformers import R_DST, R_DST_NN
+from convst.transformers import R_DST
 
 from sklearn.pipeline import make_pipeline
 
@@ -47,9 +47,6 @@ for name in dataset_names:
     pipeline_RDST = make_pipeline(R_DST(n_shapelets=10000), 
                                      StandardScaler(with_mean=False),
                                      RidgeClassifierCV(np.logspace(-6,6,20)))
-    pipeline_RDST_Nn = make_pipeline(R_DST_NN(n_shapelets=10000), 
-                                     StandardScaler(with_mean=False),
-                                     RidgeClassifierCV(np.logspace(-6,6,20)))
 
     acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
         pipeline_RDST, X_train, X_test, y_train, y_test, splitter, 1)
@@ -61,19 +58,6 @@ for name in dataset_names:
     df.loc[i_df, 'time_std'] = time_std
     df.loc[i_df, 'dataset'] = name
     df.loc[i_df, 'model'] = 'RDST'
-    i_df+=1
-    df.to_csv(csv_name)
-    
-    acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
-        pipeline_RDST_Nn, X_train, X_test, y_train, y_test, splitter, 1)
-    df.loc[i_df, 'acc_mean'] = acc_mean
-    df.loc[i_df, 'acc_std'] = acc_std
-    df.loc[i_df, 'f1_mean'] = f1_mean
-    df.loc[i_df, 'f1_std'] = f1_std
-    df.loc[i_df, 'time_mean'] = time_mean
-    df.loc[i_df, 'time_std'] = time_std
-    df.loc[i_df, 'dataset'] = name
-    df.loc[i_df, 'model'] = 'RDST NN'
     i_df+=1
     df.to_csv(csv_name)
 

@@ -350,7 +350,7 @@ def _get_dist_vect(x, values):
         #For each value of the shapelet
         for j in prange(length):
             _dist += abs(x[i, j] - values[j])
-        x_dist += _dist
+        x_dist[i] += _dist
     return x_dist
 
 @njit(fastmath=True, cache=True)
