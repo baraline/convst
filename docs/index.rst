@@ -32,7 +32,7 @@ Welcome to convst documentation !
    citation
 
 
-**convst** is a Python package dedicated to the Convolutional Shapelet Transform (CST).
+**convst** is a Python package dedicated to the Random Dilated Shapelet Transform (RDST).
 
 Minimal example
 ---------------
@@ -64,6 +64,7 @@ The following code snippet illustrates the basic usage of convst:
 3. Finally we fit the model on the training set and evaluate its
    performance by computing the accuracy on the test set using the score function.
 
+Note that for some problems, a non linear classifier such as a Random or Rotation Forest might be more interesting than the default linear classifier presentend here.
 We try ou best to follow the guidelines of sklearn to ensure compatibility with 
 their numerous tools. For more information visit the
 `Scikit-learn compatibility <scikit_learn_compatibility.html>`_ page.
