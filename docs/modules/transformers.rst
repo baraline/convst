@@ -18,6 +18,6 @@ Add description
 
 References
 ----------
-.. [1] Antoine Guillaume et al, “Convolutional Shapelet Transform: A new approach of time series shapelets” (2021)
+.. [1] Antoine Guillaume et al, “Random Dilated Shapelet Transform: A new approach of time series shapelets” (2022), Proceeding of the 3rd International Conference on Pattern Recognition and Artificial Intelligence (ICPRAI).
 
 
