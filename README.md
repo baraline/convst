@@ -57,7 +57,7 @@ To obtain the same resampling data as the UCR archive, you must use the [tsml](h
 If you are experiencing bugs in the RDST implementation, or would like to contribute in any way, please create an issue or pull request in this repository.
 For other question or to take contact with me, you can email me at antoine.guillaume45@gmail.com
 
-If you use our algorithm or publication in any work, please cite the following paper (ArXiv version will be up soon):
+If you use our algorithm or publication in any work, please cite the following paper (ArXiv version https://arxiv.org/abs/2109.13514):
 
 ```bibtex
 @article{RDST,
