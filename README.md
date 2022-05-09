@@ -87,6 +87,4 @@ Here are the code-related citations that were not made in the paper
 
 [1]: [The Scikit-learn development team, "Scikit-learn: Machine Learning in Python", Journal of Machine Learning Research 2011](https://scikit-learn.org/stable/)
 
-
 [2]: [The Numpy development team, "Array programming with NumPy", Nature 2020](https://numpy.org/)
-
