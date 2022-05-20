@@ -141,3 +141,17 @@ docs/generated/
 Acc_comparison.csv
 
 cd-diagram.png
+
+*.mp4
+
+*.aux
+
+*.dvi
+
+*.svg
+
+Figures/media/videos/scene/480p15/partial_movie_files/Slide3/partial_movie_file_list.txt
+
+Figures/media/images/scene/SinAndCosFunctionPlot_ManimCE_v0.15.2.png
+
+Figures/media/images/scene/CreateScene_ManimCE_v0.15.2.png
