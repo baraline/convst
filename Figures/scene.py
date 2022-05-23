@@ -456,7 +456,7 @@ class Slide4(Scene):
         ).scale(0.9).shift(2*DOWN).scale(0.5).shift(2.58*LEFT)
 
         ax_shapes = Axes(
-            x_range=[0, 20, 2],
+            x_range=[0, 25, 2],
             y_range=[-4.5, 4.5, 1],
             tips=False,
             axis_config={
@@ -561,8 +561,7 @@ class Slide4(Scene):
         self.play(Transform(min0, dots0), Transform(min1, dots1))
         self.wait()
         self.play(Create(all_dots), run_time=4)
-  
-        
+       
 class Slide5(Scene):
     def construct(self):
         title1 = Title('Our contributions')
@@ -800,7 +799,209 @@ class Slide5(Scene):
             self.play(FadeIn(all_dots))
             self.wait(2)
             self.play(FadeOut(l_dots),FadeOut(graph_shp),FadeOut(d_vect), FadeOut(all_dots), FadeOut(brace))
+        
             
+        
+def boxed_txt(txt):
+    text = Tex(txt)
+    framebox = SurroundingRectangle(text, buff = .1, stroke_color=GREY)
+    return VGroup(text, framebox)
+    
+            
+class Slide6(Scene):
+    def construct(self):
+        title1 = Title('Random Dilated Shapelet Transform')
+        self.play(FadeIn(title1),run_time=1)
+        
+        b7 = boxed_txt('7')
+        b9 = boxed_txt('9')
+        b11 = boxed_txt('11')
+        g_length = VGroup(
+            b7,b9,b11
+        ).arrange(RIGHT, buff=0.1)
+        txt_length = Tex('Length')
+        txt_length.next_to(g_length, UP, buff=0.1)
+        g_length.add(txt_length)
+        
+        
+        b5 = boxed_txt('5')
+        b10 = boxed_txt('10')
+        g_thresd = VGroup(
+            b5,b10
+        ).arrange(RIGHT, buff=0.1)
+        txt_th = Tex('$P_0 ,P_1$')
+        txt_th.next_to(g_thresd, UP, buff=0.1)
+        g_thresd.add(txt_th)
+        
+        
+        b03 = boxed_txt('0.3')
+        b07 = boxed_txt('0.7')
+        g_pnorm = VGroup(
+            b03,b07
+        ).arrange(RIGHT, buff=0.1)
+        txt_p = Tex('$p_{norm}$')
+        txt_p.next_to(g_pnorm, UP, buff=0.1)
+        g_pnorm.add(txt_p)
+        
+        txt_in=Tex('$({\cal X}, Y)$')
+        txt_in_T=Tex('$({\cal X}, Y)$')
+        txt_n_shp=Tex('$N_{shapelets}$')
+        
+        self.play(Create(g_length))
+        self.wait()
+        self.play(g_length.animate.scale(0.8).shift(5*LEFT).shift(1.75*UP))
+        self.wait()
+        self.play(Create(g_thresd))
+        self.wait()
+        self.play(g_thresd.animate.scale(0.8).shift(2.5*LEFT).shift(1.75*UP))
+        self.wait()
+        self.play(Create(g_pnorm))
+        self.wait()
+        self.play(g_pnorm.animate.scale(0.8).shift(1.75*UP))
+        self.wait()
+        self.play(Create(txt_in))
+        self.wait()
+        self.play(txt_in.animate.scale(0.8).shift(2.5*RIGHT).shift(1.75*UP))
+        self.add(txt_in_T.scale(0.8).shift(2.5*RIGHT).shift(1.75*UP))
+        self.wait()
+        self.play(Create(txt_n_shp))
+        self.wait()
+        self.play(txt_n_shp.animate.scale(0.8).shift(5*RIGHT).shift(1.75*UP))
+        self.wait()
+        
+        X, y, _ = get_input_data()
+        x0 = X[0,0] #y1
+        x1 = X[2,0] #y0
+        
+        shp = x1[[100,103,106,109,112,115,118]]
+        shp_norm = (shp - shp.mean()) / shp.std()
+        ax_shp = Axes(
+            x_range=[0, shp.shape[0], 1],
+            y_range=[shp_norm.min(), shp_norm.max(), 0.5],
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "color":GREEN         
+            },
+        ).scale(0.9).shift(2*DOWN).scale(0.5).shift(2.9*LEFT)
+
+        ax_input = Axes(
+            x_range=[0, x1.shape[0], 20],
+            y_range=[x1.min(), x1.max(), 0.5],
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "color":GREEN         
+            },
+        ).scale(0.9).shift(2*DOWN).scale(0.5).shift(3.2*RIGHT)
+        x_input = graph_time_series(ax_input, x1, line_color=BLUE, add_vertex_dots=False)
+        self.play(b7[1].animate.set_stroke_color(GREEN), b7[0].animate.set_fill(GREEN))
+        self.play(Transform(b7[1],ax_shp))
+        self.wait(2)
+        self.play(txt_in_T.animate.set_fill(GREEN))
+        self.play(FadeOut(txt_in_T),FadeIn(ax_input), FadeIn(x_input))
+        self.wait(2)
+        
+        txt_dil = Tex(r'd = $\lfloor 2^{x} \rfloor$, $x \in [0, log \frac{||X||}{l}]$').scale(0.8).shift(0.5*UP)
+        txt_dil1 = Tex(r'd = 3').scale(0.8).shift(0.5*UP).shift(5*LEFT)
+        self.play(Create(txt_dil))
+        self.wait(2)
+        self.play(Transform(txt_dil, txt_dil1))
+        self.wait(2)
+        txt_point = Tex(r'$ i \in [0, ||X|| - (l-1)\times d]$').scale(0.8).shift(0.5*UP)
+        txt_point3 = Tex(r'$ i = 100 $').scale(0.8).shift(0.5*UP).shift(5*RIGHT)
+        self.play(Create(txt_point))
+        self.wait(2)
+        self.play(Transform(txt_point, txt_point3))
+        self.wait(2)
+        vPoints = VGroup()
+        for ix in [100,103,106,109,112,115,118]:
+            vPoints.add(Dot(ax_input.c2p(ix, x1[ix]),fill_color=PURPLE).scale(0.9))
+        self.play(Create(vPoints, run_time=5, rate_func=rate_functions.ease_in_sine))
+        self.wait()
+        g_shp = graph_time_series(ax_shp, shp, line_color=PURPLE, add_vertex_dots=False)
+        shp_norm = (shp - shp.mean()) / shp.std()
+        g_shp_norm = graph_time_series(ax_shp, shp_norm, line_color=PURPLE, add_vertex_dots=False)
+        self.play(b07[1].animate.set_stroke_color(GREEN), b07[0].animate.set_fill(GREEN))
+        self.wait(2)
+        self.play(FadeOut(b07[1]))
+        self.wait(2)
+        self.play(FadeOut(vPoints), FadeIn(g_shp_norm))
+        self.wait(2)
+        self.play(FadeOut(x_input))
+        
+        self.wait(2)
+        x_input2 = graph_time_series(ax_input, X[102,0], line_color=BLUE, add_vertex_dots=False)
+        self.play(Create(x_input2))
+        self.wait(2)
+        shp_dist_norm0 = shapelet_dist_vect(shp, X[102,0], normalize=True, d=3)
+        
+        self.play(FadeOut(x_input2))
+        ax_dist = Axes(
+            x_range=[0, shp_dist_norm0.shape[0], 20],
+            y_range=[0, shp_dist_norm0.max(), 2],
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "color":GREEN         
+            },
+        ).scale(0.9).shift(2*DOWN).scale(0.5).shift(3.2*RIGHT)
+        g_shp_dist_norm0 = graph_time_series(ax_dist, shp_dist_norm0, line_color=BLUE, add_vertex_dots=False)
+        
+        self.play(FadeOut(ax_input))
+        self.play(FadeIn(ax_dist))
+        self.wait(2)
+        self.play(Create(g_shp_dist_norm0))
+        self.wait(2)
+        
+
+
+        
+        p, bins = np.histogram(shp_dist_norm0, bins=10, density=True)
+        points = (bins[:-1] + bins[1:])//2
+        ax_p = Axes(
+            x_range=[points.min(), points.max()+1, 2],
+            y_range=[0, 0.3, 0.05],
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "color":GREEN         
+            },
+        ).scale(0.9).shift(2*DOWN).scale(0.5).shift(3.2*RIGHT)
+        
+        area_p = graph_time_series(ax_p, points, y=p, line_color=BLUE, add_vertex_dots=False)
+        
+        
+        self.play(FadeOut(ax_dist), FadeOut(g_shp_dist_norm0), FadeIn(ax_p))
+        self.play(Create(area_p))
+        
+        lp0 = Line(start=Dot(ax_p.c2p(np.percentile(shp_dist_norm0,5),-0.1)), end=Dot(ax_p.c2p(np.percentile(shp_dist_norm0,5),0.15)), color=YELLOW)
+        lp1 = Line(start=Dot(ax_p.c2p(np.percentile(shp_dist_norm0,10),-0.1)), end=Dot(ax_p.c2p(np.percentile(shp_dist_norm0,10),0.15)), color=YELLOW)
+        self.play(b5[1].animate.set_stroke_color(GREEN), b5[0].animate.set_fill(GREEN))
+        self.wait(2)
+        self.play(FadeOut(b5[1]), Create(lp0))
+        self.wait(2)
+        self.play(b10[1].animate.set_stroke_color(GREEN), b10[0].animate.set_fill(GREEN))
+        self.wait(2)
+        self.play(FadeOut(b10[1]), Create(lp1))
+        self.wait(2)
+        
+        txt_th = Tex(r'$\lambda \in [P(P_0,d(S,X)), P(P_1,d(S,X))]$').scale(0.8).shift(0.5*UP)
+        txt_th2 = Tex(r'$\lambda = 1.81$').scale(0.8).shift(0.5*UP)
+        self.play(FadeIn(txt_th))
+        self.wait(2)
+        self.play(FadeOut(txt_th), FadeIn(txt_th2))
+        self.wait(2)
+        self.play(FadeOut(lp0),FadeOut(lp1),FadeOut(area_p),FadeOut(ax_p))
+        self.wait(2)
+        self.play(FadeIn(ax_dist), FadeIn(g_shp_dist_norm0))
+        self.wait(2)
+        c_th = np.zeros(shp_dist_norm0.shape[0])+1.81
+        g_threshold = graph_time_series(ax_dist, c_th, stroke_color=YELLOW, add_vertex_dots=False)
+        self.play(Create(g_threshold))
+        self.wait(2)
+        
+        
         # How is threshold set 
         
         #Init random
