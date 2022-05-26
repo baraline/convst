@@ -280,7 +280,7 @@ class Slide(Scene):
         self.play(DataGrp.animate.stretch(1.8, 0).shift(1.25*UP).scale(0.55))
         self.wait(0.5)
         self.play(graph_shp0.animate.shift(0.25*DOWN).shift(2.5*LEFT))
-        
+        # TODO : Add input notation X = ...
         
         Tex_shp = Tex(
             r' A Shapelet $S = \{s_1, \ldots, s_l\}$, with $l$ the length parameter'
@@ -307,7 +307,7 @@ class Slide(Scene):
         ]
         
         y_ranges = [
-            range_from_x(x0),
+            [-1.0,2.0,0.5],
             [0, max(dist_vect_shp_0_0.max(),dist_vect_shp_1_0.max()), 10],
             range_from_x(X_T_1[:,0])
         ]
@@ -381,8 +381,8 @@ class Slide(Scene):
         min0 = SurroundingRectangle(Dot(ax1[0].c2p(dist_vect_shp_0_0.argmin(), dist_vect_shp_0_0.min()))).scale(0.65)
         min1 = SurroundingRectangle(Dot(ax1[0].c2p(dist_vect_shp_0_1.argmin(), dist_vect_shp_0_1.min()))).scale(0.65)
         
-        dots0 = Dot(ax2[0].c2p(X_T_0[x0_index,0],X_T_1[x0_index,0]), fill_color=COLOR_1).scale(0.85)
-        dots1 = Dot(ax2[0].c2p(X_T_0[x1_index,0],X_T_1[x1_index,0]), fill_color=COLOR_0).scale(0.85)
+        dots0 = Dot(ax2[0].c2p(X_T_0[x0_index,0],X_T_1[x0_index,0]), fill_color=COLOR_0).scale(0.85)
+        dots1 = Dot(ax2[0].c2p(X_T_0[x1_index,0],X_T_1[x1_index,0]), fill_color=COLOR_1).scale(0.85)
                                                 
         all_dots = VGroup()
         for i in range(X.shape[0]):
@@ -399,6 +399,8 @@ class Slide(Scene):
         vg_all.add(*[d_vect, min0, 
                      min1, dots0, dots1, all_dots, min0_tex, min1_tex])
         
+        
+        # TODO : Add a d(S1, X) to ax1 to know what we are graphing
         self.play(FadeIn(title))
         self.play(Create(ax0), Create(graph_x0))
         self.play(Create(ax1))
@@ -438,18 +440,18 @@ class Slide(Scene):
         x_ranges = [
             [0,x0.shape[0],20],
             [0,dist_vect_shp_1_0.shape[0],20],
-            [0, shp0_norm.shape[0], 1]
+            [0, shp0_norm.shape[0], 2]
         ]
         
         y_ranges = [
-            range_from_x(x0),
+            [-1.0,2.0,0.5],
             [0, max(norm_dist_vect_shp_0_0.max(),norm_dist_vect_shp_0_1.max()), 10],
             [min(shp0_norm.min(),shp1_norm.min()),max(shp0_norm.max(),shp1_norm.max(), 0.5)]
         ]
                 
         _, ax1, ax2 = get_211_axes(x_ranges, y_ranges)
         
-        
+        vg_all.add(ax1)
         t = ValueTracker(0)
         x_space = np.arange(norm_dist_vect_shp_0_0.shape[0])
         
@@ -476,32 +478,71 @@ class Slide(Scene):
         x_subs = always_redraw(x_subseq)
         
         x_subs_loc = always_redraw(x_subseq_loc)
-        
+        vg_all.add(d_vect)
         z_norm_txt = Tex_Group(
             [r'$S_{norm} = (S - mean(S)) / std(S)$',
              r'$X_{norm} = (X - mean(X)) / std(X)$']
-        ).next_to(x_subs, 0.5*UP).scale(0.5)
+        ).next_to(ax2[0], 0.5*LEFT).scale(0.65).shift(0.825*RIGHT)
         
-        g_shp0_normed = graph_time_series(ax2[0], shp0_norm, stroke_color=COLOR_SHP, add_vertex_dots=False)
+        g_shp0_normed = graph_time_series(ax2[0], shp0_norm, stroke_color=COLOR_SHP, add_vertex_dots=False, stroke_width=10)
         g_shp_dist_norm1 = graph_time_series(ax1[0], norm_dist_vect_shp_0_1, stroke_color=COLOR_1, add_vertex_dots=False)
+        vg_all.add(g_shp_dist_norm1)
+        min0 = SurroundingRectangle(Dot(ax1[0].c2p(norm_dist_vect_shp_0_0.argmin(), norm_dist_vect_shp_0_0.min()))).scale(0.65)
+        min1 = SurroundingRectangle(Dot(ax1[0].c2p(norm_dist_vect_shp_0_1.argmin(), norm_dist_vect_shp_0_1.min()))).scale(0.65)
         
+        
+        x_ranges[-1] = [X_T_0[:,1].min(), X_T_0[:,1].max()+40, 20]
+        y_ranges[-1] = [X_T_0[:,0].min(), X_T_0[:,0].max()+5, 5]
+        
+        x_labels = [
+            Tex(''), Tex(''), Tex(r"arg$\min d({\cal X},S_1)$")
+        ]
+        
+        y_labels = [
+            Tex(''), Tex(''), Tex(r"$\min d({\cal X},S_1)$")
+        ]
+        _, _, ax2_points = get_211_axes(
+            x_ranges, y_ranges, x_labels=x_labels, y_labels=y_labels
+        )
+        
+        dots0 = Dot(ax2_points[0].c2p(X_T_0[x0_index,1],X_T_0[x0_index,0]), fill_color=COLOR_0).scale(0.85)
+        dots1 = Dot(ax2_points[0].c2p(X_T_0[x1_index,1],X_T_0[x1_index,0]), fill_color=COLOR_1).scale(0.85)
+        all_dots = VGroup()
+        for i in range(X.shape[0]):
+            if i != x0_index and i != x1_index:
+                if y[i] == y[x0_index]:
+                    all_dots.add(Dot(ax2_points[0].c2p(X_T_0[i,1],X_T_0[i,0]), fill_color=COLOR_0, fill_opacity=0.75).scale(0.55))
+                else:
+                    all_dots.add(Dot(ax2_points[0].c2p(X_T_0[i,1],X_T_0[i,0]), fill_color=COLOR_1, fill_opacity=0.75).scale(0.55))
+        vg_all.add(all_dots)
         self.play(FadeIn(title))
         self.play(Create(ax0), Create(graph_x0))
-        self.play(Create(ax1), Create(ax2))
+        self.play(Create(ax2))
+        vg_all.add(*[g_shp_dist_norm1,min0,min1,ax0,graph_x0,all_dots,dots1,dots0,ax2_points,graph_x1])
+        
         self.wait()
         self.play(Create(d_vect),Create(g_shp0_normed),Create(x_subs),Create(x_subs_loc))
         self.wait(3)
         self.play(FadeIn(z_norm_txt))
         self.wait(6)
-        self.play(FadeOut(z_norm_txt))
-        self.play(t.animate.set_value(x_space[-1]), run_time=12, rate_func=rate_functions.ease_in_sine)
+        self.play(FadeOut(z_norm_txt), Create(ax1))
+        self.play(t.animate.set_value(x_space[-1]), run_time=14, rate_func=rate_functions.ease_in_sine)
         self.wait()
         self.play(FadeOut(x_subs_loc))
         self.wait()
         self.play(Create(graph_x1), Create(g_shp_dist_norm1))
         self.wait()
-        
-        
+        self.play(FadeOut(ax2), FadeOut(x_subs), FadeOut(g_shp0_normed))
+        self.play(FadeIn(ax2_points))
+        self.wait()
+        self.play(Create(min0), Create(min1))
+        self.wait()
+        self.play(Transform(min0, dots0), Transform(min1, dots1))
+        self.wait()
+        self.play(Create(all_dots), run_time=5)
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #     SHOW Contribution summary        #
@@ -512,6 +553,13 @@ class Slide(Scene):
         vg_all.add(*title)
         
         
+        self.play(FadeIn(title))
+        
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #       SHOW Shapelet Occurence        #
@@ -520,7 +568,15 @@ class Slide(Scene):
         vg_all = VGroup()
         title = make_title("Shapelet Occurence", 5)
         vg_all.add(*title)
+        #Anim threshold and show effect on points with anim
+        # Only two axes 
+        self.play(FadeIn(title))
         
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #        SHOW Dilated Shapelets        #
@@ -530,7 +586,79 @@ class Slide(Scene):
         title = make_title("Dilated Shapelet", 6)
         vg_all.add(*title)
         
+        self.play(FadeIn(title))
         
+        for d in [1,5,11]:
+            shp_dist_norm0 = shapelet_dist_vect(shp, x0, normalize=False, d=d)
+            t = ValueTracker(0)
+            
+            # Tracker functions
+            
+            def update_shp():
+                i = int(t.get_value())
+                vg = VGroup()
+                for j in range(shp.shape[0]):
+                    vg.add(Dot(ax_input.c2p(i+(j*d), shp[j]),fill_color=YELLOW).scale(0.8))
+                return vg
+            
+            def get_shp_line_dots():
+                step = 1
+                i = int(t.get_value())
+                vg = VGroup()
+                for st in range(0,shp.shape[0],step):
+                    yp0 = min(shp[st],x0[i+(d*st)])
+                    yp1 = max(shp[st],x0[i+(d*st)])
+                    p1 = Dot(ax_input.coords_to_point(i+(d*st), yp0))
+                    p2 = Dot(ax_input.coords_to_point(i+(d*st), yp1))
+                    vg.add(DashedLine(start=p1.get_center(), end=p2.get_center(), stroke_color=YELLOW))
+                return vg
+    
+            def get_dist_vect():
+                i = int(t.get_value())
+                return graph_time_series(ax_dist, shp_dist_norm0[:i+1], line_color=RED, add_vertex_dots=False)
+                    
+            
+            def brace_d():
+                i = int(t.get_value())
+                vg = VGroup(
+                    Dot(ax_input.c2p(i+0.5, shp[0]+0.15)),
+                    Dot(ax_input.c2p(i+d-0.5, shp[1]+0.15))
+                )
+                brace = Brace(vg)
+                label = Text('d = {}'.format(d)).scale(0.35)
+                label.next_to(brace,DOWN, buff=0.01)
+                return VGroup(brace,label)
+            
+            
+            brace = always_redraw(brace_d)
+            l_dots = always_redraw(get_shp_line_dots)
+            graph_shp = always_redraw(update_shp)
+            x_space = np.arange(shp_dist_norm0.shape[0])
+            d_vect = always_redraw(get_dist_vect)
+            
+            self.play(Create(l_dots),Create(graph_shp),Create(d_vect), Create(brace))
+            self.play(t.animate.set_value(x_space[-1]), run_time=6, rate_func=rate_functions.ease_in_sine)
+            
+            X_mins = np.zeros((X.shape[0], 2))
+            for i in range(X.shape[0]):
+                v = shapelet_dist_vect(shp, X[i,0], normalize=False, d=d)
+                X_mins[i,0] = v.argmin()
+                X_mins[i,1] = v.min()
+            
+            all_dots = VGroup()
+            for i in range(X.shape[0]):
+                if i != 0 and i != 2:
+                    if y[i] == 0:
+                        all_dots.add(Dot(ax_points.c2p(X_mins[i,0],X_mins[i,1]), fill_color=BLUE, fill_opacity=0.75).scale(0.55))
+                    else:
+                        all_dots.add(Dot(ax_points.c2p(X_mins[i,0],X_mins[i,1]), fill_color=RED, fill_opacity=0.75).scale(0.55))
+            self.play(FadeIn(all_dots))
+            self.wait(2)
+            self.play(FadeOut(l_dots),FadeOut(graph_shp),FadeOut(d_vect), FadeOut(all_dots), FadeOut(brace))
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #              SHOW RDST               #
@@ -539,7 +667,13 @@ class Slide(Scene):
         vg_all = VGroup()
         title = make_title("Random Dilated Shapelet Transform", 7)
         vg_all.add(*title)
+        self.play(FadeIn(title))
         
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #           TIMING Results             #
@@ -548,7 +682,13 @@ class Slide(Scene):
         vg_all = VGroup()
         title = make_title("Time Complexity", 8)
         vg_all.add(*title)
+        self.play(FadeIn(title))
         
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         ########################################
         #                                      #
         #              ACC Results             #
@@ -557,7 +697,13 @@ class Slide(Scene):
         vg_all = VGroup()
         title = make_title("Accuracy Results", 9)
         vg_all.add(*title)
+        self.play(FadeIn(title))
         
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
         
         #Parameter sensitivity if time
         
@@ -570,145 +716,19 @@ class Slide(Scene):
         vg_all = VGroup()
         title = make_title("Conclusion \& Future Works", 10)
         vg_all.add(*title)
+        self.play(FadeIn(title))
+        
+        
+        
+        self.wait()
+        self.play(FadeOut(vg_all))
+        self.wait()
 
     """
       
         
         ###############################################################
         
-        title = Title('Using a z-normalized distance (scale invariance)')
-        self.play(FadeIn(title),run_time=1)
-        
-        shp_dist_norm1 = shapelet_dist_vect(shp, x1, normalize=True)
-        shp_dist_norm = shapelet_dist_vect(shp, x0, normalize=True)
-        shp_normed = (shp - shp.mean()) / shp.std()
-        
-        ax_input = Axes(
-            x_range=[0, x0.shape[0], 20],
-            y_range=[x0.min()-0.1, x0.max()+0.1, 0.5],
-            tips=False,
-            axis_config={
-                "include_numbers": True,
-                "color":GREEN         
-            },
-        ).scale(0.9).stretch(2, 0).shift(UP).scale(0.5)
-        
-        ax_dist = Axes(
-            x_range=[0, x0.shape[0], 20],
-            y_range=[shp_dist_norm1.min(), shp_dist_norm.max()+2, 5],
-            tips=False,
-            axis_config={
-                "include_numbers": True,
-                "color":GREEN         
-            },
-        ).scale(0.9).shift(2*DOWN).scale(0.5).shift(2.58*LEFT)
-
-        ax_shapes = Axes(
-            x_range=[0, 25, 2],
-            y_range=[-4.5, 4.5, 1],
-            tips=False,
-            axis_config={
-                "include_numbers": True,
-                "color":GREEN         
-            },
-        ).scale(0.9).shift(2*DOWN).shift(3.2*RIGHT).scale(0.5).stretch(0.9,0)
-        
-        graph_shp =  graph_time_series(ax_shapes, shp_normed, stroke_color=PURPLE, add_vertex_dots=False)
-            
-        t = ValueTracker(0)
-        x_space = np.arange(shp_dist_norm.shape[0])
-        def get_dist_vect():
-            i = int(t.get_value())
-            return graph_time_series(ax_dist, shp_dist_norm[:i+1], stroke_color=RED, add_vertex_dots=False)
-                
-        def x_subseq_loc():
-            i = int(t.get_value())
-            x_sub = x0[i:i+shp_normed.shape[0]]
-            vg = VGroup()
-            vg.add(Dot(ax_input.c2p(i, x_sub[0])))
-            vg.add(Dot(ax_input.c2p(i+19, x_sub[19])))
-            return SurroundingRectangle(vg, buff=0.01)
-        
-        def x_subseq():
-            i = int(t.get_value())
-            x_sub = x0[i:i+shp_normed.shape[0]]
-            x_sub_norm = (x_sub - x_sub.mean()) / x_sub.std()
-            return graph_time_series(ax_shapes, x_sub_norm, stroke_color=RED, add_vertex_dots=False)
-        
-        d_vect = always_redraw(get_dist_vect)
-        x_subs = always_redraw(x_subseq)
-        
-        x_subs_loc = always_redraw(x_subseq_loc)
-        
-        z_norm_txt = Tex_Group(
-            [r'$S_{norm} = (S - mean(S)) / std(S)$',
-             r'$X_{norm} = (X - mean(X)) / std(X)$']
-        ).next_to(x_subs, 0.5*UP).scale(0.5)
-        
-        g_input = graph_time_series(ax_input, x0, stroke_color=RED, add_vertex_dots=False)
-        g_input1 = graph_time_series(ax_input, x1, stroke_color=BLUE, add_vertex_dots=False)
-        
-        g_shp_dist_norm1 = graph_time_series(ax_dist, shp_dist_norm1, stroke_color=BLUE, add_vertex_dots=False)
-
-        self.play(Create(ax_input), Create(ax_dist),Create(g_input), Create(ax_shapes))
-        self.wait()
-        self.play(Create(d_vect),Create(graph_shp),Create(x_subs),Create(x_subs_loc))
-        self.wait(3)
-        self.play(FadeIn(z_norm_txt))
-        self.wait(6)
-        self.play(FadeOut(z_norm_txt))
-        self.play(t.animate.set_value(x_space[-1]), run_time=12, rate_func=rate_functions.ease_in_sine)
-        self.wait()
-        self.play(FadeOut(x_subs_loc))
-        self.wait()
-        self.play(Create(g_input1), Create(g_shp_dist_norm1))
-        self.wait()
-        
-        
-        ax_points = Axes(
-            x_range=[0, X_mins[:,0].max(), 20],
-            y_range=[X_mins[:,1].min(), X_mins[:,1].max(), 2],
-            tips=False,
-            axis_config={
-                "include_numbers": True,
-                "color":GREEN         
-            },
-        ).scale(0.9).shift(2*DOWN).shift(3*RIGHT).scale(0.5)
-        
-        X_mins = np.zeros((X.shape[0], 2))
-        for i in range(X.shape[0]):
-            d = shapelet_dist_vect(shp, X[i,0], normalize=True)
-            X_mins[i,0] = d.argmin()
-            X_mins[i,1] = d.min()
-        
-        all_dots = VGroup()
-        for i in range(X.shape[0]):
-            if i != 0 and i != 2:
-                if y[i] == 0:
-                    all_dots.add(Dot(ax_points.c2p(X_mins[i,0],X_mins[i,1]), fill_color=BLUE, fill_opacity=0.75).scale(0.55))
-                else:
-                    all_dots.add(Dot(ax_points.c2p(X_mins[i,0],X_mins[i,1]), fill_color=RED, fill_opacity=0.75).scale(0.55))
-          
-        dots0 = Dot(ax_points.c2p(X_mins[0,0],X_mins[0,1]), fill_color=RED).scale(0.85)
-        min0 = SurroundingRectangle(Dot(ax_dist.coords_to_point(shp_dist_norm.argmin(), shp_dist_norm.min()))).scale(0.65)
-        dots1 = Dot(ax_points.c2p(X_mins[2,0],X_mins[2,1]), fill_color=BLUE).scale(0.85)
-        min1 = SurroundingRectangle(Dot(ax_dist.coords_to_point(shp_dist_norm1.argmin(), shp_dist_norm1.min()))).scale(0.65)
-    
-        x_label = ax_points.get_x_axis_label(Tex(r"arg$\min d({\cal X},S_1)$").scale(0.5))
-        y_label = ax_points.get_y_axis_label(Tex(r"$\min d({\cal X},S_1)$").scale(0.5))
-                
-        ax_sub_grp = VGroup()
-        ax_sub_grp.add(ax_shapes)
-        ax_sub_grp.add(x_subs)
-        ax_sub_grp.add(graph_shp)
-        self.wait()
-        self.play(FadeOut(ax_sub_grp),Create(ax_points))
-        self.play(FadeIn(x_label),FadeIn(y_label))
-        self.play(Create(min0),Create(min1))
-        self.wait(3)
-        self.play(Transform(min0, dots0), Transform(min1, dots1))
-        self.wait()
-        self.play(Create(all_dots), run_time=4)
        
 class Slide5(Scene):
     def construct(self):
