@@ -501,7 +501,6 @@ class Slide2(Scene):
         self.wait(1)
         self.play(Create(all_dots), run_time=3)
         self.wait(1)
-        self.play(FadeOut(vg_all))
         
         
 class Slide3(Scene):
@@ -627,8 +626,7 @@ class Slide3(Scene):
         self.wait()
         self.play(Create(all_dots), run_time=5)
         self.wait()
-        self.play(FadeOut(vg_all))
-        self.wait()
+        
 
 class Slide4(Scene):
     def construct(self):
@@ -764,10 +762,6 @@ class Slide4(Scene):
         self.play(t.animate.set_value(x_space[-1]), run_time=7, rate_func=rate_functions.ease_in_sine)
         self.play(t.animate.set_value(x_space[0]), run_time=7, rate_func=rate_functions.ease_in_sine)
         self.wait()
-        self.play(FadeOut(area_threshold), FadeOut(threshold), FadeOut(vg_all))
-        for i in range(len(dots_th)):
-            self.remove(dots_th[i])
-        self.wait()
         
 
 class Slide5(Scene):
@@ -885,8 +879,6 @@ class Slide5(Scene):
             self.wait(2)
             self.play(FadeOut(l_dots),FadeOut(graph_shp),FadeOut(d_vect), FadeOut(all_dots), FadeOut(brace))
         
-        self.wait()
-        self.play(FadeOut(vg_all))
         self.wait()
 
 class Slide6(Scene):
