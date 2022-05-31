@@ -1,9 +1,9 @@
 [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) ![docs](https://img.shields.io/readthedocs/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main)
 
+
+![Logo UO](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-UO-2022.png) ![Logo LIFO](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-lifo.png) ![Logo WL](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png)
+
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
-
-### !! Starting from version 0.15, backward compatibility with convst < 0.15 will be broken due to a total overhaul of the method. !!
-
 ## Installation
 
 The package was built and is using Python 3.8+ as default. If inquiries are made for support of earlier version of Python, i will make the adjustments.
