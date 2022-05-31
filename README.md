@@ -1,7 +1,10 @@
 [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) ![docs](https://img.shields.io/readthedocs/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main)
 
-
-![Logo UO](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-UO-2022.png =250x250) ![Logo LIFO](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-lifo.png =250x250) ![Logo WL](https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png =250x250)
+<p float="left">
+  <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-UO-2022.png" width="100" />
+  <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/logo-lifo.png" width="100" /> 
+  <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png" width="100" />
+</p>
 
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 ## Installation
