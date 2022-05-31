@@ -316,9 +316,7 @@ class Slide1(Scene):
         #          INTRODUCE SHAPELETS         #
         #                                      # 
         ########################################
-        vg_all = VGroup()
         title = make_title("What are Shapelets ?", 1)
-        vg_all.add(*title)
         
         ax = Axes(
             x_range=[0,x0.shape[0],20],
@@ -339,25 +337,24 @@ class Slide1(Scene):
         )
 
         DataGrp = VGroup(*ax, *graph_x0, *graph_x1, graph_shp0)
-        vg_all.add(*DataGrp)
-        vg_all.add(graph_shp0)
+        
         self.play(FadeIn(title))
-        self.wait()
-        self.play(Create(ax), run_time=2)
-        self.play(Create(graph_x0), run_time=2)
-        self.play(Create(graph_x1), run_time=2)
-        self.wait(0.5)
+        self.wait(1.5)
+        self.play(Create(ax), run_time=3)
+        self.play(Create(graph_x0), run_time=2.5)
+        self.play(Create(graph_x1), run_time=2.5)
+        self.wait(2)
         self.play(Create(graph_shp0),run_time=2)
         self.play(DataGrp.animate.stretch(1.8, 0).shift(1.25*UP).scale(0.55))
-        self.wait(0.5)
+        self.wait(2)
         self.play(graph_shp0.animate.shift(1.5*DOWN).shift(2.45*LEFT))
         
         Tex_shp = Tex(
             r' A Shapelet $S = \{s_1, \ldots, s_l\}$, with $l$ the length parameter'
         ).scale(0.8).next_to(graph_shp0, RIGHT)
-        vg_all.add(*Tex_shp)
+        
         self.play(FadeIn(Tex_shp))
-        self.wait(5)
+        self.wait()
         
         
        
@@ -515,7 +512,7 @@ class Slide3(Scene):
         #                                      # 
         ########################################
         vg_all = VGroup()
-        title = make_title("Improvments of the base formulation ", 3)
+        title = make_title("Improvements of the base formulation ", 3)
         vg_all.add(*title)
         #Show znorm first and argmin on distance vector
 
@@ -603,6 +600,7 @@ class Slide3(Scene):
         vg_all.add(all_dots)
         vg_all.add(*[g_shp_dist_norm1,min0,min1,ax0,graph_x0,all_dots,dots1,dots0,ax2_points,graph_x1])
         self.play(FadeIn(title))
+        self.wait(2)
         self.play(Create(ax0), Create(graph_x0))
         self.play(Create(ax2))
         self.wait()
@@ -748,19 +746,19 @@ class Slide4(Scene):
         threshold = always_redraw(update_threshold)
         dots_th = get_dots(0.5)
         self.play(FadeIn(title))
-        self.wait()
-        self.play(Create(ax1),Create(ax2))
-        self.wait()
+        self.wait(2)
+        self.play(Create(ax1),Create(ax2))        
         self.play(Create(g_shp_dist_norm0))
+        self.wait(2)
         self.play(Create(area_threshold))
         self.play(Create(threshold))
         for i in range(len(dots_th)):
             self.add(dots_th[i])
-            
-        self.play(t.animate.set_value(x_space[-1]), run_time=7, rate_func=rate_functions.ease_in_sine)
-        self.play(t.animate.set_value(x_space[0]), run_time=7, rate_func=rate_functions.ease_in_sine)
-        self.play(t.animate.set_value(x_space[-1]), run_time=7, rate_func=rate_functions.ease_in_sine)
-        self.play(t.animate.set_value(x_space[0]), run_time=7, rate_func=rate_functions.ease_in_sine)
+        self.wait(1)
+        self.play(t.animate.set_value(x_space[-1]), run_time=6, rate_func=rate_functions.ease_in_sine)
+        self.play(t.animate.set_value(x_space[0]), run_time=6, rate_func=rate_functions.ease_in_sine)
+        self.play(t.animate.set_value(x_space[-1]), run_time=6, rate_func=rate_functions.ease_in_sine)
+        self.play(t.animate.set_value(x_space[0]), run_time=6, rate_func=rate_functions.ease_in_sine)
         self.wait()
         
 
@@ -877,7 +875,8 @@ class Slide5(Scene):
                     all_dots.add(Dot(ax2[0].c2p(X_mins[i,1],X_mins[i,2]), fill_color=COLOR_1, fill_opacity=0.75).scale(0.55))
             self.play(FadeIn(all_dots))
             self.wait(2)
-            self.play(FadeOut(l_dots),FadeOut(graph_shp),FadeOut(d_vect), FadeOut(all_dots), FadeOut(brace))
+            if d < 7:
+                self.play(FadeOut(l_dots),FadeOut(graph_shp),FadeOut(d_vect), FadeOut(all_dots), FadeOut(brace))
         
         self.wait()
 
@@ -933,26 +932,26 @@ class Slide6(Scene):
         txt_n_shp=Tex('$N_{shapelets}$')
         
         self.play(FadeIn(title))
-        self.wait()
+        self.wait(15)
         self.play(Create(g_length))
-        self.wait()
+        self.wait(4)
         self.play(g_length.animate.scale(0.8).shift(5*LEFT).shift(1.75*UP))
         self.wait()
         self.play(Create(g_thresd))
-        self.wait()
+        self.wait(2)
         self.play(g_thresd.animate.scale(0.8).shift(2.5*LEFT).shift(1.75*UP))
         self.wait()
         self.play(Create(g_pnorm))
-        self.wait()
+        self.wait(2)
         self.play(g_pnorm.animate.scale(0.8).shift(1.75*UP))
         self.wait()
         self.play(Create(txt_in))
-        self.wait()
+        self.wait(2)
         self.play(txt_in.animate.scale(0.8).shift(2.5*RIGHT).shift(1.75*UP))
         self.add(txt_in_T.scale(0.8).shift(2.5*RIGHT).shift(1.75*UP))
         self.wait()
         self.play(Create(txt_n_shp))
-        self.wait()
+        self.wait(2)
         self.play(txt_n_shp.animate.scale(0.8).shift(5*RIGHT).shift(1.75*UP))
         self.wait()
         
@@ -980,24 +979,24 @@ class Slide6(Scene):
         
         self.play(FadeIn(Tx_algo), b7[1].animate.set_stroke_color(GREEN), b7[0].animate.set_fill(GREEN))
         self.play(Transform(b7[1],ax1[0]), )
-        self.wait(2)
+        self.wait(2.5)
         self.play(txt_in_T.animate.set_fill(GREEN), FadeOut(Tx_algo))
         Tx_algo = Tex('Choose a random sample').scale(0.8)
         self.play(FadeIn(Tx_algo),FadeOut(txt_in_T),FadeIn(ax2[0]), FadeIn(x_input))
-        self.wait(2)
+        self.wait(2.5)
         self.play(FadeOut(Tx_algo))
         txt_dil = Tex(r'd = $\lfloor 2^{x} \rfloor$, $x \in [0, log \frac{||X||}{l}]$').scale(0.8).shift(0.5*UP)
         txt_dil1 = Tex(r'd = 4').scale(0.8).shift(0.5*UP).shift(5*LEFT)
         self.play(Create(txt_dil))
-        self.wait(2)
+        self.wait(5)
         self.play(Transform(txt_dil, txt_dil1))
-        self.wait(2)
+        self.wait(2.5)
         txt_point = Tex(r'$ i \in [0, ||X|| - (l-1)\times d]$').scale(0.8).shift(0.5*UP)
         txt_point3 = Tex(r'$ i = 105 $').scale(0.8).shift(0.5*UP).shift(5*RIGHT)
         self.play(Create(txt_point))
-        self.wait(2)
+        self.wait(2.5)
         self.play(Transform(txt_point, txt_point3))
-        self.wait(2)
+        self.wait(2.5)
         vPoints = VGroup()
         for ix in idx_shp:
             vPoints.add(Dot(ax2[0].c2p(ix, x0[ix]),fill_color=PURPLE).scale(0.9))
