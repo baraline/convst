@@ -33,7 +33,7 @@ setup(
         "pyts >= 0.12",
         "scipy >= 1.7",
         "seaborn >= 0.11",
-        "sktime >= 0.10",
+        "sktime >= 0.11",
         "numpy < 1.22, >=1.18",
         "networkx >= 2.6.3",
         "pytest >= 7.0",
