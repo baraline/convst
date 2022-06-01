@@ -60,11 +60,11 @@ Full API documentation of the *convst* Python package.
 
   utils.shapelet_utils.generate_strides_2D
   utils.shapelet_utils.generate_strides_1D
-  utils.check_utils.check_array_3D
-  utils.check_utils.check_array_2D
-  utils.check_utils.check_array_1D
-  utils.check_utils.check_is_numpy_or_pd
-  utils.check_utils.check_is_numpy
+  utils.checks_utils.check_array_3D
+  utils.checks_utils.check_array_2D
+  utils.checks_utils.check_array_1D
+  utils.checks_utils.check_is_numpy_or_pd
+  utils.checks_utils.check_is_numpy
   utils.dataset_utils.load_sktime_dataset_split
   utils.dataset_utils.load_sktime_dataset
   utils.dataset_utils.load_sktime_arff_file_resample_id
