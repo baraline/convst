@@ -58,8 +58,8 @@ Full API documentation of the *convst* Python package.
   
   :template: function.rst
 
-  utils.shapelet_utils.generate_strides_2D
-  utils.shapelet_utils.generate_strides_1D
+  utils.shapelets_utils.generate_strides_2D
+  utils.shapelets_utils.generate_strides_1D
   utils.checks_utils.check_array_3D
   utils.checks_utils.check_array_2D
   utils.checks_utils.check_array_1D
