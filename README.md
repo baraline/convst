@@ -67,16 +67,21 @@ For other question or to take contact with me, you can email me at antoine.guill
 If you use our algorithm or publication in any work, please cite the following paper (ArXiv version https://arxiv.org/abs/2109.13514):
 
 ```bibtex
-@article{RDST,
-  title={Random Dilated Shapelet Transform: A new approach for time series shapelets},
-  author={Antoine Guillaume, Christel Vrain, Wael Elloumi},
-  journal={},
-  volume={},
-  number={},
-  pages={},
-  year={2022}
-  publisher={}
+@InProceedings{10.1007/978-3-031-09037-0_53,
+author="Guillaume, Antoine
+and Vrain, Christel
+and Elloumi, Wael",
+title="Random Dilated Shapelet Transform: A New Approach for Time Series Shapelets",
+booktitle="Pattern Recognition and Artificial Intelligence",
+year="2022",
+publisher="Springer International Publishing",
+address="Cham",
+pages="653--664",
+abstract="Shapelet-based algorithms are widely used for time series classification because of their ease of interpretation, but they are currently outperformed by recent state-of-the-art approaches. We present a new formulation of time series shapelets including the notion of dilation, and we introduce a new shapelet feature to enhance their discriminative power for classification. Experiments performed on 112 datasets show that our method improves on the state-of-the-art shapelet algorithm, and achieves comparable accuracy to recent state-of-the-art approaches, without sacrificing neither scalability, nor interpretability.",
+isbn="978-3-031-09037-0"
 }
+
+
 ```
 This paper is set to appear in the proceedings of ICPRAI 2022, published by Springer in Lecture Notes in Computer Science. The bibtex reference will be updated accordingly.
 
