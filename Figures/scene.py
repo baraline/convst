@@ -1,9 +1,9 @@
 from manim import *
 from convst.utils.dataset_utils import load_sktime_dataset
-from convst.utils.shapelets_utils import generate_strides_1D, generate_strides_2D
+from convst.utils.shapelets_utils import generate_strides_1D
 import numpy as np
 import pandas as pd
-from copy import deepcopy
+
 """
 
 - Could be nice to be able to visualize with this top shapelets for any dataset
@@ -138,7 +138,6 @@ def Tex_Group(
         tex_list, color=WHITE, orientation=DOWN, center=False, aligned_edge=LEFT, buff=None
     ):
     vg = VGroup()
-    t_prec = None
     for i in range(len(tex_list)):
         if isinstance(tex_list[i], mobject.text.tex_mobject.Tex):
             t = tex_list[i]
@@ -297,16 +296,16 @@ def load_all_data(x0_index=2, x1_index=0, shp0_x_index=np.arange(30,50), shp1_x_
     X_T_0 = get_features(X, shp0, normalize=False, d=1, threshold=10)
     X_T_1 = get_features(X, shp1, normalize=False, d=1, threshold=10)
     return (
-        x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
-        norm_dist_vect_shp_1_0, X_T_0, X_T_1
+        norm_dist_vect_shp_1_1, X_T_0, X_T_1
     )
 
 
 class Slide1(Scene):
     def construct(self):
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data()
@@ -360,7 +359,7 @@ class Slide1(Scene):
        
 class Slide2(Scene):
     def construct(self):
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data()
@@ -502,7 +501,7 @@ class Slide2(Scene):
         
 class Slide3(Scene):
     def construct(self):
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data()
@@ -544,11 +543,11 @@ class Slide3(Scene):
                 
         def x_subseq_loc():
             i = int(t.get_value())
-            l=shp0_norm.shape[0]-1
+            length = shp0_norm.shape[0]-1
             x_sub = x0[i:i+shp0_norm.shape[0]]
             vg = VGroup()
             vg.add(Dot(ax0[0].c2p(i, x_sub[0])))
-            vg.add(Dot(ax0[0].c2p(i+l, x_sub[l])))
+            vg.add(Dot(ax0[0].c2p(i+length, x_sub[length])))
             return SurroundingRectangle(vg, buff=0.01)
         
         def x_subseq():
@@ -633,7 +632,7 @@ class Slide4(Scene):
         #       SHOW Shapelet Occurence        #
         #                                      # 
         ########################################
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data()
@@ -705,8 +704,8 @@ class Slide4(Scene):
                     for i in range(len(x_area)):
                         l1.append(ax1[0].c2p(x_area[i], y_area[i]))
                         l2.append(ax1[0].c2p(x_area[i], y_th[i]))
-                    l = l1 + l2[::-1]
-                    vg.add(Polygon(*l, color=GREY_B, fill_opacity=0.85, stroke_width=0))
+                    l_concat = l1 + l2[::-1]
+                    vg.add(Polygon(*l_concat, color=GREY_B, fill_opacity=0.85, stroke_width=0))
             return vg
             
         
@@ -726,16 +725,15 @@ class Slide4(Scene):
           
         def get_dots(i):
             X_mins = get_features(X, shp0, normalize=True, d=1, threshold=i)
-            l = []
+            dot_list = []
             for ix in range(X.shape[0]):
-            
                 if y[ix] == y[x0_index]:
                     dot = Dot_ix(ix=ix, point=ax2[0].c2p(X_mins[0,1],X_mins[0,2]), fill_color=COLOR_0, fill_opacity=0.75).scale(0.55)
                 else:
                     dot = Dot_ix(ix=ix, point=ax2[0].c2p(X_mins[0,1],X_mins[0,2]), fill_color=COLOR_1, fill_opacity=0.75).scale(0.55)
                 dot.add_updater(lambda x: x.move_to(get_dot(float(t.get_value()),x.ix)))
-                l.append(dot)
-            return l
+                dot_list.append(dot)
+            return dot_list
         
         
             
@@ -769,7 +767,7 @@ class Slide5(Scene):
         #        SHOW Dilated Shapelets        #
         #                                      # 
         ########################################
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data(shp0_x_index=np.arange(35,45))
@@ -887,7 +885,7 @@ class Slide6(Scene):
         #              SHOW RDST               #
         #                                      # 
         ########################################
-        (x0_index, x1_index, shp0_x_index, shp1_x_index,  X, y, x0, x1, shp0, shp1,
+        (x0_index, x1_index, shp0_x_index, shp1_x_index, X, y, x0, x1, shp0, shp1,
         shp0_norm, shp1_norm, dist_vect_shp_0_0, dist_vect_shp_0_1, norm_dist_vect_shp_0_0,
         norm_dist_vect_shp_0_1, dist_vect_shp_1_0, dist_vect_shp_1_1, norm_dist_vect_shp_1_0,
         norm_dist_vect_shp_1_0, X_T_0, X_T_1) = load_all_data()
@@ -1002,7 +1000,6 @@ class Slide6(Scene):
             vPoints.add(Dot(ax2[0].c2p(ix, x0[ix]),fill_color=PURPLE).scale(0.9))
         self.play(Create(vPoints, run_time=5, rate_func=rate_functions.ease_in_sine))
         self.wait()
-        g_shp = graph_time_series(ax1[0], shp, line_color=PURPLE, add_vertex_dots=False)
         shp_norm = (shp - shp.mean()) / shp.std()
         g_shp_norm = graph_time_series(ax1[0], shp_norm, line_color=PURPLE, add_vertex_dots=False)
         self.play(b07[1].animate.set_stroke_color(GREEN), b07[0].animate.set_fill(GREEN))
@@ -1133,7 +1130,7 @@ class Slide7(Scene):
             if model == 'RDST':
                 sw=8
             
-            g =  graph_time_series(
+            g = graph_time_series(
                 ax1[0], sample_bench.index.values,
                 y=sample_bench[model].values,
                 stroke_color=color_dict[model],
@@ -1141,7 +1138,7 @@ class Slide7(Scene):
             )
             v_samples.add(g)
             
-            g =  graph_time_series(
+            g = graph_time_series(
                 ax2[0], length_bench.index.values,
                 y=length_bench[model].values, 
                 stroke_color=color_dict[model],
