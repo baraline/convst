@@ -2,8 +2,8 @@
 
 import numpy as np
 import pandas as pd
-from sktime.datatypes._panel._convert import from_nested_to_3d_numpy, is_nested_dataframe
-
+from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
+from sktime.datatypes._panel._check import is_nested_dataframe
 def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=2):
     """
     Perform checks on the input to verify if it is a 3D array.
