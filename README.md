@@ -83,7 +83,6 @@ isbn="978-3-031-09037-0"
 
 
 ```
-This paper is set to appear in the proceedings of ICPRAI 2022, published by Springer in Lecture Notes in Computer Science. The bibtex reference will be updated accordingly.
 
 ## TODO for relase 1.0:
 
