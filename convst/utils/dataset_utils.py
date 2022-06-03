@@ -7,6 +7,31 @@ from sktime.datasets import (load_UCR_UEA_dataset,
 from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
 
 from sklearn.preprocessing import LabelEncoder
+from numba import njit, prange
+
+@njit(cache=True)
+def z_norm_3D(X):
+    """
+    Z normalise a time series dataset assumed to be of even length. A small value
+    is added to the standard deviation for all samples and features to avoid
+    0 division.
+
+    Parameters
+    ----------
+    X : array, shape=(n_samples, n_features, n_timestamps)
+        Input numerical array to z-normalise
+
+    Returns
+    -------
+    X : array, shape=(n_samples, n_features, n_timestamps)
+        Z-normalised array
+
+    """
+    for i_x in prange(X.shape[0]):
+        for i_ft in prange(X.shape[1]):
+            X[i_x, i_ft] = (X[i_x, i_ft] - X[i_x, i_ft].mean())/(X[i_x, i_ft].std() + 1e-8)
+    return X
+    
 
 def load_sktime_dataset_split(name, normalize=True):
     """
@@ -51,11 +76,8 @@ def load_sktime_dataset_split(name, normalize=True):
 
     #Z-Normalize the data
     if normalize:
-        X_train = (X_train - X_train.mean(axis=-1, keepdims=True)) / (
-            X_train.std(axis=-1, keepdims=True) + 1e-8)
-        X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
-            X_test.std(axis=-1, keepdims=True) + 1e-8)
-
+        X_train = z_norm_3D(X_train)
+        X_test = z_norm_3D(X_test)
     return X_train, X_test, y_train, y_test, le
 
 

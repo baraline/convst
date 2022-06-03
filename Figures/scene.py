@@ -577,11 +577,11 @@ class Slide3(Scene):
         y_ranges[-1] = [X_T_0[:,0].min(), X_T_0[:,0].max()+5, 5]
         
         x_labels = [
-            Tex(''), Tex(''), Tex(r"arg$\min d({\cal X},S_1)$")
+            Tex(''), Tex(''), Tex(r"arg$\min d({\cal X},S)$")
         ]
         
         y_labels = [
-            Tex(''), Tex(''), Tex(r"$\min d({\cal X},S_1)$")
+            Tex(''), Tex(''), Tex(r"$\min d({\cal X},S)$")
         ]
         _, _, ax2_points = get_211_axes(
             x_ranges, y_ranges, x_labels=x_labels, y_labels=y_labels

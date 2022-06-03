@@ -24,7 +24,8 @@ from matplotlib import pyplot as plt
 def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
     """
     Compute a shapelet distance vector from an univariate time series 
-    and a dilated shapelet.
+    and a dilated shapelet. Shapelet should be already normalized if normalizing
+    the distance
 
     Parameters
     ----------
