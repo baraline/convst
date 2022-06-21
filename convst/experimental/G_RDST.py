@@ -6,13 +6,14 @@ Created on Thu Nov 18 13:17:07 2021
 """
 from numba import njit, prange
 import numpy as np
-import seaborn as sns
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
 import pandas as pd
-from matplotlib import pyplot as plt
+
+from numba import set_num_threads
 
 """
 from convst.utils.dataset_utils import load_sktime_dataset_split
@@ -33,8 +34,6 @@ r = make_pipeline(
 p = r.predict(bt)
 print(accuracy_score(yt, p))
 """
-
-
 
 @njit(fastmath=True, cache=True, error_model='numpy')
 def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
@@ -192,7 +191,7 @@ def _get_subsequence(X, i_start, l, d, normalize):
 
 
 @njit(cache=True, parallel=True)
-def generate_shapelet(X, y, n_shapelets, shapelet_sizes,
+def generate_shapelet(X, y, n_shapelets, shapelet_sizes, min_len,
                       seed, p_norm, p_min, p_max, X_len, max_channels):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -231,7 +230,7 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes,
     np.random.seed(seed)
 
     values, lengths, dilations, threshold, normalize, channels = _init_random_shapelet_params(
-        n_shapelets, shapelet_sizes, X_len.min(), p_norm, n_features, max_channels
+        n_shapelets, shapelet_sizes, min_len, p_norm, n_features, max_channels
     )
 
     samples_pool = np.arange(X.shape[0]).astype(np.int64)
@@ -239,6 +238,8 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes,
     # For Values, draw from random uniform (0,n_samples*(n_ts-(l-1)*d))
     # for each l,d combinations. Then take by index the values instead
     # of generating strides.
+                
+            
     for i in prange(n_shapelets):
         id_sample = samples_pool[i % X.shape[0]]
         index = np.int64(np.random.choice(
@@ -295,7 +296,7 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold,
         
     Returns
     -------
-    X_new : array, shape=(n_samples, 3*n_shapelets)
+    X_new : array, shape=(n_samples, 4*n_shapelets)
         The transformed input time series with each shapelet extracting 3
         feature from the distance vector computed on each time series.
 
@@ -318,7 +319,6 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold,
                     d_shape = X_len[i] - (l-1)*d
                     X_dist = np.zeros((len(ix_shapelets), d_shape))
                     for i_ft in range(n_ft):
-                    
                         X_sample = np.zeros((2, d_shape, l))
                         strides = generate_strides_1D(X[i, i_ft, :X_len[i]], l, d)
                         X_sample[0] = strides
@@ -332,7 +332,6 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold,
                             i_shp = ix_shapelets[j]
                             if channels[i_shp,i_ft]:
                                 X_dist[j] += _get_dist_vect(X_sample[normalize[i_shp]],  values[i_shp, i_ft])                                
-                        
                     for j in range(len(ix_shapelets)):
                         i_shp = ix_shapelets[j]
                         X_new[i, (n_features * i_shp):(n_features * i_shp + n_features)] = extract_features(
@@ -384,8 +383,10 @@ def extract_features(x, threshold):
 
     """
 
-    return np.min(x), np.argmin(x)/x.shape[0], np.sum(x<threshold)/x.shape[0]
-    #return np.min(x), np.float64(np.sum(x<threshold))
+    _min = np.min(x)
+    _argmin = np.where(x == _min)[0][-1] / x.shape[0]
+    _n_occ = np.float64(np.sum(x<threshold))
+    return _min, _argmin, _n_occ, 
 
 
 class FR_DST(BaseEstimator, TransformerMixin):
@@ -414,21 +415,32 @@ class FR_DST(BaseEstimator, TransformerMixin):
     
     """
     def __init__(self, n_shapelets=10000, shapelet_sizes=[11], max_channels=None,
-                 random_state=None, p_norm=0.8, percentiles=[5, 10]):
+                 random_state=None, p_norm=0.8, percentiles=[5, 10], n_jobs=1, min_len=None):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)
         self.random_state = random_state
         self.p_norm = p_norm
         self.max_channels = max_channels
         self.percentiles = percentiles
-
+        self.min_len=min_len
+        self.n_jobs=n_jobs
+        set_num_threads(n_jobs)
+        
+    
     def fit(self, X, y=None):
+        
         X, X_len = self._format_uneven_timestamps(X)
-        X = check_array_3D(X, is_univariate=False).astype(np.float64)
+        if self.min_len is None:
+            self.min_len = X_len.min()
+        else:
+            self.min_len = min(X_len.min(), self.min_len)
+        self.min_len = np.int64(self.min_len)
+        X = check_array_3D(X, enforce_univariate=False).astype(np.float64)
         n_samples, n_features, n_timestamps = X.shape
+        
         if self.shapelet_sizes.dtype == float:
             self.shapelet_sizes = np.floor(n_timestamps*self.shapelet_sizes)
-        shapelet_sizes, seed = self._check_params(n_timestamps)
+        shapelet_sizes, seed = self._check_params(self.min_len)
         if self.max_channels is None:
             self.max_channels = X.shape[1]
         else:
@@ -436,7 +448,7 @@ class FR_DST(BaseEstimator, TransformerMixin):
         # Generate the shapelets
         
         values, lengths, dilations, threshold, normalize, channels = generate_shapelet(
-            X, y, self.n_shapelets, shapelet_sizes, seed, self.p_norm,
+            X, y, self.n_shapelets, shapelet_sizes, self.min_len , seed, self.p_norm,
             self.percentiles[0], self.percentiles[1], X_len, self.max_channels
         )
         self.values_ = values
@@ -445,13 +457,16 @@ class FR_DST(BaseEstimator, TransformerMixin):
         self.normalize_ = normalize
         self.threshold_ = threshold
         self.channels_ = channels
+        
         return self
 
     def transform(self, X):
+        
         X, X_len = self._format_uneven_timestamps(X)
-        X = check_array_3D(X, is_univariate=False).astype(np.float64)
+        X = check_array_3D(X, enforce_univariate=False).astype(np.float64)
         check_is_fitted(self, ['values_', 'length_','channels_',
                         'dilation_', 'threshold_', 'normalize_'])
+        
         X_new = apply_all_shapelets(
             X, self.values_, self.length_, self.dilation_, self.threshold_,
             self.normalize_, self.channels_, X_len
@@ -466,11 +481,11 @@ class FR_DST(BaseEstimator, TransformerMixin):
                 X[i] = X[i].values.T
             n_ft[i] = X[i].shape[0]
             lengths[i] = X[i].shape[1]
-            
+        
         if np.all(n_ft == n_ft[0]):      
-            X_new = np.zeros((X.shape[0], n_ft[0], lengths.max()))
-            for i in range(X.shape[0]):
-                    X_new[i, :, :lengths[i]] = X[i]
+            X_new = np.zeros((len(X), n_ft[0], lengths.max()))
+            for i in range(len(X)):
+                X_new[i, :, :lengths[i]] = X[i]
             return X_new, lengths
         else:
             raise ValueError("Samples got different number of features")
@@ -484,117 +499,20 @@ class FR_DST(BaseEstimator, TransformerMixin):
         if not isinstance(self.shapelet_sizes, (list, tuple, np.ndarray)):
             raise TypeError("'shapelet_sizes' must be a list, a tuple or "
                             "an array (got {}).".format(self.shapelet_sizes))
+        
         shapelet_sizes = check_array_1D(self.shapelet_sizes).astype(np.int64)
         if not np.all(1 <= shapelet_sizes):
             raise ValueError("All the values in 'shapelet_sizes' must be "
                              "greater than or equal to 1 ({} < 1)."
                              .format(shapelet_sizes.min()))
-        if not np.all(shapelet_sizes <= n_timestamps//2):
-            shapelet_sizes = shapelet_sizes[shapelet_sizes <= n_timestamps//2]
-            if shapelet_sizes.shape[0] == 0:
-                shapelet_sizes = np.array([3])
-            """
+        if not np.all(shapelet_sizes <= n_timestamps):
+            shapelet_sizes = shapelet_sizes[shapelet_sizes <= n_timestamps]
+
             raise ValueError("All the values in 'shapelet_sizes' must be lower "
                              "than or equal to 'n_timestamps//2' ({} > {})."
                              .format(shapelet_sizes.max(), n_timestamps//2))
-            """
+            
         rng = check_random_state(self.random_state)
-        seed = rng.randint(np.iinfo(np.uint32).max, dtype='u8')
+        seed = rng.randint(np.iinfo(np.uint64).max, dtype='u8')
 
         return shapelet_sizes, seed
-
-    def _get_shp_params(self, id_shp):
-        #values, length, dilation, padding, range
-        return (self.values_[id_shp], self.length_[id_shp],
-                self.dilation_[id_shp], self.threshold_[id_shp],
-                self.normalize_[id_shp])
-
-    def visualise_one_shapelet(self, id_shp, X, y, target_class,figs=(15, 10)):
-        # For visualisation, if argmin is important, draw a bar on x axis
-        # If min, highligh on series (red)
-        # If #match, hihgligh all parts which match on series (blue)
-        sns.set()
-        sns.set_context('talk')
-        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figs)
-        values, length, dilation, r, norm = self._get_shp_params(id_shp)
-        values = values[:length]
-        X_new = np.zeros((X.shape[0], 3))
-        yc = (y == target_class).astype(int)
-        for i in range(X.shape[0]):
-            x_dist = compute_shapelet_dist_vector(
-                X[i, 0], values, length, dilation, norm)
-            X_new[i, 0] = np.min(x_dist)
-            X_new[i, 1] = np.argmin(x_dist)
-            X_new[i, 2] = np.mean(x_dist < r)
-
-        sns.boxplot(x=yc, y=X_new[:, 0], ax=ax[0, 0])
-        sns.boxplot(x=yc, y=X_new[:, 1], ax=ax[0, 1])
-        sns.boxplot(x=yc, y=X_new[:, 2], ax=ax[0, 2])
-
-        i0 = np.random.choice(np.where(yc == 0)[0])
-        i1 = np.random.choice(np.where(yc == 1)[0])
-        ax[1, 1].scatter(np.arange(length)*dilation, values)
-        ax[1, 1].plot(np.arange(length)*dilation, values, linestyle='--')
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i1, 0], values, length, dilation, norm),
-                      c='C1', alpha=0.75, label='distance vector of sample of class {}'.format(target_class))
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i0, 0], values, length, dilation, norm),
-                      c='C0', alpha=0.75, label='distance vector of sample of class {}'.format(y[i0]))
-        ax[0, 0].set_xticks([0, 1])
-        ax[0, 0].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 1].set_xticks([0, 1])
-        ax[0, 1].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 2].set_xticks([0, 1])
-        ax[0, 2].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[1, 0].set_xlabel('timestamps')
-        ax[1, 1].set_xlabel('timestamps')
-        ax[1, 2].set_xlabel('timestamps')
-        ix_start = X_new[i0, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i0, 0, ix].std() + X[i0, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C0', alpha=0.75)
-
-        ix_start = X_new[i1, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i1, 0, ix].std() + X[i1, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C1', alpha=0.75)
-
-        ax[1, 2].axhline(r, c='C2', linestyle='--')
-        """
-        ax[i,1].set_xticks(np.arange(length), rotation=70)
-        ax[i,1].set_xticklabels(np.arange(length)*dilation, rotation=70)
-        ax[i,2].plot(x_conv, color = 'C'+str(i))
-        ax[i,2].axhline(r)
-        """
-        ax[1, 0].plot(X[i1, 0], c='C1', alpha=0.75, 
-                      label='sample of class {}'.format(target_class))
-        ax[1, 0].plot(X[i0, 0], c='C0', alpha=0.75,
-                      label='sample of class {}'.format(y[i0]))
-        
-        ax[0, 0].set_title("Boxplot of min")
-        ax[1, 0].set_title("Location of the minimum")
-        ax[0, 1].set_title("Boxplot of argmin")
-        ax[1, 1].set_title("Shapelet n°{} (d={})".format(id_shp, dilation))
-        ax[0, 2].set_title("Boxplot of shapelet occurences")
-        ax[1, 2].set_title("Distance vector and lambda threshold")
-        #ax[2,1].set_title("0 : {}; 1 : {}".format(str(X_new[i0,2])[0:5],str(X_new[i1,2])[0:5]))
-        ax[1, 0].legend()
-        ax[1, 1].legend()
-        #fig.suptitle("Shapelet l={}, d={}, n={}".format(length,dilation,norm))
-        plt.show()

@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
+"""RotationForest vector classifier.
+Rotation Forest, sktime implementation for continuous values only.
+"""
+
+__author__ = ["MatthewMiddlehurst"]
+__all__ = ["RotationForest"]
 
 import time
 
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator
 from sklearn.decomposition import PCA
@@ -12,6 +19,7 @@ from sklearn.utils import check_random_state, check_X_y
 from sktime.base._base import _clone_estimator
 from sktime.exceptions import NotFittedError
 from sktime.utils.validation import check_n_jobs
+
 
 class RotationForest(BaseEstimator):
     """Rotation Forest Classifier.
@@ -77,7 +85,7 @@ class RotationForest(BaseEstimator):
        with continuous features?." arXiv preprint arXiv:1809.06705 (2018).
     Examples
     --------
-    >>> from sktime.contrib.vector_classifiers._rotation_forest import RotationForest
+    >>> from sktime._contrib.vector_classifiers._rotation_forest import RotationForest
     >>> from sktime.datasets import load_unit_test
     >>> from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
     >>> X_train, y_train = load_unit_test(split="train", return_X_y=True)
@@ -152,6 +160,8 @@ class RotationForest(BaseEstimator):
         """
         if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
             X = np.reshape(X, (X.shape[0], -1))
+        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
+            X = X.to_numpy()
         elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
             raise ValueError(
                 "RotationForest is not a time series classifier. "
@@ -269,6 +279,8 @@ class RotationForest(BaseEstimator):
             )
         if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
             X = np.reshape(X, (X.shape[0], -1))
+        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
+            X = X.to_numpy()
         elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
             raise ValueError(
                 "RotationForest is not a time series classifier. "
@@ -305,6 +317,8 @@ class RotationForest(BaseEstimator):
             )
         if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
             X = np.reshape(X, (X.shape[0], -1))
+        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
+            X = X.to_numpy()
         elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
             raise ValueError(
                 "RotationForest is not a time series classifier. "
@@ -315,9 +329,8 @@ class RotationForest(BaseEstimator):
 
         if n_instances != self.n_instances or n_atts != self.n_atts:
             raise ValueError(
-                "n_instances, n_dims, series_length mismatch. X should be "
-                "the same as the training data used in fit for generating train "
-                "probabilities."
+                "n_instances, n_atts mismatch. X should be the same as the training "
+                "data used in fit for generating train probabilities."
             )
 
         if not self.save_transformed_data:
@@ -375,7 +388,7 @@ class RotationForest(BaseEstimator):
 
             sample_ind = rng.choice(
                 X_t.shape[0],
-                int(X_t.shape[0] * self.remove_proportion),
+                max(1, int(X_t.shape[0] * self.remove_proportion)),
                 replace=False,
             )
             X_t = X_t[sample_ind]
@@ -433,6 +446,10 @@ class RotationForest(BaseEstimator):
         subsample = rng.choice(self.n_instances, size=self.n_instances)
         oob = [n for n in indices if n not in subsample]
 
+        results = np.zeros((self.n_instances, self.n_classes))
+        if len(oob) == 0:
+            return [results, oob]
+
         clf = _clone_estimator(self._base_estimator, rs)
         clf.fit(self.transformed_data[idx][subsample], y[subsample])
         probas = clf.predict_proba(self.transformed_data[idx][oob])
@@ -444,7 +461,6 @@ class RotationForest(BaseEstimator):
                 new_probas[:, cls_idx] = probas[:, i]
             probas = new_probas
 
-        results = np.zeros((self.n_instances, self.n_classes))
         for n, proba in enumerate(probas):
             results[oob[n]] += proba
 
@@ -472,7 +488,7 @@ class RotationForest(BaseEstimator):
             group_size_count[current_size] -= 1
 
             n = self.min_group + current_size
-            groups.append(np.zeros(n, dtype=np.int))
+            groups.append(np.zeros(n, dtype=int))
             for k in range(0, n):
                 if current_attribute < permutation.shape[0]:
                     groups[i][k] = permutation[current_attribute]
