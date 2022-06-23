@@ -201,7 +201,7 @@ def dist_vect(X, S, l, d, inv):
         return dist_euc(X_subs, S, CF)
 
         
-@njit(cache=True, parallel=False, fastmath=True)
+@njit(cache=True, parallel=True, fastmath=True)
 def generate_shapelet(
         X, y, n_shapelets, shapelet_sizes, seed, invariance_proba, p_min, p_max
     ):
