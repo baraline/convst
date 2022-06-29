@@ -55,9 +55,8 @@ for name in dataset_names:
     for model_name, model_class in dict_models.items():
         print(model_name)
         pipeline_RDST = make_pipeline(
-            model_class(n_jobs=85), 
-            StandardScaler(with_mean=False),
-            RotationForest(n_estimators=85, min_group=10, max_group=20, n_jobs=85)
+            model_class(n_jobs=90), 
+            RotationForest(n_estimators=150, min_group=10, max_group=20, n_jobs=75)
         )
     
         acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(

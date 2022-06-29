@@ -9,7 +9,8 @@ import time
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+from joblib import Parallel
+from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
@@ -17,7 +18,28 @@ from sklearn.utils import check_random_state, check_X_y
 
 from sktime.base._base import _clone_estimator
 from sktime.exceptions import NotFittedError
-from sktime.utils.validation import check_n_jobs
+
+from convst.utils.checks_utils import check_n_jobs
+
+from datetime import datetime
+def _log(msg):
+    print("{} - {}".format(str(datetime.now()),msg))
+
+def _predict_proba_for_estimator(X, clf, pcas, groups, n_classes, _class_dictionary):
+    X_t = np.concatenate(
+        [pcas[i].transform(X[:, group]) for i, group in enumerate(groups)], axis=1
+    )
+    probas = clf.predict_proba(X_t)
+
+    if probas.shape[1] != n_classes:
+        new_probas = np.zeros((probas.shape[0], n_classes))
+        for i, cls in enumerate(clf.classes_):
+            cls_idx = _class_dictionary[cls]
+            new_probas[:, cls_idx] = probas[:, i]
+        probas = new_probas
+
+    return probas
+
 
 
 class RotationForest(BaseEstimator):
@@ -157,6 +179,7 @@ class RotationForest(BaseEstimator):
         -------
         self : object
         """
+        _log('Start fit')
         if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
             X = np.reshape(X, (X.shape[0], -1))
         elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
@@ -182,14 +205,12 @@ class RotationForest(BaseEstimator):
 
         if self.base_estimator is None:
             self._base_estimator = DecisionTreeClassifier(criterion="entropy")
-
         # replace missing values with 0 and remove useless attributes
         X = np.nan_to_num(X, False, 0, 0, 0)
         self._useful_atts = ~np.all(X[1:] == X[:-1], axis=0)
         X = X[:, self._useful_atts]
 
         self._n_atts = X.shape[1]
-
         # normalise attributes
         self._min = X.min(axis=0)
         self._ptp = X.max(axis=0) - self._min
@@ -202,7 +223,7 @@ class RotationForest(BaseEstimator):
             self.estimators_ = []
             self._pcas = []
             self._groups = []
-
+            
             while (
                 train_time < time_limit
                 and self._n_estimators < self.contract_max_n_estimators
@@ -227,7 +248,8 @@ class RotationForest(BaseEstimator):
                 self._n_estimators += self._n_jobs
                 train_time = time.time() - start_time
         else:
-            fit = Parallel(n_jobs=self._n_jobs)(
+            _log('Start parallel')
+            fit = Parallel(n_jobs=self._n_jobs, prefer='processes')(
                 delayed(self._fit_estimator)(
                     X,
                     X_cls_split,
@@ -240,7 +262,7 @@ class RotationForest(BaseEstimator):
             self.estimators_, self._pcas, self._groups, self.transformed_data = zip(
                 *fit
             )
-
+        _log('End fit')
         self._is_fitted = True
         return self
 
@@ -253,6 +275,7 @@ class RotationForest(BaseEstimator):
         -------
         output : array of shape = [n_test_instances]
         """
+        _log('Start predict')
         rng = check_random_state(self.random_state)
         return np.array(
             [
@@ -292,17 +315,19 @@ class RotationForest(BaseEstimator):
 
         # normalise the data.
         X = (X - self._min) / self._ptp
-
-        y_probas = Parallel(n_jobs=self._n_jobs)(
-            delayed(self._predict_proba_for_estimator)(
+        _log('Start predict parallel')
+        y_probas = Parallel(n_jobs=self._n_jobs, prefer='processes')(
+            delayed(_predict_proba_for_estimator)(
                 X,
                 self.estimators_[i],
                 self._pcas[i],
                 self._groups[i],
+                self.n_classes,
+                self._class_dictionary
             )
             for i in range(self._n_estimators)
         )
-
+        _log('end predict parallel')
         output = np.sum(y_probas, axis=0) / (
             np.ones(self.n_classes) * self._n_estimators
         )
@@ -335,7 +360,7 @@ class RotationForest(BaseEstimator):
         if not self.save_transformed_data:
             raise ValueError("Currently only works with saved transform data from fit.")
 
-        p = Parallel(n_jobs=self._n_jobs)(
+        p = Parallel(n_jobs=self._n_jobs, prefer='processes')(
             delayed(self._train_probas_for_estimator)(
                 y,
                 i,
@@ -417,20 +442,6 @@ class RotationForest(BaseEstimator):
 
         return tree, pcas, groups, X_t if self.save_transformed_data else None
 
-    def _predict_proba_for_estimator(self, X, clf, pcas, groups):
-        X_t = np.concatenate(
-            [pcas[i].transform(X[:, group]) for i, group in enumerate(groups)], axis=1
-        )
-        probas = clf.predict_proba(X_t)
-
-        if probas.shape[1] != self.n_classes:
-            new_probas = np.zeros((probas.shape[0], self.n_classes))
-            for i, cls in enumerate(clf.classes_):
-                cls_idx = self._class_dictionary[cls]
-                new_probas[:, cls_idx] = probas[:, i]
-            probas = new_probas
-
-        return probas
 
     def _train_probas_for_estimator(self, y, idx):
         rs = 255 if self.random_state == 0 else self.random_state

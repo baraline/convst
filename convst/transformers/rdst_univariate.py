@@ -17,8 +17,11 @@ from convst.utils.shapelets_utils import generate_strides_1D
 from numba import set_num_threads
 from numba import njit, prange
 from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
+from convst.utils.checks_utils import check_n_jobs
 
 from matplotlib import pyplot as plt
+
+
 
 @njit(fastmath=True, cache=True, error_model='numpy')
 def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
@@ -402,13 +405,8 @@ class R_DST(BaseEstimator, TransformerMixin):
         self.random_state = random_state
         self.p_norm = p_norm
         self.percentiles = percentiles
-        self.n_jobs = n_jobs
-        if self.n_jobs == -1:
-            set_num_threads(NUMBA_DEFAULT_NUM_THREADS)
-        elif isinstance(self.n_jobs, int) and self.n_jobs > 0:
-            set_num_threads(int(self.n_jobs))
-        else:
-            raise ValueError("n_jobs parameter should be a int superior to 0 or equal to -1 but got {}".format(self.n_jobs))
+        self.n_jobs = check_n_jobs(n_jobs)
+        set_num_threads(n_jobs)
             
             
     def fit(self, X, y):

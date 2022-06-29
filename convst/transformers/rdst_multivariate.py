@@ -8,7 +8,7 @@ from sklearn.utils.validation import check_is_fitted, check_random_state
 
 from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
-
+from convst.utils.checks_utils import check_n_jobs
 from numba import set_num_threads
 
 @njit(fastmath=True, cache=True, error_model='numpy')
@@ -385,7 +385,7 @@ class MR_DST(BaseEstimator, TransformerMixin):
         self.p_norm = p_norm
         self.max_channels = max_channels
         self.percentiles = percentiles
-        self.n_jobs=n_jobs
+        self.n_jobs = check_n_jobs(n_jobs)
         set_num_threads(n_jobs)
         
     
