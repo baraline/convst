@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """RotationForest vector classifier.
 Rotation Forest, sktime implementation for continuous values only.
 """
@@ -497,4 +496,3 @@ class RotationForest(BaseEstimator):
                 current_attribute += 1
 
         return groups
-
