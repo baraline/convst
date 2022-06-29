@@ -54,7 +54,7 @@ def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
         mean = c[i].mean()*normalize
         std = (c[i].std()+1e-8)*normalize
         x0 = (c[i] - mean)/(std + 1.0-normalize)
-        for j in range(length):
+        for j in prange(length):
             s += abs(x0[j] - values[j])
         x_conv[i] = s
     return x_conv
@@ -146,7 +146,7 @@ def _get_subsequence(X, i_start, l, d, normalize):
     _idx = i_start
     _sum = 0
     _sum2 = 0
-    for j in range(l):
+    for j in prange(l):
         v[j] = X[_idx]
         _sum += X[_idx]
         _sum2 += X[_idx]**2
@@ -260,7 +260,7 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold, normalize):
     """
     n_samples, n_ft, n_timestamps = X.shape
     n_shapelets = len(lengths)
-    n_features = 3
+    n_features = 5
 
     unique_lengths = np.unique(lengths)
     unique_dilations = np.unique(dilations)
@@ -329,7 +329,12 @@ def apply_one_shapelet_one_sample(x, values, threshold):
     _n_match = 0
     _min = 1e+100
     _argmin = 0
-
+    _longest_region = 0
+    _n_region = 0
+    
+    
+    region_counter = 0
+    
     #For each step of the moving window in the shapelet distance
     for i in range(n_candidates):
         _dist = 0
@@ -343,11 +348,23 @@ def apply_one_shapelet_one_sample(x, values, threshold):
 
         if _dist < threshold:
             _n_match += 1
+            region_counter += 1
+        else:
+            if region_counter > 0:
+                _n_region += 1
+                if region_counter > _longest_region:
+                    _longest_region = region_counter
+            region_counter = 0
+        
+    if region_counter > 0:
+        _n_region += 1
+        if region_counter > _longest_region:
+            _longest_region = region_counter
 
-    return _min, np.float64(_argmin), np.float64(_n_match)
+    return _min, np.float64(_argmin), np.float64(_n_match), np.float64(_longest_region), np.float64(_n_region)
 
 
-class R_DST(BaseEstimator, TransformerMixin):
+class R_DST_FT(BaseEstimator, TransformerMixin):
     """
     Implementation of univariate Random Dilated Shapelet Transform (RDST).
     For details and explanation on the algorithm, users are referred to [1]_:
@@ -395,7 +412,7 @@ class R_DST(BaseEstimator, TransformerMixin):
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
     """
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=-1,
+    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1,
                  p_norm=0.8, percentiles=[5, 10], random_state=None):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)
