@@ -25,14 +25,16 @@ from matplotlib import pyplot as plt
 @njit(cache=True, fastmath=True)
 def _CE(X):
     s = 0
-    for i in prange(0,X.shape[0]-1):
+    for i in prange(X.shape[0]-1):
         s += (X[i] - X[i+1])**2
     return np.sqrt(s)
 
 @njit(cache=True, fastmath=True)
 def _CF(A,B):
-    CE_A = _CE(A)
-    CE_B = _CE(B)
+    CE_A = _CE(A) + 1e-8
+    CE_B = _CE(B) + 1e-8
+    if min(CE_A,CE_B) == 0:
+        return max(CE_A,CE_B)
     return max(CE_A,CE_B)/min(CE_A,CE_B)
 
 

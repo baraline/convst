@@ -436,6 +436,64 @@ for m in ['RDST']:
                     title='Results for other datasets', 
                     labels=True, width=5.5)
     plt.show()
+# In[]:
+# Rank dummies
+import seaborn as sns
+sns.set()
+sns.set_context('talk')
+df = pd.read_csv("CV_10_results_dummies_Ridge.csv", index_col=0)
+df = df[df['dataset']!='0']
+df = df[df['dataset']!='ACSF1']
+dataset_names = df['dataset'].unique()
+df_perf = pd.DataFrame()    
+a=0
+for i, grp in df.groupby('dataset'):
+    df_perf.loc[a,'dataset'] = i
+    for j, d in grp.groupby('model'):
+        df_perf.loc[a,j] = d['acc_mean'].values[0]
+    a+=1
+    
+df_res = pd.DataFrame()
+
+
+models = {
+    'R_ST_NL': 'no lambda no dilation',
+    'R_DST': 'RDST',
+    'R_DST_NL': 'no lambda',
+    'R_ST': 'no dilation',
+    'R_DST_Sampling': 'RDST + Similarity',
+    'R_DST_PH': 'RDST + Phase',
+    'R_DST_CID': 'RDST + CID'
+}
+
+df_perf = df_perf.rename(columns=models)
+
+for col in df_perf.columns.difference(['dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
+    d['accuracy'] = df_perf[col]
+    d['dataset_name'] = df_perf['dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+
+for model in list(models.values()):
+    cols = ['no lambda no dilation','RDST']
+    if model not in cols:
+        cols = cols + [model]
+        
+        draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
+                        title='Results for '+model, 
+                        labels=True, width=7)
+        plt.show()
+        plt.figure(figsize=(15,6))
+        for col in cols:
+            plt.plot(df_perf[col].values, label=col)
+        plt.xticks(ticks=np.arange(df_perf.shape[0]), labels=df_perf['dataset'].values,rotation=-90)
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.show()
+        
+
 
 # In[]:
 #Ranks params

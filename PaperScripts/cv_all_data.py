@@ -30,7 +30,6 @@ csv_name = 'CV_{}_results_Random_final_(5_10)_2.csv'.format(
 
 dataset_names = return_all_dataset_names()
 
-#Initialize result dataframe. This script will also launch RDST without any normalization for comparison, hence the *2
 df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*2), columns=['dataset','model','acc_mean','acc_std','f1_mean','f1_std','time_mean','time_std'])
 df.to_csv(csv_name)
 
@@ -45,7 +44,7 @@ for name in dataset_names:
     )
     
     pipeline_RDST = make_pipeline(R_DST(n_shapelets=10000), 
-                                     StandardScaler(with_mean=False),
+                                     StandardScaler(with_mean=True),
                                      RidgeClassifierCV(np.logspace(-6,6,20)))
 
     acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(

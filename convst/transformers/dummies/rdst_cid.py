@@ -29,9 +29,9 @@ def _CE(X):
 
 @njit(cache=True, fastmath=True)
 def _CF(A,B):
-    CE_A = _CE(A)
-    CE_B = _CE(B)
-    return max(CE_A,CE_B)/min(CE_A,CE_B)
+    CE_A = _CE(A) + 1e-8
+    CE_B = _CE(B) + 1e-8
+    return max(CE_A,CE_B) /min(CE_A,CE_B)
 
 
 

@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 18 13:17:07 2021
+
+@author: a694772
+"""
 
 import numpy as np
 import seaborn as sns
@@ -10,18 +15,44 @@ from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
 
 from numba import set_num_threads
-from numba import njit, prange, types
+from numba import njit, prange
 from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
-from numba.extending import overload, register_jitable
-from numba.core.errors import TypingError
 
 from matplotlib import pyplot as plt
 
+
+
+@njit(cache=True, fastmath=True)
+def _CE(X):
+    s = 0
+    for i in prange(X.shape[0]-1):
+        s += (X[i] - X[i+1])**2
+    return np.sqrt(s)
+
+@njit(cache=True, fastmath=True)
+def _CF(A,B):
+    CE_A = _CE(A) + 1e-8
+    CE_B = _CE(B) + 1e-8
+    if min(CE_A,CE_B) == 0:
+        return max(CE_A,CE_B)
+    return max(CE_A,CE_B)/min(CE_A,CE_B)
+
+
+@njit(fastmath=True, cache=True, error_model='numpy')
+def _generate_strides_1D_phase(x, l, d):
+    n_ts = x.shape[0]
+    x_new = np.zeros((n_ts,l))
+    for i in prange(n_ts):
+        for j in prange(l):
+            x_new[i,j] = x[(i+(j*d))%n_ts]
+    return x_new
+    
 @njit(fastmath=True, cache=True, error_model='numpy')
 def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
     """
     Compute a shapelet distance vector from an univariate time series 
-    and a dilated shapelet.
+    and a dilated shapelet. Shapelet should be already normalized if normalizing
+    the distance
 
     Parameters
     ----------
@@ -43,16 +74,16 @@ def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
         The resulting distance vector
 
     """
-    c = generate_strides_1D(x, length, dilation)
+    c = _generate_strides_1D_phase(x, length, dilation)
     x_conv = np.empty(c.shape[0])
     for i in range(x_conv.shape[0]):
         s = 0
         mean = c[i].mean()*normalize
         std = (c[i].std()+1e-8)*normalize
         x0 = (c[i] - mean)/(std + 1.0-normalize)
-        for j in range(length):
-            s += abs(x0[j] - values[j])
-        x_conv[i] = s
+        for j in prange(length):
+            s += (x0[j] - values[j])**2
+        x_conv[i] = np.sqrt(s) * _CF(x0, values)
     return x_conv
 
 
@@ -138,15 +169,17 @@ def _get_subsequence(X, i_start, l, d, normalize):
         The resulting subsequence.
 
     """
+    n_ts = X.shape[0]
     v = np.empty(l, dtype=np.float64)
     _idx = i_start
     _sum = 0
     _sum2 = 0
-    for j in range(l):
+    for j in prange(l):
         v[j] = X[_idx]
         _sum += X[_idx]
         _sum2 += X[_idx]**2
-        _idx += d
+        _idx = (_idx+d)%n_ts
+        
     #0 if normalize, seems faster than adding a if statement
     mean = (_sum/l)*normalize
     std = (np.sqrt((_sum2/l) - mean**2)+1e-8)*normalize
@@ -154,176 +187,6 @@ def _get_subsequence(X, i_start, l, d, normalize):
     v = (v - mean)/(std + 1-normalize)
     return v
 
-
-@njit(cache=True)
-def resample(y, p_samples):
-    n_classes = np.bincount(y)
-    n_per_class = np.ones(n_classes.shape[0], dtype=np.int64)
-    for i in range(n_classes.shape[0]):
-        n = (n_classes[i] * p_samples).astype(np.int64)        
-        if n>1:
-            n_per_class[i] = n
-    sub_id = np.zeros(n_per_class.sum(), dtype=np.int64)
-    count = 0
-    for i in range(n_classes.shape[0]):
-        sub_id[count:count+n_per_class[i]] = np.random.choice(
-            np.where(y==i)[0], size=n_per_class[i], replace=False
-        )
-        count+=+n_per_class[i]
-    return sub_id
-    
-@overload(np.all)
-def np_all(x, axis=None):
-
-    # ndarray.all with axis arguments for 2D arrays.
-    @register_jitable
-    def _np_all_axis0(arr):
-        out = np.logical_and(arr[0], arr[1])
-        for v in iter(arr[2:]):
-            for idx, v_2 in enumerate(v):
-                out[idx] = np.logical_and(v_2, out[idx])
-        return out
-
-    @register_jitable
-    def _np_all_flat(x):
-        out = x.all()
-        return out
-
-    @register_jitable
-    def _np_all_axis1(arr):
-        out = np.logical_and(arr[:, 0], arr[:, 1])
-        for idx, v in enumerate(arr[:, 2:]):
-            for v_2 in iter(v):
-                out[idx] = np.logical_and(v_2, out[idx])
-        return out
-
-    if isinstance(axis, types.Optional):
-        axis = axis.type
-
-    if not isinstance(axis, (types.Integer, types.NoneType)):
-        raise TypingError("'axis' must be 0, 1, or None")
-
-    if not isinstance(x, types.Array):
-        raise TypingError("Only accepts NumPy ndarray")
-
-    if not (1 <= x.ndim <= 2):
-        raise TypingError("Only supports 1D or 2D NumPy ndarrays")
-
-    if isinstance(axis, types.NoneType):
-
-        def _np_all_impl(x, axis=None):
-            return _np_all_flat(x)
-
-        return _np_all_impl
-
-    elif x.ndim == 1:
-
-        def _np_all_impl(x, axis=None):
-            return _np_all_flat(x)
-
-        return _np_all_impl
-
-    elif x.ndim == 2:
-
-        def _np_all_impl(x, axis=None):
-            if axis == 0:
-                return _np_all_axis0(x)
-            else:
-                return _np_all_axis1(x)
-
-        return _np_all_impl
-
-    else:
-
-        def _np_all_impl(x, axis=None):
-            return _np_all_flat(x)
-
-        return _np_all_impl
-
-@njit()
-def nb_unique(input_data, axis=0):
-    """2D np.unique(a, return_index=True, return_counts=True)
-    
-    Parameters
-    ----------
-    input_data : 2D numeric array
-    axis : int, optional
-        axis along which to identify unique slices, by default 0
-    Returns
-    -------
-    2D array
-        unique rows (or columns) from the input array
-    1D array of ints
-        indices of unique rows (or columns) in input array
-    1D array of ints
-        number of instances of each unique row
-    """
-
-    # don't want to sort original data
-    if axis == 1:
-        data = input_data.T.copy()
-
-    else:
-        data = input_data.copy()
-
-    # so we can remember the original indexes of each row
-    orig_idx = np.array([i for i in range(data.shape[0])])
-
-    # sort our data AND the original indexes
-    for i in range(data.shape[1] - 1, -1, -1):
-        sorter = data[:, i].argsort(kind="mergesort")
-
-        # mergesort to keep associations
-        data = data[sorter]
-        orig_idx = orig_idx[sorter]
-    # get original indexes
-    idx = [0]
-
-    if data.shape[1] > 1:
-        bool_idx = ~np.all((data[:-1] == data[1:]), axis=1)
-        additional_uniques = np.nonzero(bool_idx)[0] + 1
-
-    else:
-        additional_uniques = np.nonzero(~(data[:-1] == data[1:]))[0] + 1
-
-    idx = np.append(idx, additional_uniques)
-    # get counts for each unique row
-    counts = np.append(idx[1:], data.shape[0])
-    counts = counts - idx
-    return data[idx], orig_idx[idx], counts
-
-@njit(fastmath=True, cache=True)
-def znorm(S):
-    S_new = np.zeros(S.shape)
-    for i in prange(S.shape[0]):
-        S_new[i] = (S[i] - S[i].mean()) / (S[i].std() + 1e-8)
-    return S_new
-
-
-@njit(cache=True)
-def extract_candidates(X, l, d, r):
-    max_candidates = X.shape[0] * (X.shape[-1] * (l-1) * d)
-    candidates = np.zeros((max_candidates, l))
-    i_candidates = np.zeros(max_candidates)
-    ix = 0
-    for i in range(X.shape[0]):
-        X_strides = generate_strides_1D(X[i,0], l, d)
-        for j in range(d):
-            i_d = np.arange(j, X_strides.shape[0], d)[::r+1]
-            candidates[ix:ix+i_d.shape[0]] = znorm(X_strides[i_d])
-            i_candidates[ix:ix+i_d.shape[0]] = i
-            ix += i_d.shape[0]
-    return candidates[:ix], i_candidates[:ix]
-
-@njit(cache=True, fastmath=True)
-def p_dist(X):
-    d = np.zeros((X.shape[0],X.shape[0]))
-    for i in prange(X.shape[0]):
-        for j in prange(i+1,X.shape[0]):
-            v = np.abs(X[i] - X[j]).sum()
-            d[i,j] = v
-            d[j,i] = v
-    return d
 
 @njit(cache=True, parallel=True)
 def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_max):
@@ -364,24 +227,33 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_
     values, lengths, dilations, threshold, normalize = _init_random_shapelet_params(
         n_shapelets, shapelet_sizes, n_timestamps, p_norm
     )
-    unique_len = np.unique(lengths)
-    unique_dil = np.unique(lengths)
-    p_samples = 0.25
-    redundance_factor = 0.75
-    n_symbol = 10
-    for i_l in range(unique_len):
-        l = unique_len[i_l]
-        r = ((1-redundance_factor)*l).astype(np.int64)
-        for i_d in prange(unique_dil):
-            d = unique_dil[i_d]
-            ix_shapelets = np.where((lengths == l) & (dilations == d))[0]
-            d_shape = n_timestamps - (l-1)*d
-            if len(ix_shapelets) > 0:
-                i_samples = resample(y, p_samples)
-                candidates, c_id_sample = extract_candidates(X[i_samples], l, d, r, n_symbol)
-                
-                
-    
+
+    samples_pool = np.arange(X.shape[0]).astype(np.int64)
+    np.random.shuffle(samples_pool)
+    # For Values, draw from random uniform (0,n_samples*(n_ts-(l-1)*d))
+    # for each l,d combinations. Then take by index the values instead
+    # of generating strides.
+    for i in prange(n_shapelets):
+        id_sample = samples_pool[i % X.shape[0]]
+        index = np.int64(np.random.choice(
+            n_timestamps
+        ))
+        
+        v = _get_subsequence(
+            X[id_sample, 0], index, lengths[i], dilations[i], normalize[i]
+        )
+
+        values[i, :lengths[i]] = v
+
+        id_test = np.random.choice(np.where(y == y[id_sample])[0])
+
+        x_dist = compute_shapelet_dist_vector(
+            X[id_test, 0], values[i], lengths[i], dilations[i], normalize[i]
+        )
+        threshold[i] = np.random.uniform(
+            np.percentile(x_dist, p_min), np.percentile(x_dist, p_max)
+        )
+        
     return values, lengths, dilations, threshold, normalize.astype(np.int64)
 
 
@@ -417,7 +289,7 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold, normalize):
     """
     n_samples, n_ft, n_timestamps = X.shape
     n_shapelets = len(lengths)
-    n_features = 3
+    n_features = 5
 
     unique_lengths = np.unique(lengths)
     unique_dilations = np.unique(dilations)
@@ -429,14 +301,14 @@ def apply_all_shapelets(X, values, lengths, dilations, threshold, normalize):
             d = unique_dilations[index_d]
 
             ix_shapelets = np.where((lengths == l) & (dilations == d))[0]
-            d_shape = n_timestamps - (l-1)*d
+            d_shape = n_timestamps
 
             if len(ix_shapelets) > 0:
                 for i in prange(n_samples):
-                    strides = generate_strides_1D(X[i, 0], l, d)
+                    strides = _generate_strides_1D_phase(X[i, 0], l, d)
                     X_sample = np.empty((2, d_shape, l), dtype=np.float64)
                     X_sample[0] = strides
-                    X_sample[1] = strides
+                    X_sample[1] = np.copy(strides)
                     for j in range(d_shape):
                         X_sample[1, j] = (X_sample[1, j] - np.mean(X_sample[1, j]))/(
                             np.std(X_sample[1, j])+1e-8
@@ -486,25 +358,43 @@ def apply_one_shapelet_one_sample(x, values, threshold):
     _n_match = 0
     _min = 1e+100
     _argmin = 0
+    _longest_region = 0
+    _n_region = 0
+    
+    
+    region_counter = 0
+        
 
     #For each step of the moving window in the shapelet distance
     for i in range(n_candidates):
         _dist = 0
         #For each value of the shapelet
         for j in prange(length):
-            _dist += abs(x[i, j] - values[j])
-
+            _dist += (x[i, j] - values[j])**2
+        _dist = np.sqrt(_dist) * _CF(x[i], values)
         if _dist < _min:
             _min = _dist
             _argmin = i
 
         if _dist < threshold:
             _n_match += 1
+            region_counter += 1
+        else:
+            if region_counter > 0:
+                _n_region += 1
+                if region_counter > _longest_region:
+                    _longest_region = region_counter
+            region_counter = 0
+        
+    if region_counter > 0:
+        _n_region += 1
+        if region_counter > _longest_region:
+            _longest_region = region_counter
 
-    return _min, np.float64(_argmin), np.float64(_n_match)
+    return _min, np.float64(_argmin), np.float64(_n_match), np.float64(_longest_region), np.float64(_n_region)
 
 
-class R_DST(BaseEstimator, TransformerMixin):
+class R_DST_V2(BaseEstimator, TransformerMixin):
     """
     Implementation of univariate Random Dilated Shapelet Transform (RDST).
     For details and explanation on the algorithm, users are referred to [1]_:
@@ -552,7 +442,7 @@ class R_DST(BaseEstimator, TransformerMixin):
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
     """
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=-1,
+    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1,
                  p_norm=0.8, percentiles=[5, 10], random_state=None):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)
@@ -653,122 +543,3 @@ class R_DST(BaseEstimator, TransformerMixin):
         seed = rng.randint(np.iinfo(np.uint32).max, dtype='u8')
 
         return shapelet_sizes, seed
-
-    def _get_shp_params(self, id_shp):
-        #values, length, dilation, padding, range
-        return (self.values_[id_shp], self.length_[id_shp],
-                self.dilation_[id_shp], self.threshold_[id_shp],
-                self.normalize_[id_shp])
-
-    def visualise_one_shapelet(self, id_shp, X, y, target_class, figsize=(15, 10)):
-        """
-        A function used to generate a visualization of a shapelet. The fit 
-        function must be called before to generate shapelets, then, by giving
-        the identifier (between [0, n_shapelets-1]), a visualization of the
-        shapelet is produced, giving boxplot of the features it generate on 
-        passed data, and a visualization on two randomly choosed samples
-        between the target class and the other classes.
-        
-        Parameters
-        ----------
-        id_shp : int
-            Identifier of the shapelet, must be between 0 and n_shapelets-1
-        X : array, shape=(n_samples, n_features, n_timestamps)
-            Input time series.
-        y : array, shape=(n_samples)
-            Class of the input time series.
-        target_class : int
-            Class to visualize. Will influence boxplot generation and sample
-            choice.
-        figsize : tuple, optional
-            A tuple of int indicating the size of the generated figure.
-            The default is (15, 10).
-
-        Returns
-        -------
-        None.
-
-        """
-        # For visualisation, if argmin is important, draw a bar on x axis
-        # If min, highligh on series (red)
-        # If #match, hihgligh all parts which match on series (blue)
-        sns.set()
-        sns.set_context('talk')
-        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figsize)
-        values, length, dilation, r, norm = self._get_shp_params(id_shp)
-        values = values[:length]
-        X_new = np.zeros((X.shape[0], 3))
-        yc = (y == target_class).astype(int)
-        for i in range(X.shape[0]):
-            x_dist = compute_shapelet_dist_vector(
-                X[i, 0], values, length, dilation, norm)
-            X_new[i, 0] = np.min(x_dist)
-            X_new[i, 1] = np.argmin(x_dist)
-            X_new[i, 2] = np.mean(x_dist < r)
-
-        sns.boxplot(x=yc, y=X_new[:, 0], ax=ax[0, 0])
-        sns.boxplot(x=yc, y=X_new[:, 1], ax=ax[0, 1])
-        sns.boxplot(x=yc, y=X_new[:, 2], ax=ax[0, 2])
-
-        i0 = np.random.choice(np.where(yc == 0)[0])
-        i1 = np.random.choice(np.where(yc == 1)[0])
-        ax[1, 1].scatter(np.arange(length)*dilation, values)
-        ax[1, 1].plot(np.arange(length)*dilation, values, linestyle='--')
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i1, 0], values, length, dilation, norm),
-                      c='C1', alpha=0.75, label='distance vector of sample of class {}'.format(target_class))
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i0, 0], values, length, dilation, norm),
-                      c='C0', alpha=0.75, label='distance vector of sample of class {}'.format(y[i0]))
-        ax[0, 0].set_xticks([0, 1])
-        ax[0, 0].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 1].set_xticks([0, 1])
-        ax[0, 1].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 2].set_xticks([0, 1])
-        ax[0, 2].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[1, 0].set_xlabel('timestamps')
-        ax[1, 1].set_xlabel('timestamps')
-        ax[1, 2].set_xlabel('timestamps')
-        ix_start = X_new[i0, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i0, 0, ix].std() + X[i0, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C0', alpha=0.75)
-
-        ix_start = X_new[i1, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i1, 0, ix].std() + X[i1, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C1', alpha=0.75)
-
-        ax[1, 2].axhline(r, c='C2', linestyle='--')
-
-        ax[1, 0].plot(X[i1, 0], c='C1', alpha=0.75, 
-                      label='sample of class {}'.format(target_class))
-        ax[1, 0].plot(X[i0, 0], c='C0', alpha=0.75,
-                      label='sample of class {}'.format(y[i0]))
-        
-        ax[0, 0].set_title("Boxplot of min")
-        ax[1, 0].set_title("Location of the minimum")
-        ax[0, 1].set_title("Boxplot of argmin")
-        ax[1, 1].set_title("Shapelet n°{} (d={})".format(id_shp, dilation))
-        ax[0, 2].set_title("Boxplot of shapelet occurences")
-        ax[1, 2].set_title("Distance vector and lambda threshold")
-        #ax[2,1].set_title("0 : {}; 1 : {}".format(str(X_new[i0,2])[0:5],str(X_new[i1,2])[0:5]))
-        ax[1, 0].legend()
-        ax[1, 1].legend()
-        #fig.suptitle("Shapelet l={}, d={}, n={}".format(length,dilation,norm))
-        plt.show()

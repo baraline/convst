@@ -146,25 +146,92 @@ for dataset_name in data_names:
             print(e)
 # In[]:
 
-%matplotlib inline
 import pandas as pd
 import seaborn as sns
 sns.set()
 sns.set_context('talk')
 from matplotlib import pyplot as plt
 df = pd.read_csv('early_abandon_benchmark.csv',index_col=0)
-df2 = pd.read_csv('early_abandon_benchmark_python.csv',index_col=0)
-df['n_data_points'] = df['n_samples'] * df['n_timestamps']
-df2['n_data_points'] = df2['n_samples'] * df2['n_timestamps']
-df = df.sort_values(by='n_data_points')
-df2 = df2.sort_values(by='n_data_points')
-df = df.dropna(axis=0)
-df2 = df2.dropna(axis=0)
+df2 = pd.read_csv('early_abandon_benchmark_py.csv',index_col=0)
+df_sum = pd.DataFrame()
+trad = {
+    'ea_time_':'early abandon',
+    'ear_time_':'early abandon + random order',
+    'time_':'no speed-up',   
+}
 for p in [0.01,0.025,0.05,0.1]:
-    dp = df[['mean_ea_time_'+str(p),'mean_ear_time_'+str(p),'mean_time_'+str(p)]]
-    dp2 = df2[['mean_ea_time_'+str(p),'mean_ear_time_'+str(p),'mean_time_'+str(p)]]
-    fig, ax = plt.subplots(ncols=2,figsize=(15,10), sharey=True)
-    dp.boxplot(ax=ax[0])
-    dp2.boxplot(ax=ax[1])
-    plt.show()
-  
+    for r in ['ea_time_','ear_time_','time_']:
+        _s_mean = 0
+        _s_min = 0
+        _s_max = 0
+        for dataset in df.index.values:
+            _s_base = df.loc[dataset,'mean_'+r+str(p)]
+            _s_std = df.loc[dataset,'std_'+r+str(p)]
+            _s_mean += _s_base
+            _s_min += _s_base - _s_std
+            _s_max += _s_base + _s_std
+        
+        df_sum.loc[p,trad[r]+' Numba'] = _s_mean
+        #df_sum.loc[p,trad[r]+' Numba (-std)'] = _s_min
+        #df_sum.loc[p,trad[r]+' Numba (+std)'] = _s_max
+        
+        for dataset in df.index.values:
+            _s_base = df2.loc[dataset,'mean_'+r+str(p)]
+            _s_std = df2.loc[dataset,'std_'+r+str(p)]
+            _s_mean += _s_base
+            _s_min += _s_base - _s_std
+            _s_max += _s_base + _s_std
+        
+        df_sum.loc[p,trad[r]+' Python'] = _s_mean
+        #df_sum.loc[p,trad[r]+' Python (-std)'] = _s_min
+        #df_sum.loc[p,trad[r]+' Python (+std)'] = _s_max
+
+fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 12), sharey=True)
+r_names = ['early abandon Numba','early abandon + random order Numba','no speed-up Numba', 'early abandon Python','early abandon + random order Python','no speed-up Python']
+ax[0,0].set_xscale('log')
+ax[0,0].set_xticks(ticks=[0.06, 0.6, 6, 60])
+ax[0,0].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+ax[0,0].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+
+ax[0,1].set_xscale('log')
+ax[0,1].set_xticks(ticks=[0.06, 0.6, 6, 60])
+ax[0,1].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+ax[0,1].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+
+ax[1,0].set_xscale('log')
+ax[1,0].set_xticks(ticks=[0.06, 0.6, 6, 60])
+ax[1,0].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+ax[1,0].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+
+ax[1,1].set_xscale('log')
+ax[1,1].set_xticks(ticks=[0.06, 0.6, 6, 60])
+ax[1,1].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+ax[1,1].set_xticklabels(labels=['60ms','600ms', '6s', '1min'])
+
+ax[1,0].set_yticks(range(len(r_names)))
+ax[1,0].set_yticklabels(labels=r_names)
+ax[0,0].set_yticks(range(len(r_names)))
+ax[0,0].set_yticklabels(labels=r_names)
+
+ax[0,0].set_title('Shapelet length = 0.01')
+ax[0,1].set_title('Shapelet length = 0.025')
+ax[1,0].set_title('Shapelet length = 0.05')
+ax[1,1].set_title('Shapelet length = 0.1')
+
+ranks = df_sum.rank(axis=1)
+
+i = 0
+for r in r_names:
+    ax[0,0].scatter(df_sum.loc[0.01,r], i, c='C0')
+    ax[0,0].text(df_sum.loc[0.01,r], i, int(ranks.loc[0.01,r]), size=20)
+    
+    ax[0,1].scatter(df_sum.loc[0.025,r], i, c='C0')
+    ax[0,1].text(df_sum.loc[0.025,r], i, int(ranks.loc[0.025,r]), size=20)
+    
+    ax[1,0].scatter(df_sum.loc[0.05,r], i, c='C0')
+    ax[1,0].text(df_sum.loc[0.05,r], i, int(ranks.loc[0.05,r]), size=20)
+    
+    ax[1,1].scatter(df_sum.loc[0.1,r], i, c='C0')
+    ax[1,1].text(df_sum.loc[0.1,r], i, int(ranks.loc[0.1,r]), size=20)
+    i+= 1
+        

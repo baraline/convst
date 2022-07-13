@@ -43,7 +43,7 @@ dataset_names = np.random.choice(dataset_names, size=40, replace=False)
 #Small run for numba compilations if needed
 pipe = make_pipeline(
     R_DST(n_shapelets=1),
-    StandardScaler(with_mean=False),
+    StandardScaler(with_mean=True),
     RidgeClassifierCV(alphas=np.logspace(-6,6,20))
 )
 X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
@@ -71,7 +71,7 @@ for name in dataset_names:
             
             pipe = make_pipeline(
                 R_DST(**p_dict),
-                StandardScaler(with_mean=False),
+                StandardScaler(with_mean=True),
                 RidgeClassifierCV(alphas=np.logspace(-6,6,20))
             )
             acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
