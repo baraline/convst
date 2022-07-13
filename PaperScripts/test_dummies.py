@@ -26,16 +26,16 @@ csv_name = 'CV_{}_results_dummies_Ridge.csv'.format(
 dataset_names = return_all_dataset_names()
 
 #Initialize result dataframe. This script will also launch RDST without any normalization for comparison, hence the *2
-df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*10), columns=['dataset','model','acc_mean','acc_std','f1_mean','f1_std','time_mean','time_std'])
-df.to_csv(csv_name)
-#df = pd.read_csv(csv_name, index_col=0)
+#df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*10), columns=['dataset','model','acc_mean','acc_std','f1_mean','f1_std','time_mean','time_std'])
+#df.to_csv(csv_name)
+df = pd.read_csv(csv_name, index_col=0)
 print(df)
 dict_models = {
     "R_DST": R_DST,
     "R_DST_NL":R_DST_NL,
     "R_ST_NL":R_ST_NL,
     "R_ST":R_ST,
-    "R_DST_22":R_DST_22,
+    #"R_DST_22":R_DST_22,
     "R_DST_PH":R_DST_PH,
     "R_DST_CID":R_DST_CID,
     "R_DST_Sampling":R_DST_Sampling,
