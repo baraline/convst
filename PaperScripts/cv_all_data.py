@@ -45,7 +45,7 @@ for name in dataset_names:
     )
     
     pipeline_RDST = make_pipeline(R_DST(n_shapelets=10000), 
-                                     StandardScaler(with_mean=False),
+                                     StandardScaler(with_mean=True),
                                      RidgeClassifierCV(np.logspace(-6,6,20)))
 
     acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
