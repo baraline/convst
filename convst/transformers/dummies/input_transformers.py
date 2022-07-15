@@ -45,19 +45,14 @@ class Z_normalizer(BaseEstimator, TransformerMixin):
         return z_norm_all_samples(X)
     
 class Raw(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.is_univariate=False
-        
     def fit(self, X, y=None):
         return self
     
     def transform(self, X):
-        X = check_array_3D(X, is_univariate=self.is_univariate)
         return X
 
 class Derivate(BaseEstimator, TransformerMixin):
     def __init__(self, order=1, random=False):
-        self.is_univariate=False
         self.order = order
         self.random = random
         
@@ -67,7 +62,6 @@ class Derivate(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X):
-        X = check_array_3D(X, is_univariate=self.is_univariate)
         for i in range(self.order):
             if X.shape[0]>3:
                 X = _diff(X[:,:,1:], X[:,:,:-1])        
@@ -83,13 +77,12 @@ class Periodigram(BaseEstimator, TransformerMixin):
         self.is_univariate=False
         
     def fit(self, X, y=None):
+        if self.random:
+            self._random_init()
         return self
     
     def transform(self, X):
-        X = check_array_3D(X, is_univariate=self.is_univariate)[:,0,:]
-        if self.random:
-            self._random_init()
-        return periodogram(X, detrend=False, window=self.window_type)[1][:, np.newaxis, :]     
+        return periodogram(X[:,0,:], detrend=False, window=self.window_type)[1][:, np.newaxis, :]     
     
     def _random_init(self):
         self.set_params(**{"window_type":np.random.choice(self._get_windows())})
@@ -108,21 +101,19 @@ class Sax(BaseEstimator, TransformerMixin):
         self.random = random
         self.n_bins = n_bins
         self.strategy = strategy
-        self.is_univariate = True
+        
     
     def fit(self, X, y=None):
-        X = check_array_3D(X, is_univariate=self.is_univariate)[:,0,:]
         if self.random:
             self._random_init(X.shape[1])
         self.transformer = SymbolicAggregateApproximation(
             n_bins=self.n_bins, strategy=self.strategy, alphabet='ordinal'
         )
-        self.transformer.fit(X)
+        self.transformer.fit(X[:,0,:])
         return self
     
     def transform(self, X):
-        X = check_array_3D(X, is_univariate=self.is_univariate)[:,0,:]
-        X = self.transformer.transform(X)
+        X = self.transformer.transform(X[:,0,:])
         return X[:, np.newaxis, :]
     
     def _random_init(self, n_timestamps):
@@ -137,18 +128,15 @@ class FourrierCoefs(BaseEstimator, TransformerMixin):
         self.anova = anova
         self.norm_mean = norm_mean
         self.norm_std = norm_std
-        self.is_univariate=True
     
     def fit(self, X, y=None):
-        X = check_array_3D(X, is_univariate=self.is_univariate)[:,0,:]
         self.transformer = DiscreteFourierTransform(
             n_coefs=self.n_coefs, drop_sum=self.drop_sum, anova=self.anova,
             norm_std=self.norm_std, norm_mean=self.norm_mean,
         )
-        self.transformer.fit(X)
+        self.transformer.fit(X[:,0,:], y=y)
         return self
     
     def transform(self, X):
-        X = check_array_3D(X, is_univariate=self.is_univariate)[:,0,:]
-        X = self.transformer.transform(X)
+        X = self.transformer.transform(X[:,0,:])
         return X[:, np.newaxis, :]

@@ -62,7 +62,7 @@ for name in dataset_names:
             pipeline_RDST_rdg = make_pipeline(
                 model_class(n_jobs=90), 
                 StandardScaler(with_mean=True),
-                RidgeClassifierCV(alphas=np.logspace(-6,6,20))
+                RidgeClassifierCV(alphas=np.logspace(-3,3,20))
             )
             acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
                 pipeline_RDST_rdg, X_train, X_test, y_train, y_test, splitter, n_jobs=1)

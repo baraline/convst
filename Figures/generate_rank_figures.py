@@ -442,23 +442,25 @@ import seaborn as sns
 sns.set()
 sns.set_context('talk')
 df = pd.read_csv("CV_10_results_dummies_Ridge.csv", index_col=0)
+df2 = pd.read_csv("CV_10_results_dummies_Ridge2.csv", index_col=0)
 df = df[df['dataset']!='0']
-df = df[df['dataset']!='ACSF1']
 dataset_names = df['dataset'].unique()
+df2 = df2[df2['dataset'].isin(dataset_names)]
 df_perf = pd.DataFrame()    
 a=0
 for i, grp in df.groupby('dataset'):
     df_perf.loc[a,'dataset'] = i
     for j, d in grp.groupby('model'):
         df_perf.loc[a,j] = d['acc_mean'].values[0]
+    df_perf.loc[a,'RDST_v2'] = df2.loc[df2['dataset'] == i, 'acc_mean'].values[0]
     a+=1
     
 df_res = pd.DataFrame()
 
-
 models = {
     'R_ST_NL': 'no lambda no dilation',
     'R_DST': 'RDST',
+    'RDST_v2': 'RDST v2',
     'R_DST_NL': 'no lambda',
     'R_ST': 'no dilation',
     'R_DST_Sampling': 'RDST + Similarity',
@@ -479,6 +481,7 @@ for col in df_perf.columns.difference(['dataset']):
 for model in list(models.values()):
     cols = ['no lambda no dilation','RDST']
     if model not in cols:
+        print(model)
         cols = cols + [model]
         
         draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
@@ -492,9 +495,36 @@ for model in list(models.values()):
         plt.ylabel('Accuracy')
         plt.legend()
         plt.show()
-        
+# In[]:        
+
+dfv2 = pd.read_csv("CV_10_results_dummies_Ridge2.csv", index_col=0)
+dfv2 = dfv2[dfv2['dataset']!='0']
+dfv1 = pd.read_csv("results/CV_30_results_Random_final_(5_10).csv", index_col=0)
+dfv1 = dfv1[dfv1['model']=='RDST']
+dfsota = pd.read_csv("results/SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
+dfv1 = dfv1[dfv1['dataset'].isin(dfv2['dataset'])]
+dfsota = dfsota[dfsota['dataset'].isin(dfv2['dataset'])]
+dfv2 = dfv2.set_index('dataset')
+dfv1 = dfv1.set_index('dataset')
+dfsota = dfsota.set_index('dataset')
+
+dfsota['RDST'] = dfv1['acc_mean']
+dfsota['RDST_v2'] = dfv2['acc_mean']
+dfsota = dfsota.reset_index()
 
 
+df_res = pd.DataFrame()
+for col in dfsota.columns.difference(['dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, dfsota.shape[0]))
+    d['accuracy'] = dfsota[col]
+    d['dataset_name'] = dfsota['dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                title='Results SoTA', 
+                labels=True, width=7)
 # In[]:
 #Ranks params
 

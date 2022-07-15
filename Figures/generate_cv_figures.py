@@ -8,7 +8,7 @@ import pandas as pd
 sns.set()
 sns.set_context("talk", font_scale=0.9)
 
-base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
+base_path = "/home/lifo/Documents/git_projects/convst/results/"
 
 baseline_path = base_path + r"CV_30_results_Random_final_(5_10).csv"
 df = pd.read_csv(baseline_path, sep=',', index_col=0).rename(
