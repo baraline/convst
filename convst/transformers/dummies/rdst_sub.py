@@ -493,6 +493,7 @@ class R_DST_Subsampling(BaseEstimator, TransformerMixin):
         if not isinstance(self.shapelet_sizes, (list, tuple, np.ndarray)):
             raise TypeError("'shapelet_sizes' must be a list, a tuple or "
                             "an array (got {}).".format(self.shapelet_sizes))
+        
         shapelet_sizes = check_array_1D(self.shapelet_sizes).astype(np.int64)
         
         if not np.all(1 <= shapelet_sizes):

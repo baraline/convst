@@ -2,16 +2,13 @@
 Rotation Forest, sktime implementation for continuous values only.
 """
 
-__author__ = ["MatthewMiddlehurst"]
-__all__ = ["RotationForest"]
-
 import time
 
 import numpy as np
 import pandas as pd
 from joblib import Parallel
 from sklearn.utils.fixes import delayed
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state, check_X_y
@@ -21,9 +18,6 @@ from sktime.exceptions import NotFittedError
 
 from convst.utils.checks_utils import check_n_jobs
 
-from datetime import datetime
-def _log(msg):
-    print("{} - {}".format(str(datetime.now()),msg))
 
 def _predict_proba_for_estimator(X, clf, pcas, groups, n_classes, _class_dictionary):
     X_t = np.concatenate(
@@ -42,7 +36,7 @@ def _predict_proba_for_estimator(X, clf, pcas, groups, n_classes, _class_diction
 
 
 
-class RotationForest(BaseEstimator):
+class RotationForest(BaseEstimator, ClassifierMixin):
     """Rotation Forest Classifier.
     Implementation of the Rotation Forest classifier described in Rodriguez et al
     (2013). [1]_
@@ -121,9 +115,9 @@ class RotationForest(BaseEstimator):
 
     def __init__(
         self,
-        n_estimators=200,
+        n_estimators=50,
         min_group=3,
-        max_group=3,
+        max_group=3,        
         remove_proportion=0.5,
         base_estimator=None,
         time_limit_in_minutes=0.0,
@@ -165,8 +159,6 @@ class RotationForest(BaseEstimator):
         # We need to add is-fitted state when inheriting from scikit-learn
         self._is_fitted = False
 
-        super(RotationForest, self).__init__()
-
     def fit(self, X, y):
         """Fit a forest of trees on cases (X,y), where y is the target variable.
         Parameters
@@ -179,18 +171,6 @@ class RotationForest(BaseEstimator):
         -------
         self : object
         """
-        _log('Start fit')
-        if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
-            X = np.reshape(X, (X.shape[0], -1))
-        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
-            X = X.to_numpy()
-        elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
-            raise ValueError(
-                "RotationForest is not a time series classifier. "
-                "A 2d numpy array is required."
-            )
-        X, y = check_X_y(X, y)
-
         self._n_jobs = check_n_jobs(self.n_jobs)
 
         self.n_instances, self.n_atts = X.shape
@@ -206,7 +186,6 @@ class RotationForest(BaseEstimator):
         if self.base_estimator is None:
             self._base_estimator = DecisionTreeClassifier(criterion="entropy")
         # replace missing values with 0 and remove useless attributes
-        X = np.nan_to_num(X, False, 0, 0, 0)
         self._useful_atts = ~np.all(X[1:] == X[:-1], axis=0)
         X = X[:, self._useful_atts]
 
@@ -248,7 +227,6 @@ class RotationForest(BaseEstimator):
                 self._n_estimators += self._n_jobs
                 train_time = time.time() - start_time
         else:
-            _log('Start parallel')
             fit = Parallel(n_jobs=self._n_jobs, prefer='processes')(
                 delayed(self._fit_estimator)(
                     X,
@@ -262,7 +240,6 @@ class RotationForest(BaseEstimator):
             self.estimators_, self._pcas, self._groups, self.transformed_data = zip(
                 *fit
             )
-        _log('End fit')
         self._is_fitted = True
         return self
 
@@ -275,7 +252,6 @@ class RotationForest(BaseEstimator):
         -------
         output : array of shape = [n_test_instances]
         """
-        _log('Start predict')
         rng = check_random_state(self.random_state)
         return np.array(
             [
@@ -299,23 +275,11 @@ class RotationForest(BaseEstimator):
                 f"This instance of {self.__class__.__name__} has not "
                 f"been fitted yet; please call `fit` first."
             )
-        if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
-            X = np.reshape(X, (X.shape[0], -1))
-        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
-            X = X.to_numpy()
-        elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
-            raise ValueError(
-                "RotationForest is not a time series classifier. "
-                "A 2d numpy array is required."
-            )
 
-        # replace missing values with 0 and remove useless attributes
-        X = np.nan_to_num(X, False, 0, 0, 0)
         X = X[:, self._useful_atts]
 
         # normalise the data.
         X = (X - self._min) / self._ptp
-        _log('Start predict parallel')
         y_probas = Parallel(n_jobs=self._n_jobs, prefer='processes')(
             delayed(_predict_proba_for_estimator)(
                 X,
@@ -327,7 +291,6 @@ class RotationForest(BaseEstimator):
             )
             for i in range(self._n_estimators)
         )
-        _log('end predict parallel')
         output = np.sum(y_probas, axis=0) / (
             np.ones(self.n_classes) * self._n_estimators
         )
@@ -339,16 +302,7 @@ class RotationForest(BaseEstimator):
                 f"This instance of {self.__class__.__name__} has not "
                 f"been fitted yet; please call `fit` first."
             )
-        if isinstance(X, np.ndarray) and len(X.shape) == 3 and X.shape[1] == 1:
-            X = np.reshape(X, (X.shape[0], -1))
-        elif isinstance(X, pd.DataFrame) and len(X.shape) == 2:
-            X = X.to_numpy()
-        elif not isinstance(X, np.ndarray) or len(X.shape) > 2:
-            raise ValueError(
-                "RotationForest is not a time series classifier. "
-                "A 2d numpy array is required."
-            )
-
+        
         n_instances, n_atts = X.shape
 
         if n_instances != self.n_instances or n_atts != self.n_atts:
@@ -507,3 +461,16 @@ class RotationForest(BaseEstimator):
                 current_attribute += 1
 
         return groups
+ 
+    
+from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.transformers import R_DST
+
+X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
+    'Beef')
+a = R_DST(n_shapelets=1000).fit(X_train, y_train)
+at = a.transform(X_train)
+att = a.transform(X_test)
+
+r = RotationForest(n_estimators=3).fit(at, y_train)
+print(r.score(att, y_test))

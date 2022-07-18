@@ -437,35 +437,48 @@ for m in ['RDST']:
                     labels=True, width=5.5)
     plt.show()
 # In[]:
+filelist = ['CV_10_results_dummies_Ridge.csv',
+            'CV_10_results_dummies_Ridge_subs_0.5.csv',
+            'CV_10_results_dummies_Ridge2.csv',
+            'CV_10_results_dummies_Ridge_ensemble.csv',
+            'CV_10_results_dummies_Ridge_subs1.csv']
+df = pd.concat([pd.read_csv(file, index_col=0) for file in filelist],axis=0)    
+# In[]:
 # Rank dummies
 import seaborn as sns
 sns.set()
 sns.set_context('talk')
-df = pd.read_csv("CV_10_results_dummies_Ridge.csv", index_col=0)
-df2 = pd.read_csv("CV_10_results_dummies_Ridge2.csv", index_col=0)
-df = df[df['dataset']!='0']
-dataset_names = df['dataset'].unique()
-df2 = df2[df2['dataset'].isin(dataset_names)]
+df = df[df['dataset']!='0'].reset_index(drop=True)
+
+dnames = df['dataset'].value_counts()
+dataset_names = dnames[dnames == dnames.max()].index.values
+
+#dataset_names = df[df['model']=='R_DST_Ensemble']['dataset'].unique()
+df = df[df['dataset'].isin(dataset_names)]
+
 df_perf = pd.DataFrame()    
 a=0
 for i, grp in df.groupby('dataset'):
     df_perf.loc[a,'dataset'] = i
     for j, d in grp.groupby('model'):
         df_perf.loc[a,j] = d['acc_mean'].values[0]
-    df_perf.loc[a,'RDST_v2'] = df2.loc[df2['dataset'] == i, 'acc_mean'].values[0]
     a+=1
     
 df_res = pd.DataFrame()
 
 models = {
-    'R_ST_NL': 'no lambda no dilation',
-    'R_DST': 'RDST',
-    'RDST_v2': 'RDST v2',
-    'R_DST_NL': 'no lambda',
-    'R_ST': 'no dilation',
-    'R_DST_Sampling': 'RDST + Similarity',
-    'R_DST_PH': 'RDST + Phase',
-    'R_DST_CID': 'RDST + CID'
+    'R_ST_NL':'no lambda no dilation',
+    'R_DST':'RDST',
+    'R_DST_V2':'RDST v2',
+    'R_DST_NL':'with dilation',
+    'R_ST':'with lambda',
+    'R_DST_PH':'RDST + Phase',
+    'R_DST_CID':'RDST + CID',
+    'R_DST_Sampling':'RDST + alpha=0.5',
+    'R_DST_Sampling_1':'RDST + alpha=1.0',
+    'R_DST_Subsampling_0.5':'RDST sub=0.5 alpha=0.5',
+    'R_DST_Subsampling_1':'RDST sub=0.5 alpha=1.0',
+    'R_DST_Ensemble':'Ensemble RDST'
 }
 
 df_perf = df_perf.rename(columns=models)
@@ -488,30 +501,55 @@ for model in list(models.values()):
                         title='Results for '+model, 
                         labels=True, width=7)
         plt.show()
-        plt.figure(figsize=(15,6))
+        """
+        plt.figure(figsize=(20,6))
         for col in cols:
             plt.plot(df_perf[col].values, label=col)
         plt.xticks(ticks=np.arange(df_perf.shape[0]), labels=df_perf['dataset'].values,rotation=-90)
         plt.ylabel('Accuracy')
         plt.legend()
         plt.show()
+        """
+# In[]:        
+df_info = pd.read_csv('results/TSC_dataset_info.csv')
+u_types = df_info['Type'].unique()
+for model in list(models.values()):
+    cols = ['no lambda no dilation','RDST']
+    if model not in cols:
+        perfs = pd.DataFrame(columns=cols, index=u_types)
+        for typ, grp in df_info.groupby('Type'):
+            mask = df_perf['dataset'].isin(grp['Dataset'])
+            if mask.sum()>0:
+                p0 = df_perf.loc[mask,model] - df_perf.loc[mask,cols[0]] 
+                p1 = df_perf.loc[mask,model] - df_perf.loc[mask,cols[1]] 
+                p0m = np.round(p0.mean(),decimals=3)
+                if p0m > 0 :
+                    p0m = '+' + str(p0m)
+                p1m = np.round(p1.mean(),decimals=3)
+                if p1m > 0 :
+                    p1m = '+' + str(p1m)
+                p0s = np.round(p0.std(),decimals=3)
+                if np.isnan(p0s):
+                    p0s = '0.000'
+                p1s = np.round(p1.std(),decimals=3)
+                if np.isnan(p1s):
+                    p1s = '0.000'
+                perfs.loc[typ, cols[0]] = "{} (+/- {})".format(p0m, p0s)
+                perfs.loc[typ, cols[1]] = "{} (+/- {})".format(p1m, p1s)
+
+        perfs = perfs.dropna()
+        print('------ {} -------'.format(model))
+        print(perfs.to_latex())
 # In[]:        
 
-dfv2 = pd.read_csv("CV_10_results_dummies_Ridge2.csv", index_col=0)
-dfv2 = dfv2[dfv2['dataset']!='0']
-dfv1 = pd.read_csv("results/CV_30_results_Random_final_(5_10).csv", index_col=0)
-dfv1 = dfv1[dfv1['model']=='RDST']
 dfsota = pd.read_csv("results/SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
-dfv1 = dfv1[dfv1['dataset'].isin(dfv2['dataset'])]
-dfsota = dfsota[dfsota['dataset'].isin(dfv2['dataset'])]
-dfv2 = dfv2.set_index('dataset')
-dfv1 = dfv1.set_index('dataset')
+dfsota = dfsota[dfsota['dataset'].isin(dataset_names)]
 dfsota = dfsota.set_index('dataset')
-
-dfsota['RDST'] = dfv1['acc_mean']
-dfsota['RDST_v2'] = dfv2['acc_mean']
+df_perf = df_perf.set_index("dataset")
+#dfsota['RDST'] = df_perf['RDST']
+dfsota['E-RDST'] = df_perf['Ensemble RDST']
 dfsota = dfsota.reset_index()
-
+# In[]:
 
 df_res = pd.DataFrame()
 for col in dfsota.columns.difference(['dataset']):
@@ -524,7 +562,7 @@ for col in dfsota.columns.difference(['dataset']):
 
 draw_cd_diagram(df_perf=df_res, alpha=0.05,
                 title='Results SoTA', 
-                labels=True, width=7)
+                labels=True, width=10)
 # In[]:
 #Ranks params
 

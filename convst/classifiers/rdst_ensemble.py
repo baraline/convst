@@ -40,7 +40,7 @@ class _internalRidgeCV(RidgeClassifierCV):
     
     def predict_proba(self, X):
         d = self.decision_function(self.scaler.transform(X))
-        if d.shape[1] == 1:
+        if len(d.shape) == 1:
             d = np.c_[-d, d]
         return softmax(d)
     
@@ -65,9 +65,9 @@ def _parallel_predict(X, model, w):
 class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
-        n_shapelets_per_estimator=1000,
+        n_shapelets_per_estimator=10000,
         shapelet_sizes=[11],
-        n_samples=0.5,
+        n_samples=1.0,
         n_jobs=1,
         n_jobs_rdst=1,
         backend="threads",
