@@ -62,7 +62,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
                  alphas=np.logspace(-4,4,10)):
 
         self.classifier = make_pipeline(
-            StandardScaler(with_mean=False),
+            StandardScaler(with_mean=True),
             RidgeClassifierCV(
                 alphas=alphas, class_weight=class_weight, 
                 fit_intercept=fit_intercept
