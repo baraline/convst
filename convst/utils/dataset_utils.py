@@ -275,6 +275,65 @@ def load_sktime_dataset(name, normalize=True):
     return X, y, le
 
 
+def return_all_multivariate_dataset_names():
+    
+    return np.asarray([
+        "ArticularyWordRecognition",
+        "AtrialFibrillation",
+        "BasicMotions",
+        "Cricket",
+        "DuckDuckGeese",
+        "EigenWorms",
+        "Epilepsy",
+        "EthanolConcentration",
+        "ERing",
+        "FaceDetection",
+        "FingerMovements",
+        "HandMovementDirection",
+        "Handwriting",
+        "Heartbeat",
+        "Libras",
+        "LSST",
+        "MotorImagery",
+        "NATOPS",
+        "PenDigits",
+        "PEMS-SF",
+        "PhonemeSpectra",
+        "RacketSports",
+        "SelfRegulationSCP1",
+        "SelfRegulationSCP2",
+        "StandWalkJump",
+        "UWaveGestureLibrary"
+    ])
+
+def return_all_uneven_multivariate_dataset_names():
+    return np.asarray([
+        "AsphaltObstaclesCoordinates",
+        "AsphaltPavementTypeCoordinates",
+        "AsphaltRegularityCoordinates",
+        "CharacterTrajectories",
+        "InsectWingbeat",
+        "JapaneseVowels",
+        "SpokenArabicDigits"
+    ])
+
+
+def return_all_uneven_dataset_names():
+    return np.asarray([
+        "AllGestureWiimoteX",
+        "AllGestureWiimoteY",
+        "AllGestureWiimoteZ",
+        "GestureMidAirD1",
+        "GestureMidAirD2",
+        "GestureMidAirD3",
+        "GesturePebbleZ1",
+        "GesturePebbleZ2",
+        "PickupGestureWiimoteZ",
+        "PLAID",
+        "ShakeGestureWiimoteZ"
+    ])
+
+
 def return_all_dataset_names():
     """
     Return the names of the 112 univariate datasets of the UCR archive.
@@ -297,13 +356,12 @@ def return_all_dataset_names():
             "CBF",
             "Chinatown",
             "ChlorineConcentration",
-            "CinCECGTorso",
+            
             "Coffee",
             "Computers",
             "CricketX",
             "CricketY",
             "CricketZ",
-            "Crop",
             "DiatomSizeReduction",
             "DistalPhalanxOutlineAgeGroup",
             "DistalPhalanxOutlineCorrect",
@@ -315,7 +373,6 @@ def return_all_dataset_names():
             "ElectricDevices",
             "EOGHorizontalSignal",
             "EOGVerticalSignal",
-            "EthanolLevel",
             "FaceAll",
             "FaceFour",
             "FacesUCR",
@@ -330,7 +387,6 @@ def return_all_dataset_names():
             "GunPointMaleVersusFemale",
             "GunPointOldVersusYoung",
             "Ham",
-            "HandOutlines",
             "Haptics",
             "Herring",
             "HouseTwenty",
@@ -356,17 +412,12 @@ def return_all_dataset_names():
             "OliveOil",
             "OSULeaf",
             "PhalangesOutlinesCorrect",
-            "Phoneme",
-            "PigAirwayPressure",
-            "PigArtPressure",
-            "PigCVP",
             "Plane",
             "PowerCons",
             "ProximalPhalanxOutlineAgeGroup",
             "ProximalPhalanxOutlineCorrect",
             "ProximalPhalanxTW",
             "RefrigerationDevices",
-            "Rock",
             "ScreenType",
             "SemgHandGenderCh2",
             "SemgHandMovementCh2",
@@ -377,7 +428,6 @@ def return_all_dataset_names():
             "SmoothSubspace",
             "SonyAIBORobotSurface1",
             "SonyAIBORobotSurface2",
-            "StarLightCurves",
             "Strawberry",
             "SwedishLeaf",
             "Symbols",
@@ -397,4 +447,15 @@ def return_all_dataset_names():
             "WordSynonyms",
             "Worms",
             "WormsTwoClass",
-            "Yoga"])
+            "Yoga",
+            "Phoneme",
+            "PigAirwayPressure",
+            "PigArtPressure",
+            "PigCVP",
+            "Crop",
+            "StarLightCurves",
+            "Rock",
+            "HandOutlines",
+            "CinCECGTorso",
+            "EthanolLevel"
+            ])
