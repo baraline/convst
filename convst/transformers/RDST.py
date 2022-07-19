@@ -372,7 +372,8 @@ class R_DST(BaseEstimator, TransformerMixin):
         The default is None.
     n_jobs : int, optional
         Number of thread used by numba for the computational heavy part
-        of the algortihm. The default is -1 (i.e all available cores).
+        of the algortihm. The default is 1. Change to -1 to use all 
+        available cores.
         
     Attributes
     ----------
