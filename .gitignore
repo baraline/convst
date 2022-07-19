@@ -171,3 +171,23 @@ Figures/media/videos/scene/1080p60/partial_movie_files/Slide2/partial_movie_file
 *.Result
 
 untitled2.py
+
+CV_10_results_dummies_Ridge_ensemble.csv
+
+CV_10_all.csv
+
+CV_10_results_dummies_Ridge.csv
+
+CV_10_results_dummies_Ridge2.csv
+
+CV_10_results_dummies_Ridge_subs1.csv
+
+CV_10_results_dummies_Ridge_subs_0.5.csv
+
+early_abandon_benchmark.csv
+
+early_abandon_benchmark_py.csv
+
+PaperScripts/test_dummies1.py
+
+PaperScripts/test_dummies2.py

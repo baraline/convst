@@ -11,7 +11,7 @@ from convst.transformers import R_DST
 from convst.transformers.dummies import (R_DST_NL, R_ST_NL ,R_ST, R_DST_22, R_DST_Sampling, 
                                          R_DST_CID, R_DST_PH)
 from sklearn.pipeline import make_pipeline
-
+from convst.classifiers import R_DST_Ensemble
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.preprocessing import StandardScaler
 
@@ -31,20 +31,13 @@ dataset_names = return_all_dataset_names()
 df = pd.read_csv(csv_name, index_col=0)
 print(df)
 dict_models = {
-    "R_DST": R_DST,
-    "R_DST_NL":R_DST_NL,
-    "R_ST_NL":R_ST_NL,
-    "R_ST":R_ST,
-    #"R_DST_22":R_DST_22,
-    "R_DST_PH":R_DST_PH,
-    "R_DST_CID":R_DST_CID,
-    "R_DST_Sampling":R_DST_Sampling,
+    "R_DST_Ensemble": R_DST_Ensemble,
 }
 for model_name, model_class in dict_models.items():
     print("Compiling {}".format(model_name))
     X = np.random.rand(5,1,50)
     y = np.array([0,0,1,1,1])
-    model_class(n_shapelets=2).fit_transform(X,y)
+    model_class(n_shapelets_per_estimator=2).fit_transform(X,y)
 
 i_df=0
 base_UCR_resamples_path = r"/home/prof/guillaume/sktime_resamples/"
