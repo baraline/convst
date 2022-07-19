@@ -43,7 +43,8 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         The default is None.
     n_jobs : int, optional
         Number of thread used by numba for the computational heavy part
-        of the algortihm. The default is 1 (i.e all available cores).
+        of the algortihm. The default is 1. Change to -1 to use all
+        available cores.
     class_weight : object, optional
         Class weight option of Ridge Classifier, either None, "balanced" or a
         custom dictionnary of weight for each class. The default is None.
