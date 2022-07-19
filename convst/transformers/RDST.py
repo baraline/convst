@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 18 13:17:07 2021
-
-@author: a694772
+@author: Antoine Guillaume
 """
 
 import numpy as np
@@ -16,9 +14,11 @@ from convst.utils.shapelets_utils import generate_strides_1D
 
 from numba import set_num_threads
 from numba import njit, prange
-from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
+from convst.utils.checks_utils import check_n_jobs
 
 from matplotlib import pyplot as plt
+
+
 
 @njit(fastmath=True, cache=True, error_model='numpy')
 def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
@@ -54,7 +54,7 @@ def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
         mean = c[i].mean()*normalize
         std = (c[i].std()+1e-8)*normalize
         x0 = (c[i] - mean)/(std + 1.0-normalize)
-        for j in range(length):
+        for j in prange(length):
             s += abs(x0[j] - values[j])
         x_conv[i] = s
     return x_conv
@@ -146,7 +146,7 @@ def _get_subsequence(X, i_start, l, d, normalize):
     _idx = i_start
     _sum = 0
     _sum2 = 0
-    for j in range(l):
+    for j in prange(l):
         v[j] = X[_idx]
         _sum += X[_idx]
         _sum2 += X[_idx]**2
@@ -395,20 +395,15 @@ class R_DST(BaseEstimator, TransformerMixin):
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
     """
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=-1,
+    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1,
                  p_norm=0.8, percentiles=[5, 10], random_state=None):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)
         self.random_state = random_state
         self.p_norm = p_norm
         self.percentiles = percentiles
-        self.n_jobs = n_jobs
-        if self.n_jobs == -1:
-            set_num_threads(NUMBA_DEFAULT_NUM_THREADS)
-        elif isinstance(self.n_jobs, int) and self.n_jobs > 0:
-            set_num_threads(int(self.n_jobs))
-        else:
-            raise ValueError("n_jobs parameter should be a int superior to 0 or equal to -1 but got {}".format(self.n_jobs))
+        self.n_jobs = check_n_jobs(n_jobs)
+        set_num_threads(n_jobs)
             
             
     def fit(self, X, y):
