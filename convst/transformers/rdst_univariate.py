@@ -16,7 +16,6 @@ from convst.utils.shapelets_utils import generate_strides_1D
 
 from numba import set_num_threads
 from numba import njit, prange
-from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
 from convst.utils.checks_utils import check_n_jobs
 
 from matplotlib import pyplot as plt
