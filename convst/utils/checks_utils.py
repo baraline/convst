@@ -2,8 +2,37 @@
 
 import numpy as np
 import pandas as pd
+from os import cpu_count
 from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
 from sktime.datatypes._panel._check import is_nested_dataframe
+
+def is_int(x):
+    """Check if x is of integer type, but not boolean."""
+    # boolean are subclasses of integers in Python, so explicitly exclude them
+    return isinstance(x, (int, np.integer)) and not isinstance(x, bool)
+
+def check_n_jobs(n_jobs):
+    """Check `n_jobs` parameter according to the scikit-learn convention.
+
+    Parameters
+    ----------
+    n_jobs : int, positive or -1
+        The number of jobs for parallelization.
+
+    Returns
+    -------
+    n_jobs : int
+        Checked number of jobs.
+    """
+    if n_jobs is None:
+        return 1
+    elif not is_int(n_jobs):
+        raise ValueError(f"`n_jobs` must be None or an integer, but found: {n_jobs}")
+    elif n_jobs < 0:
+        return cpu_count() - n_jobs + 1
+    else:
+        return n_jobs
+
 def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=2):
     """
     Perform checks on the input to verify if it is a 3D array.
