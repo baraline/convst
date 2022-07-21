@@ -96,7 +96,7 @@ class Periodigram(BaseEstimator, TransformerMixin):
         )
 
 class Sax(BaseEstimator, TransformerMixin):
-    def __init__(self, n_bins=10, strategy="quantile", random=False):
+    def __init__(self, n_bins=10, strategy="uniform", random=False):
         # To fix __repr__ ...
         self.random = random
         self.n_bins = n_bins

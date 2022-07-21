@@ -115,7 +115,7 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
     minnotsignificant = max(2 * 0.2, linesblank)
     height = cline + ((k + 1) / 2) * 0.2 + minnotsignificant
 
-    fig = plt.figure(figsize=(width, height))
+    fig = plt.figure(figsize=(width, height*1.05))
     fig.set_facecolor('white')
     ax = fig.add_axes([0, 0, 1, 1])  # reverse y axis
     ax.set_axis_off()
@@ -443,7 +443,7 @@ filelist = ['CV_10_results_dummies_Ridge.csv',
             'CV_10_results_dummies_Ridge_ensemble.csv',
             'CV_10_results_dummies_Ridge_subs1.csv']
 df = pd.concat([pd.read_csv(file, index_col=0) for file in filelist],axis=0)    
-# In[]:
+
 # Rank dummies
 import seaborn as sns
 sns.set()
@@ -463,11 +463,20 @@ for i, grp in df.groupby('dataset'):
     for j, d in grp.groupby('model'):
         df_perf.loc[a,j] = d['acc_mean'].values[0]
     a+=1
-    
-df_res = pd.DataFrame()
+
+df_info = pd.read_csv('results/TSC_dataset_info.csv').set_index('Dataset')
+df_perf = df_perf.set_index('dataset')
+df_perf.loc[:, 'Type'] = df_info.loc[df_perf.index,'Type']
+df_perf.loc[:, 'Length'] = df_info.loc[df_perf.index,'Length']
+df_perf.loc[:, 'Train size'] = df_info.loc[df_perf.index,'Train size']
+df_perf.loc[:, 'Test size'] = df_info.loc[df_perf.index,'Test size']
+df_perf = df_perf.reset_index()
+
+
+
 
 models = {
-    'R_ST_NL':'no lambda no dilation',
+    'R_ST_NL':'RST baseline',
     'R_DST':'RDST',
     'R_DST_V2':'RDST v2',
     'R_DST_NL':'with dilation',
@@ -482,7 +491,9 @@ models = {
 }
 
 df_perf = df_perf.rename(columns=models)
-
+# In[]:
+    
+df_res = pd.DataFrame()
 for col in df_perf.columns.difference(['dataset']):
     d = pd.DataFrame()
     d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
@@ -492,13 +503,13 @@ for col in df_perf.columns.difference(['dataset']):
 
 
 for model in list(models.values()):
-    cols = ['no lambda no dilation','RDST']
+    cols = ['RST baseline','RDST']
     if model not in cols:
         print(model)
         cols = cols + [model]
         
         draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
-                        title='Results for '+model, 
+                        title='Results '+model, 
                         labels=True, width=7)
         plt.show()
         """
@@ -510,11 +521,17 @@ for model in list(models.values()):
         plt.legend()
         plt.show()
         """
+# In[]:
+cols = ['RDST', 'RDST + Phase', 'RDST sub=0.5 alpha=0.5']
+draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
+                title='Results for invariance properties', 
+                labels=True, width=7)
+plt.show()
 # In[]:        
 df_info = pd.read_csv('results/TSC_dataset_info.csv')
 u_types = df_info['Type'].unique()
 for model in list(models.values()):
-    cols = ['no lambda no dilation','RDST']
+    cols = ['RST baseline','RDST']
     if model not in cols:
         perfs = pd.DataFrame(columns=cols, index=u_types)
         for typ, grp in df_info.groupby('Type'):
@@ -542,13 +559,14 @@ for model in list(models.values()):
         print(perfs.to_latex())
 # In[]:        
 
-dfsota = pd.read_csv("results/SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
+dfsota = pd.read_csv("results/all_resamples_average.csv").rename(columns={'dataset_name': 'dataset'})
 dfsota = dfsota[dfsota['dataset'].isin(dataset_names)]
 dfsota = dfsota.set_index('dataset')
 df_perf = df_perf.set_index("dataset")
-#dfsota['RDST'] = df_perf['RDST']
-dfsota['E-RDST'] = df_perf['Ensemble RDST']
+dfsota['RST baseline'] =  df_perf.loc[dfsota.index,'RST baseline']
+#dfsota['Ensemble RDST'] = df_perf.loc[dfsota.index,'Ensemble RDST']
 dfsota = dfsota.reset_index()
+df_perf = df_perf.reset_index()
 # In[]:
 
 df_res = pd.DataFrame()
@@ -561,8 +579,8 @@ for col in dfsota.columns.difference(['dataset']):
 
 
 draw_cd_diagram(df_perf=df_res, alpha=0.05,
-                title='Results SoTA', 
-                labels=True, width=10)
+                title='', 
+                labels=True, width=11)
 # In[]:
 #Ranks params
 

@@ -18,46 +18,6 @@ from numba import set_num_threads
 from numba import njit, prange
 from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
 
-from matplotlib import pyplot as plt
-
-@njit(fastmath=True, cache=True, error_model='numpy')
-def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
-    """
-    Compute a shapelet distance vector from an univariate time series 
-    and a dilated shapelet. Shapelet should be already normalized if normalizing
-    the distance
-
-    Parameters
-    ----------
-    x : array, shape=(n_timestamps)
-        An input time series
-    values : array, shape=(max_shapelet_length)
-        The value array of the shapelet
-    length : int
-        Length of the shapelet
-    dilation : int
-        Dilation of the shapelet
-    normalize : float
-        Boolean converted as float (to avoid if statement) indicating
-        wheter or not the distance will be z-normalized
-
-    Returns
-    -------
-    x_conv : array, shape=(n_timestamps - (length-1) * dilation)
-        The resulting distance vector
-
-    """
-    c = generate_strides_1D(x, length, dilation)
-    x_conv = np.empty(c.shape[0])
-    for i in range(x_conv.shape[0]):
-        s = 0
-        mean = c[i].mean()*normalize
-        std = (c[i].std()+1e-8)*normalize
-        x0 = (c[i] - mean)/(std + 1.0-normalize)
-        for j in prange(length):
-            s += abs(x0[j] - values[j])
-        x_conv[i] = s
-    return x_conv
 
 
 @njit(cache=True, parallel=True)
@@ -106,12 +66,12 @@ def _init_random_shapelet_params(n_shapelets, shapelet_sizes, n_timestamps, p_no
 
     # Is shapelet using z-normalization ?
     normalize = np.random.random(size=n_shapelets)
-    normalize = (normalize < p_norm).astype(np.float64)
-
+    normalize = (normalize < p_norm)
+    
     return values, lengths, dilations, normalize
 
 
-@njit(cache=True, fastmath=True, error_model='numpy')
+@njit(cache=True, fastmath=True)
 def _get_subsequence(X, i_start, l, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
@@ -139,18 +99,13 @@ def _get_subsequence(X, i_start, l, d, normalize):
     """
     v = np.empty(l, dtype=np.float64)
     _idx = i_start
-    _sum = 0
-    _sum2 = 0
+    
     for j in prange(l):
         v[j] = X[_idx]
-        _sum += X[_idx]
-        _sum2 += X[_idx]**2
         _idx += d
     #0 if normalize, seems faster than adding a if statement
-    mean = (_sum/l)*normalize
-    std = (np.sqrt((_sum2/l) - mean**2)+1e-8)*normalize
-    # divided by 1 if non normalized
-    v = (v - mean)/(std + 1-normalize)
+    if normalize:
+        v = (v - v.mean())/(v.std()+1e-8)
     return v
 
 
@@ -458,122 +413,3 @@ class R_DST_NL(BaseEstimator, TransformerMixin):
         seed = rng.randint(np.iinfo(np.uint32).max, dtype='u8')
 
         return shapelet_sizes, seed
-    
-    def _get_shp_params(self, id_shp):
-        #values, length, dilation, padding, range
-        return (self.values_[id_shp], self.length_[id_shp],
-                self.dilation_[id_shp], self.threshold_[id_shp],
-                self.normalize_[id_shp])
-
-    def visualise_one_shapelet(self, id_shp, X, y, target_class, figsize=(15, 10)):
-        """
-        A function used to generate a visualization of a shapelet. The fit 
-        function must be called before to generate shapelets, then, by giving
-        the identifier (between [0, n_shapelets-1]), a visualization of the
-        shapelet is produced, giving boxplot of the features it generate on 
-        passed data, and a visualization on two randomly choosed samples
-        between the target class and the other classes.
-        
-        Parameters
-        ----------
-        id_shp : int
-            Identifier of the shapelet, must be between 0 and n_shapelets-1
-        X : array, shape=(n_samples, n_features, n_timestamps)
-            Input time series.
-        y : array, shape=(n_samples)
-            Class of the input time series.
-        target_class : int
-            Class to visualize. Will influence boxplot generation and sample
-            choice.
-        figsize : tuple, optional
-            A tuple of int indicating the size of the generated figure.
-            The default is (15, 10).
-
-        Returns
-        -------
-        None.
-
-        """
-        # For visualisation, if argmin is important, draw a bar on x axis
-        # If min, highligh on series (red)
-        # If #match, hihgligh all parts which match on series (blue)
-        sns.set()
-        sns.set_context('talk')
-        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figsize)
-        values, length, dilation, r, norm = self._get_shp_params(id_shp)
-        values = values[:length]
-        X_new = np.zeros((X.shape[0], 3))
-        yc = (y == target_class).astype(int)
-        for i in range(X.shape[0]):
-            x_dist = compute_shapelet_dist_vector(
-                X[i, 0], values, length, dilation, norm)
-            X_new[i, 0] = np.min(x_dist)
-            X_new[i, 1] = np.argmin(x_dist)
-            X_new[i, 2] = np.mean(x_dist < r)
-
-        sns.boxplot(x=yc, y=X_new[:, 0], ax=ax[0, 0])
-        sns.boxplot(x=yc, y=X_new[:, 1], ax=ax[0, 1])
-        sns.boxplot(x=yc, y=X_new[:, 2], ax=ax[0, 2])
-
-        i0 = np.random.choice(np.where(yc == 0)[0])
-        i1 = np.random.choice(np.where(yc == 1)[0])
-        ax[1, 1].scatter(np.arange(length)*dilation, values)
-        ax[1, 1].plot(np.arange(length)*dilation, values, linestyle='--')
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i1, 0], values, length, dilation, norm),
-                      c='C1', alpha=0.75, label='distance vector of sample of class {}'.format(target_class))
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i0, 0], values, length, dilation, norm),
-                      c='C0', alpha=0.75, label='distance vector of sample of class {}'.format(y[i0]))
-        ax[0, 0].set_xticks([0, 1])
-        ax[0, 0].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 1].set_xticks([0, 1])
-        ax[0, 1].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 2].set_xticks([0, 1])
-        ax[0, 2].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[1, 0].set_xlabel('timestamps')
-        ax[1, 1].set_xlabel('timestamps')
-        ax[1, 2].set_xlabel('timestamps')
-        ix_start = X_new[i0, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i0, 0, ix].std() + X[i0, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C0', alpha=0.75)
-
-        ix_start = X_new[i1, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i1, 0, ix].std() + X[i1, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C1', alpha=0.75)
-
-        ax[1, 2].axhline(r, c='C2', linestyle='--')
-
-        ax[1, 0].plot(X[i1, 0], c='C1', alpha=0.75, 
-                      label='sample of class {}'.format(target_class))
-        ax[1, 0].plot(X[i0, 0], c='C0', alpha=0.75,
-                      label='sample of class {}'.format(y[i0]))
-        
-        ax[0, 0].set_title("Boxplot of min")
-        ax[1, 0].set_title("Location of the minimum")
-        ax[0, 1].set_title("Boxplot of argmin")
-        ax[1, 1].set_title("Shapelet n°{} (d={})".format(id_shp, dilation))
-        ax[0, 2].set_title("Boxplot of shapelet occurences")
-        ax[1, 2].set_title("Distance vector and lambda threshold")
-        #ax[2,1].set_title("0 : {}; 1 : {}".format(str(X_new[i0,2])[0:5],str(X_new[i1,2])[0:5]))
-        ax[1, 0].legend()
-        ax[1, 1].legend()
-        #fig.suptitle("Shapelet l={}, d={}, n={}".format(length,dilation,norm))
-        plt.show()

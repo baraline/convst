@@ -6,22 +6,20 @@ Created on Thu Nov 18 13:17:07 2021
 """
 
 import numpy as np
-import seaborn as sns
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
+from sklearn.utils import resample
 
 from convst.utils.checks_utils import check_array_3D, check_array_1D
 from convst.utils.shapelets_utils import generate_strides_1D
 
 from numba import set_num_threads
 from numba import njit, prange
-from numba.core.config import NUMBA_DEFAULT_NUM_THREADS
-
-from matplotlib import pyplot as plt
+from convst.utils.checks_utils import check_n_jobs
 
 @njit(fastmath=True, cache=True, error_model='numpy')
-def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
+def compute_shapelet_dist_vector(x, values, length, dilation):
     """
     Compute a shapelet distance vector from an univariate time series 
     and a dilated shapelet. Shapelet should be already normalized if normalizing
@@ -51,9 +49,43 @@ def compute_shapelet_dist_vector(x, values, length, dilation, normalize):
     x_conv = np.empty(c.shape[0])
     for i in range(x_conv.shape[0]):
         s = 0
-        mean = c[i].mean()*normalize
-        std = (c[i].std()+1e-8)*normalize
-        x0 = (c[i] - mean)/(std + 1.0-normalize)
+        for j in prange(length):
+            s += abs(c[i,j] - values[j])
+        x_conv[i] = s
+    return x_conv
+
+@njit(fastmath=True, cache=True, error_model='numpy')
+def compute_shapelet_dist_vector_norm(x, values, length, dilation):
+    """
+    Compute a shapelet distance vector from an univariate time series 
+    and a dilated shapelet. Shapelet should be already normalized if normalizing
+    the distance
+
+    Parameters
+    ----------
+    x : array, shape=(n_timestamps)
+        An input time series
+    values : array, shape=(max_shapelet_length)
+        The value array of the shapelet
+    length : int
+        Length of the shapelet
+    dilation : int
+        Dilation of the shapelet
+    normalize : float
+        Boolean converted as float (to avoid if statement) indicating
+        wheter or not the distance will be z-normalized
+
+    Returns
+    -------
+    x_conv : array, shape=(n_timestamps - (length-1) * dilation)
+        The resulting distance vector
+
+    """
+    c = generate_strides_1D(x, length, dilation)
+    x_conv = np.empty(c.shape[0])
+    for i in range(x_conv.shape[0]):
+        s = 0
+        x0 = (c[i] - c[i].mean())/(c[i].std()+1e-8)
         for j in prange(length):
             s += abs(x0[j] - values[j])
         x_conv[i] = s
@@ -111,12 +143,12 @@ def _init_random_shapelet_params(n_shapelets, shapelet_sizes, n_timestamps, p_no
 
     # Is shapelet using z-normalization ?
     normalize = np.random.random(size=n_shapelets)
-    normalize = (normalize < p_norm).astype(np.float64)
+    normalize = (normalize < p_norm)
 
     return values, lengths, dilations, threshold, normalize
 
 
-@njit(cache=True, fastmath=True, error_model='numpy')
+@njit(cache=True, fastmath=True)
 def _get_subsequence(X, i_start, l, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
@@ -144,23 +176,18 @@ def _get_subsequence(X, i_start, l, d, normalize):
     """
     v = np.empty(l, dtype=np.float64)
     _idx = i_start
-    _sum = 0
-    _sum2 = 0
+    
     for j in prange(l):
         v[j] = X[_idx]
-        _sum += X[_idx]
-        _sum2 += X[_idx]**2
         _idx += d
     #0 if normalize, seems faster than adding a if statement
-    mean = (_sum/l)*normalize
-    std = (np.sqrt((_sum2/l) - mean**2)+1e-8)*normalize
-    # divided by 1 if non normalized
-    v = (v - mean)/(std + 1-normalize)
+    if normalize:
+        v = (v - v.mean())/(v.std()+1e-8)
     return v
 
 
 @njit(cache=True, parallel=True)
-def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_max):
+def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_max, alpha):
     """
     Given a time series dataset and parameters of the method, generate the
     set of random shapelet that will be used in the rest of the algorithm.
@@ -191,44 +218,63 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_
         indicators as array with first dimension of size (n_shapelets)
     """
     n_samples, n_features, n_timestamps = X.shape
-
     # Fix the random see
     np.random.seed(seed)
 
     values, lengths, dilations, threshold, normalize = _init_random_shapelet_params(
         n_shapelets, shapelet_sizes, n_timestamps, p_norm
     )
-
-    samples_pool = np.arange(X.shape[0]).astype(np.int64)
-    np.random.shuffle(samples_pool)
+    unique_dil = np.unique(dilations)
+    mask_sampling = np.ones((2,unique_dil.shape[0],n_samples,n_timestamps),dtype=np.bool_)
     # For Values, draw from random uniform (0,n_samples*(n_ts-(l-1)*d))
     # for each l,d combinations. Then take by index the values instead
     # of generating strides.
+    for i_d in prange(unique_dil.shape[0]):
+        for i in np.where(dilations==unique_dil[i_d])[0]:
+            d = dilations[i]
+            l = lengths[i]
+            norm = np.int64(normalize[i])
+            mask_dil = mask_sampling[norm,i_d]
+            d_shape = n_timestamps-(l-1)*d
+            i_mask = np.where(mask_dil[:,:d_shape])
+            if i_mask[0].shape[0] > 0:
+                id_sample = np.random.choice(i_mask[0])
+                index = np.random.choice(i_mask[1][i_mask[0]==id_sample])
+                mask_sampling[norm, i_d, id_sample, index] = False
+                for j in range(np.int64(np.floor(l*alpha))):
+                    mask_sampling[norm, i_d, id_sample, index-(j*d)] = False
+                    mask_sampling[norm, i_d, id_sample, index+(j*d)] = False
+                
+                v = _get_subsequence(
+                    X[id_sample, 0], index, l, d, normalize[i]
+                )
+                values[i, :l] = v
+                loc_others = np.where(y == y[id_sample])[0]
+                if loc_others.shape[0] > 1:
+                    loc_others = loc_others[loc_others != id_sample]
+                    id_test = np.random.choice(loc_others)
+                else:
+                    id_test = id_sample
+                if normalize[i]:
+                    x_dist = compute_shapelet_dist_vector_norm(
+                        X[id_test, 0], values[i], l, d
+                    )
+                else:
+                    x_dist = compute_shapelet_dist_vector(
+                        X[id_test, 0], values[i], l, d
+                    )
+                threshold[i] = np.random.uniform(
+                    np.percentile(x_dist, p_min), np.percentile(x_dist, p_max)
+                )
+                
+    mask_values = np.ones(n_shapelets, dtype=np.bool_)
     for i in prange(n_shapelets):
-        id_sample = samples_pool[i % X.shape[0]]
-        index = np.int64(np.random.choice(
-            n_timestamps - (lengths[i]-1)*dilations[i]
-        ))
-        
-        v = _get_subsequence(
-            X[id_sample, 0], index, lengths[i], dilations[i], normalize[i]
-        )
-
-        values[i, :lengths[i]] = v
-
-        id_test = np.random.choice(np.where(y == y[id_sample])[0])
-
-        x_dist = compute_shapelet_dist_vector(
-            X[id_test, 0], values[i], lengths[i], dilations[i], normalize[i]
-        )
-        threshold[i] = np.random.uniform(
-            np.percentile(x_dist, p_min), np.percentile(x_dist, p_max)
-        )
-        
-    return values, lengths, dilations, threshold, normalize.astype(np.int64)
+        if np.all(values[i] == 0):
+            mask_values[i] = False
+    return values[mask_values], lengths[mask_values], dilations[mask_values], threshold[mask_values], normalize.astype(np.int64)[mask_values]
 
 
-@njit(cache=True, parallel=True, fastmath=True, error_model='numpy')
+@njit(cache=False, parallel=True, fastmath=True, error_model='numpy')
 def apply_all_shapelets(X, values, lengths, dilations, threshold, normalize):
     """
     Apply a set of generated shapelet using the parameter arrays previously 
@@ -327,12 +373,10 @@ def apply_one_shapelet_one_sample(x, values, threshold):
     n_candidates, length = x.shape
 
     _n_match = 0
-    _min = 1e+100
-    _argmin = 0
+    _min = 1e100
+    _argmin = -1
     _longest_region = 0
-    _n_region = 0
-    
-    
+    _mean_v_region = 0.0
     region_counter = 0
     
     #For each step of the moving window in the shapelet distance
@@ -349,19 +393,24 @@ def apply_one_shapelet_one_sample(x, values, threshold):
         if _dist < threshold:
             _n_match += 1
             region_counter += 1
+            _mean_v_region += _dist
         else:
             if region_counter > 0:
-                _n_region += 1
                 if region_counter > _longest_region:
                     _longest_region = region_counter
             region_counter = 0
         
     if region_counter > 0:
-        _n_region += 1
         if region_counter > _longest_region:
             _longest_region = region_counter
+    
+    if _n_match > 0:    
+        _mean_v_region = _mean_v_region/_n_match
+    else:
+        _mean_v_region = -1.0
+    
+    return _min, np.float64(_argmin), np.float64(_n_match), np.float64(_longest_region), _mean_v_region
 
-    return _min, np.float64(_argmin), np.float64(_n_match), np.float64(_longest_region), np.float64(_n_region)
 
 
 class R_DST_FT(BaseEstimator, TransformerMixin):
@@ -412,20 +461,17 @@ class R_DST_FT(BaseEstimator, TransformerMixin):
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
     """
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1,
-                 p_norm=0.8, percentiles=[5, 10], random_state=None):
+    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1, n_samples=0.5,
+                 p_norm=0.8, percentiles=[5, 10], random_state=None, alpha=0.5):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)
         self.random_state = random_state
         self.p_norm = p_norm
+        self.n_samples=n_samples
+        self.alpha=alpha
         self.percentiles = percentiles
-        self.n_jobs = n_jobs
-        if self.n_jobs == -1:
-            set_num_threads(NUMBA_DEFAULT_NUM_THREADS)
-        elif isinstance(self.n_jobs, int) and self.n_jobs > 0:
-            set_num_threads(int(self.n_jobs))
-        else:
-            raise ValueError("n_jobs parameter should be a int superior to 0 or equal to -1 but got {}".format(self.n_jobs))
+        self.n_jobs = check_n_jobs(n_jobs)
+        set_num_threads(n_jobs)
             
             
     def fit(self, X, y):
@@ -444,6 +490,9 @@ class R_DST_FT(BaseEstimator, TransformerMixin):
 
         """
         X = check_array_3D(X, is_univariate=True).astype(np.float64)
+        id_X = resample(np.arange(X.shape[0]), replace=False, n_samples=int(np.ceil(X.shape[0]*self.n_samples)), stratify=y)
+        X = X[id_X]
+        y = y[id_X]
         n_samples, n_features, n_timestamps = X.shape
         if self.shapelet_sizes.dtype == float:
             self.shapelet_sizes = np.floor(n_timestamps*self.shapelet_sizes)
@@ -453,7 +502,7 @@ class R_DST_FT(BaseEstimator, TransformerMixin):
 
         values, lengths, dilations, threshold, normalize = generate_shapelet(
             X, y, self.n_shapelets, shapelet_sizes, seed, self.p_norm,
-            self.percentiles[0], self.percentiles[1]
+            self.percentiles[0], self.percentiles[1], self.alpha
         )
         self.values_ = values
         self.length_ = lengths
@@ -497,6 +546,7 @@ class R_DST_FT(BaseEstimator, TransformerMixin):
         if not isinstance(self.shapelet_sizes, (list, tuple, np.ndarray)):
             raise TypeError("'shapelet_sizes' must be a list, a tuple or "
                             "an array (got {}).".format(self.shapelet_sizes))
+        
         shapelet_sizes = check_array_1D(self.shapelet_sizes).astype(np.int64)
         
         if not np.all(1 <= shapelet_sizes):
@@ -514,121 +564,3 @@ class R_DST_FT(BaseEstimator, TransformerMixin):
 
         return shapelet_sizes, seed
 
-    def _get_shp_params(self, id_shp):
-        #values, length, dilation, padding, range
-        return (self.values_[id_shp], self.length_[id_shp],
-                self.dilation_[id_shp], self.threshold_[id_shp],
-                self.normalize_[id_shp])
-
-    def visualise_one_shapelet(self, id_shp, X, y, target_class, figsize=(15, 10)):
-        """
-        A function used to generate a visualization of a shapelet. The fit 
-        function must be called before to generate shapelets, then, by giving
-        the identifier (between [0, n_shapelets-1]), a visualization of the
-        shapelet is produced, giving boxplot of the features it generate on 
-        passed data, and a visualization on two randomly choosed samples
-        between the target class and the other classes.
-        
-        Parameters
-        ----------
-        id_shp : int
-            Identifier of the shapelet, must be between 0 and n_shapelets-1
-        X : array, shape=(n_samples, n_features, n_timestamps)
-            Input time series.
-        y : array, shape=(n_samples)
-            Class of the input time series.
-        target_class : int
-            Class to visualize. Will influence boxplot generation and sample
-            choice.
-        figsize : tuple, optional
-            A tuple of int indicating the size of the generated figure.
-            The default is (15, 10).
-
-        Returns
-        -------
-        None.
-
-        """
-        # For visualisation, if argmin is important, draw a bar on x axis
-        # If min, highligh on series (red)
-        # If #match, hihgligh all parts which match on series (blue)
-        sns.set()
-        sns.set_context('talk')
-        fig, ax = plt.subplots(ncols=3, nrows=2, figsize=figsize)
-        values, length, dilation, r, norm = self._get_shp_params(id_shp)
-        values = values[:length]
-        X_new = np.zeros((X.shape[0], 3))
-        yc = (y == target_class).astype(int)
-        for i in range(X.shape[0]):
-            x_dist = compute_shapelet_dist_vector(
-                X[i, 0], values, length, dilation, norm)
-            X_new[i, 0] = np.min(x_dist)
-            X_new[i, 1] = np.argmin(x_dist)
-            X_new[i, 2] = np.mean(x_dist < r)
-
-        sns.boxplot(x=yc, y=X_new[:, 0], ax=ax[0, 0])
-        sns.boxplot(x=yc, y=X_new[:, 1], ax=ax[0, 1])
-        sns.boxplot(x=yc, y=X_new[:, 2], ax=ax[0, 2])
-
-        i0 = np.random.choice(np.where(yc == 0)[0])
-        i1 = np.random.choice(np.where(yc == 1)[0])
-        ax[1, 1].scatter(np.arange(length)*dilation, values)
-        ax[1, 1].plot(np.arange(length)*dilation, values, linestyle='--')
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i1, 0], values, length, dilation, norm),
-                      c='C1', alpha=0.75, label='distance vector of sample of class {}'.format(target_class))
-        ax[1, 2].plot(compute_shapelet_dist_vector(X[i0, 0], values, length, dilation, norm),
-                      c='C0', alpha=0.75, label='distance vector of sample of class {}'.format(y[i0]))
-        ax[0, 0].set_xticks([0, 1])
-        ax[0, 0].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 1].set_xticks([0, 1])
-        ax[0, 1].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[0, 2].set_xticks([0, 1])
-        ax[0, 2].set_xticklabels(
-            ['other classes', 'class {}'.format(target_class)])
-        ax[1, 0].set_xlabel('timestamps')
-        ax[1, 1].set_xlabel('timestamps')
-        ax[1, 2].set_xlabel('timestamps')
-        ix_start = X_new[i0, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i0, 0, ix].std() + X[i0, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C0', alpha=0.75)
-
-        ix_start = X_new[i1, 1]
-        ix = np.arange(ix_start, ix_start+length)
-        if norm == 1:
-            ix = np.zeros(length)
-            for i in range(length):
-                ix[i] = ix_start + (i*dilation)
-            ix = ix.astype(int)
-            v = values[:length] * X[i1, 0, ix].std() + X[i1, 0, ix].mean()
-        else:
-            v = values[:length]
-        ax[1, 0].scatter(ix, v, c='C1', alpha=0.75)
-
-        ax[1, 2].axhline(r, c='C2', linestyle='--')
-
-        ax[1, 0].plot(X[i1, 0], c='C1', alpha=0.75, 
-                      label='sample of class {}'.format(target_class))
-        ax[1, 0].plot(X[i0, 0], c='C0', alpha=0.75,
-                      label='sample of class {}'.format(y[i0]))
-        
-        ax[0, 0].set_title("Boxplot of min")
-        ax[1, 0].set_title("Location of the minimum")
-        ax[0, 1].set_title("Boxplot of argmin")
-        ax[1, 1].set_title("Shapelet n°{} (d={})".format(id_shp, dilation))
-        ax[0, 2].set_title("Boxplot of shapelet occurences")
-        ax[1, 2].set_title("Distance vector and lambda threshold")
-        #ax[2,1].set_title("0 : {}; 1 : {}".format(str(X_new[i0,2])[0:5],str(X_new[i1,2])[0:5]))
-        ax[1, 0].legend()
-        ax[1, 1].legend()
-        #fig.suptitle("Shapelet l={}, d={}, n={}".format(length,dilation,norm))
-        plt.show()

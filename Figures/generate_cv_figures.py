@@ -42,8 +42,8 @@ for i, grp in df.groupby('Dataset'):
 df_perf['total_len'] = df_perf['Train size'] * df_perf['Length']
 
 # In[]:
-m0 = 'RS Ridge v2'
-m1 = 'TS-CHIEF'
+m0 = 'with dilation'
+m1 = 'RST basline'
 margin = 0.05
 margin /= 2
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
@@ -84,16 +84,17 @@ for f in ['total_len', 'Type']:
 # In[]:
 
 baseline = 'RDST'
-competitors = ['HC2', 'TS-CHIEF', 'HC1', 'InceptionTime']
+competitors = ['RDST + CID', 'RDST + Phase']
 #competitors = ['HIVE-COTE v1.0', 'RS Ridge', 'STC', 'InceptionTime']
 ncols = 2
-nrows = 2
+nrows = 1
 limit_min = 0.2
 limit_max = 1.0
 margin = 0.05
 margin /= 2
+margin_names = 0.1
 show_names = True
-fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 10), sharey=True)
+fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 7), sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
 for i, comp in enumerate(competitors):
     if nrows >= 2:
@@ -118,10 +119,10 @@ for i, comp in enumerate(competitors):
             for j in range(df_perf.shape[0]):
                 x1 = df_perf.loc[j, comp]
                 y1 = df_perf.loc[j, baseline]
-                if abs(x1 - y1) > margin*5:
+                if abs(x1 - y1) > margin_names:
                     ax[i // ncols, i % ncols].annotate(
                         "{} ({})".format(
-                            df_perf.loc[j, 'Dataset'], df_perf.loc[j, 'Type']),
+                            df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
                         (x1, y1),
                         fontsize=14,
                         bbox=dict(boxstyle="round", alpha=0.1),
@@ -133,6 +134,54 @@ for i, comp in enumerate(competitors):
         textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum(
             (x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
         ax[i // ncols, i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols, i % ncols].transAxes, fontsize=14,
+                                       verticalalignment='top', bbox=props)
+    if nrows == 1:
+        limp = (limit_max-limit_min)*0.05
+        ax[i % ncols].set_xlim(limit_min-limp, limit_max+limp)
+        ax[i % ncols].set_ylim(limit_min-limp, limit_max+limp)
+        ax[i %
+            ncols].plot([limit_min, limit_max], [limit_min, limit_max], color='r')
+        ax[i % ncols].plot([limit_min, limit_max-margin], [
+                                       limit_min + margin, limit_max], color='orange', linestyle='--', alpha=0.75)
+        ax[i % ncols].plot([limit_min + margin, limit_max], [
+                                       limit_min, limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+        
+        ax[i % ncols].annotate(
+            '{}'.format(margin),
+            (limit_min + margin/2 + 0.0125, limit_min+margin/2 - 0.01),
+            fontsize=12
+        )
+        x = df_perf[comp].values
+        y = df_perf[baseline].values
+        ax[i % ncols].scatter(x, y, s=15, alpha=0.75, zorder=2)
+        if show_names:
+            for j in range(df_perf.shape[0]):
+                x1 = df_perf.loc[j, comp]
+                y1 = df_perf.loc[j, baseline]
+                if abs(x1 - y1) > margin_names:
+                    if df_perf.loc[j, 'dataset'] == 'CricketY':
+                        ax[i % ncols].annotate(
+                            "{} ({})".format(
+                                df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                            (x1, y1-0.025),
+                            fontsize=14,
+                            bbox=dict(boxstyle="round", alpha=0.1)
+                        )
+                    else:
+                        ax[i % ncols].annotate(
+                            "{} ({})".format(
+                                df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                            (x1, y1),
+                            fontsize=14,
+                            bbox=dict(boxstyle="round", alpha=0.1)
+                        )
+        if i % ncols == 0:
+            ax[i % ncols].set_ylabel(baseline)
+        ax[i % ncols].set_xlabel(comp)
+
+        textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum(
+            (x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+        ax[i % ncols].text(0.05, 0.95, textstr, transform=ax[i % ncols].transAxes, fontsize=14,
                                        verticalalignment='top', bbox=props)
 # In[]:
 

@@ -461,16 +461,3 @@ class RotationForest(BaseEstimator, ClassifierMixin):
                 current_attribute += 1
 
         return groups
- 
-    
-from convst.utils.dataset_utils import load_sktime_dataset_split
-from convst.transformers import R_DST
-
-X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-    'Beef')
-a = R_DST(n_shapelets=1000).fit(X_train, y_train)
-at = a.transform(X_train)
-att = a.transform(X_test)
-
-r = RotationForest(n_estimators=3).fit(at, y_train)
-print(r.score(att, y_test))

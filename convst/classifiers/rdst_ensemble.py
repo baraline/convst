@@ -5,12 +5,8 @@ import numpy as np
 from joblib import Parallel
 
 from convst.transformers.dummies import R_DST_Subsampling, Raw, Derivate, Sax, FourrierCoefs, Periodigram
-from sklearn.utils import resample, shuffle
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils.fixes import delayed
-from sklearn.decomposition import PCA
-from sklearn.utils import resample, shuffle
-from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import RidgeClassifierCV
 
 # Most of the following have been developed for the ATM case using a binary classification.
@@ -66,7 +62,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         n_shapelets_per_estimator=10000,
-        shapelet_sizes=[11],
+        shapelet_sizes=[9],
         n_samples=1.0,
         n_jobs=1,
         n_jobs_rdst=1,
@@ -89,10 +85,11 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         input_transformer = [
             Raw(),
             Derivate(),
-            FourrierCoefs(n_coefs=min(250, X.shape[2]), anova=True),
+            FourrierCoefs(),
             Sax(),
+            Periodigram()
         ]
-        p_norms = [0.8, 0.8, 0., 0.]
+        p_norms = [0.8, 0.8, 0.8, 0.8, 0.8]
         models = Parallel(
             n_jobs=self.n_jobs,
             prefer=self.backend,
@@ -109,7 +106,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                     _internalRidgeCV()
                 )
             )
-            for i in range(4)
+            for i in range(len(input_transformer))
         )
             
         self.models = models

@@ -7,7 +7,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
 from sklearn.preprocessing import StandardScaler
-from convst.transformers import R_DST
+from convst.transformers.dummies import R_DST_Sampling
 
 from sklearn.metrics import accuracy_score
 
@@ -68,7 +68,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
                 fit_intercept=fit_intercept
             )
         )
-        self.transformer = R_DST(
+        self.transformer = R_DST_Sampling(
             n_shapelets=n_shapelets, shapelet_sizes=shapelet_sizes, 
             p_norm=p_norm, percentiles=percentiles,
             n_jobs=n_jobs, random_state=random_state
