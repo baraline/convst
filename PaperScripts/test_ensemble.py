@@ -6,19 +6,14 @@ import numpy as np
 from convst.utils.dataset_utils import (return_all_dataset_names,
     load_sktime_arff_file_resample_id, load_sktime_dataset_split)
 from convst.utils.experiments_utils import UCR_stratified_resample, run_pipeline
-
-from convst.transformers.dummies import *
 from sklearn.pipeline import make_pipeline
-from convst.transformers import R_DST, c_StandardScaler
-from sklearn.linear_model import RidgeClassifierCV
-from sklearn.preprocessing import StandardScaler
-
+from convst.classifiers import R_DST_Ensemble
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
 n_cv=30
 
-csv_name = 'CV_{}_results_phase.csv'.format(
+csv_name = 'CV_{}_results_ensemble.csv'.format(
     n_cv)
 
 dataset_names = return_all_dataset_names()
@@ -29,13 +24,13 @@ df.to_csv(csv_name)
 #df = pd.read_csv(csv_name, index_col=0)
 print(df)
 dict_models = {
-    "R_DST_Sampling_Phase":R_DST_PH,
+    "R_DST_Ensemble": R_DST_Ensemble,
 }
 for model_name, model_class in dict_models.items():
     print("Compiling {}".format(model_name))
     X = np.random.rand(5,1,50)
     y = np.array([0,0,1,1,1])
-    model_class(n_shapelets=2).fit_transform(X,y)
+    model_class(n_shapelets_per_estimator=1).fit(X,y).predict(X)
 
 i_df=0
 base_UCR_resamples_path = r"/home/prof/guillaume/sktime_resamples/"
@@ -50,11 +45,7 @@ for name in dataset_names:
     for model_name, model_class in dict_models.items():
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == None or df.loc[i_df, 'acc_mean'] == 0.0:
             print(model_name)
-            pipeline_RDST_rdg = make_pipeline(
-                model_class(n_jobs=90, n_samples=1.0), 
-                c_StandardScaler(with_mean=True),
-                RidgeClassifierCV(alphas=np.logspace(-3,3,20))
-            )
+            pipeline_RDST_rdg = model_class(n_jobs=3, n_jobs_rdst=95//3)
             acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
                 pipeline_RDST_rdg, X_train, X_test, y_train, y_test, splitter, n_jobs=1)
             df.loc[i_df, 'acc_mean'] = acc_mean

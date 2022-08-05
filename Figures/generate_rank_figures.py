@@ -14,7 +14,7 @@ from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare
 
 
-def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None,
+def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, highv=None, highlight=None,
                 width=6, textspace=1, reverse=False, filename=None, labels=False, **kwargs):
     """
     Draws a CD graph, which is used to display  the differences in methods'
@@ -172,28 +172,47 @@ def graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hig
 
     for i in range(math.ceil(k / 2)):
         chei = cline + minnotsignificant + i * space_between_names
-        line([(rankpos(ssums[i]), cline),
-              (rankpos(ssums[i]), chei),
-              (textspace - 0.1, chei)],
-             linewidth=linewidth)
+        if nnames[i] == highlight:
+            line([(rankpos(ssums[i]), cline),
+                  (rankpos(ssums[i]), chei),
+                  (textspace - 0.1, chei)],
+                 linewidth=linewidth, color='red')
+        else:
+            line([(rankpos(ssums[i]), cline),
+                  (rankpos(ssums[i]), chei),
+                  (textspace - 0.1, chei)],
+                 linewidth=linewidth)
         if labels:
             text(textspace + 0.3, chei - 0.075,
                  format(ssums[i], '.4f'), ha="right", va="center", size=10)
-        text(textspace - 0.2, chei,
-             filter_names(nnames[i]), ha="right", va="center", size=18)
+        if nnames[i] == highlight:
+            text(textspace - 0.2, chei,
+                 filter_names(nnames[i]), ha="right", va="center", size=18, color='red')
+        else:
+            text(textspace - 0.2, chei,
+                 filter_names(nnames[i]), ha="right", va="center", size=18)
 
     for i in range(math.ceil(k / 2), k):
         chei = cline + minnotsignificant + (k - i - 1) * space_between_names
-        line([(rankpos(ssums[i]), cline),
-              (rankpos(ssums[i]), chei),
-              (textspace + scalewidth + 0.1, chei)],
-             linewidth=linewidth)
+        if nnames[i] == highlight:
+            line([(rankpos(ssums[i]), cline),
+                  (rankpos(ssums[i]), chei),
+                  (textspace + scalewidth + 0.1, chei)],
+                 linewidth=linewidth, color='red')
+        else:
+            line([(rankpos(ssums[i]), cline),
+                  (rankpos(ssums[i]), chei),
+                  (textspace + scalewidth + 0.1, chei)],
+                 linewidth=linewidth)
         if labels:
             text(textspace + scalewidth - 0.3, chei - 0.075,
                  format(ssums[i], '.4f'), ha="left", va="center", size=10)
-        text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
-             ha="left", va="center", size=18)
-    
+        if nnames[i] == highlight:
+            text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
+                 ha="left", va="center", size=18, color='red')
+        else:
+            text(textspace + scalewidth + 0.2, chei, filter_names(nnames[i]),
+                 ha="left", va="center", size=18)
     start = cline + 0.2
     side = -0.02
     height = 0.1
@@ -237,15 +256,16 @@ def form_cliques(p_values, nnames):
     return networkx.find_cliques(g)
 
 
-def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, width=10, labels=False, path=None):
+def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, width=10, labels=False, path=None, highlight=None):
     """
     Draws the critical difference diagram given the list of pairwise classifiers that are
     significant or not
     """
     p_values, average_ranks, _ = wilcoxon_holm(df_perf=df_perf, alpha=alpha)
     if p_values is not None:
-        graph_ranks(average_ranks.values, average_ranks.keys(), p_values,
-                    cd=None, reverse=True, width=width, textspace=1.25, labels=labels)
+        graph_ranks(average_ranks.values, average_ranks.keys(), p_values, 
+                    cd=None, reverse=True, width=width, textspace=1.25, labels=labels,
+                    highlight=highlight)
 
         font = {'family': 'sans-serif',
                 'color':  'black',
@@ -437,13 +457,13 @@ for m in ['RDST']:
                     labels=True, width=5.5)
     plt.show()
 # In[]:
-filelist = ['CV_10_results_dummies_Ridge.csv',
-            'CV_10_results_dummies_Ridge_subs_0.5.csv',
-            'CV_10_results_dummies_Ridge2.csv',
-            'CV_10_results_dummies_Ridge_ensemble.csv',
-            'CV_10_results_dummies_Ridge_subs1.csv']
-df = pd.concat([pd.read_csv(file, index_col=0) for file in filelist],axis=0)    
-
+bp = '/home/lifo/Documents/git_projects/convst/results/'
+filelist = [
+    'CV_10_results_subs.csv',
+    'CV_10_results_invariances.csv',
+    'CV_10_results_invariances_no_sub.csv'
+]
+df = pd.concat([pd.read_csv(bp+file, index_col=0) for file in filelist],axis=0)    
 # Rank dummies
 import seaborn as sns
 sns.set()
@@ -464,6 +484,7 @@ for i, grp in df.groupby('dataset'):
         df_perf.loc[a,j] = d['acc_mean'].values[0]
     a+=1
 
+
 df_info = pd.read_csv('results/TSC_dataset_info.csv').set_index('Dataset')
 df_perf = df_perf.set_index('dataset')
 df_perf.loc[:, 'Type'] = df_info.loc[df_perf.index,'Type']
@@ -473,60 +494,59 @@ df_perf.loc[:, 'Test size'] = df_info.loc[df_perf.index,'Test size']
 df_perf = df_perf.reset_index()
 
 
-
-
 models = {
     'R_ST_NL':'RST baseline',
     'R_DST':'RDST',
-    'R_DST_V2':'RDST v2',
-    'R_DST_NL':'with dilation',
-    'R_ST':'with lambda',
-    'R_DST_PH':'RDST + Phase',
-    'R_DST_CID':'RDST + CID',
-    'R_DST_Sampling':'RDST + alpha=0.5',
-    'R_DST_Sampling_1':'RDST + alpha=1.0',
-    'R_DST_Subsampling_0.5':'RDST sub=0.5 alpha=0.5',
-    'R_DST_Subsampling_1':'RDST sub=0.5 alpha=1.0',
-    'R_DST_Ensemble':'Ensemble RDST'
+    'R_DST_NL':'RST + dilation',
+    'R_ST':'RST + lambda',
+    'R_DST_Sampling_Phase':'RDST + alpha=0.5 Phase',
+    'R_DST_Sampling_CID':'RDST + alpha=0.5 CID',
+    'R_DST_Sampling_0.5':'RDST + alpha=0.5',
+    'R_DST_Sampling_1.0':'RDST + alpha=1.0',
+    'R_DST_SubSampling_0.5':'RDST + sub=0.5 alpha=0.5',
+    'R_DST_SubSampling_1.0':'RDST + sub=0.5 alpha=1.0',
+    'R_DST_Subsampling_CID':'RDST + sub=0.5 alpha=0.5 CID',
+    'R_DST_Subsampling_Phase':'RDST + sub=0.5 alpha=0.5 Phase'
 }
-
 df_perf = df_perf.rename(columns=models)
-# In[]:
-    
 df_res = pd.DataFrame()
-for col in df_perf.columns.difference(['dataset']):
+for col in list(models.values()):
     d = pd.DataFrame()
     d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
     d['accuracy'] = df_perf[col]
     d['dataset_name'] = df_perf['dataset']
     df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
-
+# In[]:
 
 for model in list(models.values()):
     cols = ['RST baseline','RDST']
     if model not in cols:
-        print(model)
         cols = cols + [model]
-        
         draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
                         title='Results '+model, 
                         labels=True, width=7)
         plt.show()
-        """
-        plt.figure(figsize=(20,6))
-        for col in cols:
-            plt.plot(df_perf[col].values, label=col)
-        plt.xticks(ticks=np.arange(df_perf.shape[0]), labels=df_perf['dataset'].values,rotation=-90)
-        plt.ylabel('Accuracy')
-        plt.legend()
-        plt.show()
-        """
 # In[]:
-cols = ['RDST', 'RDST + Phase', 'RDST sub=0.5 alpha=0.5']
+cols = ['RDST + alpha=0.5',
+        'RDST + alpha=0.5 CID',
+        'RDST + alpha=0.5 Phase']
 draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
                 title='Results for invariance properties', 
                 labels=True, width=7)
-plt.show()
+
+# In[]:
+cols = ['RDST',
+        'RDST + sub=0.5 alpha=0.5',
+        'RDST + sub=0.5 alpha=1.0']
+#cols = list(models.values())
+df_perf['Total size'] = (df_perf['Train size'] + df_perf['Test size'])*df_perf['Length']
+for s in [1e2,1e3,1e4,1e5,1e6,3e6]:
+    names = df_perf.loc[df_perf['Total size']>s,'dataset']
+    draw_cd_diagram(df_perf=df_res[
+        (df_res['classifier_name'].isin(cols))&(df_res['dataset_name'].isin(names))], alpha=0.05,
+        title='Results for input subsampling (top {} longest dataset)'.format(len(names)), 
+                    labels=True, width=7)
+    plt.show()
 # In[]:        
 df_info = pd.read_csv('results/TSC_dataset_info.csv')
 u_types = df_info['Type'].unique()
@@ -558,16 +578,30 @@ for model in list(models.values()):
         print('------ {} -------'.format(model))
         print(perfs.to_latex())
 # In[]:        
+bp = '/home/lifo/Documents/git_projects/convst/results/'
+df_30 = pd.read_csv(bp+'CV_30_results_ensemble.csv', index_col=0)
+df_30 = df_30[df_30['dataset']!='0'].reset_index(drop=True)
+df_perf_30 = pd.DataFrame()    
+a=0
+for i, grp in df_30.groupby('dataset'):
+    df_perf_30.loc[a,'dataset'] = i
+    for j, d in grp.groupby('model'):
+        df_perf_30.loc[a,j] = d['acc_mean'].values[0]
+    a+=1
 
-dfsota = pd.read_csv("results/all_resamples_average.csv").rename(columns={'dataset_name': 'dataset'})
-dfsota = dfsota[dfsota['dataset'].isin(dataset_names)]
+#dfsota = pd.read_csv("results/all_resamples_average_all.csv").rename(columns={'dataset_name': 'dataset'})
+dfsota = pd.read_csv("results/SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
+dataset_names = df_perf_30['dataset']
+df_perf_30 = df_perf_30[df_perf_30['dataset'].isin(dataset_names)]
+#df_perf2 = df_perf2[df_perf2['dataset'].isin(dataset_names)]
 dfsota = dfsota.set_index('dataset')
-df_perf = df_perf.set_index("dataset")
-dfsota['RST baseline'] =  df_perf.loc[dfsota.index,'RST baseline']
+df_perf_30 = df_perf_30.set_index("dataset")
+#df_perf2 = df_perf2.set_index("dataset")
+dfsota['RDST Ensemble'] = df_perf_30.loc[dfsota.index,'R_DST_Ensemble']
 #dfsota['Ensemble RDST'] = df_perf.loc[dfsota.index,'Ensemble RDST']
 dfsota = dfsota.reset_index()
-df_perf = df_perf.reset_index()
-# In[]:
+df_perf_30 = df_perf_30.reset_index()
+
 
 df_res = pd.DataFrame()
 for col in dfsota.columns.difference(['dataset']):
@@ -579,11 +613,10 @@ for col in dfsota.columns.difference(['dataset']):
 
 
 draw_cd_diagram(df_perf=df_res, alpha=0.05,
-                title='', 
+                title='', highlight='RDST Ensemble',
                 labels=True, width=11)
 # In[]:
 #Ranks params
-
 csv_name = base_path + 'params_csv.csv'
 
 df=pd.read_csv(csv_name,index_col=0)

@@ -18,7 +18,6 @@ from sktime.exceptions import NotFittedError
 
 from convst.utils.checks_utils import check_n_jobs
 
-
 def _predict_proba_for_estimator(X, clf, pcas, groups, n_classes, _class_dictionary):
     X_t = np.concatenate(
         [pcas[i].transform(X[:, group]) for i, group in enumerate(groups)], axis=1

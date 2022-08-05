@@ -4,7 +4,7 @@ import numpy as np
 
 from joblib import Parallel
 
-from convst.transformers import R_DST, Raw, Derivate, Periodigram
+from convst.transformers import MR_DST, Raw, Derivate, Periodigram
 from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import RidgeClassifierCV
@@ -58,7 +58,7 @@ def _parallel_fit(X, y, model):
 def _parallel_predict(X, model, w):
     return model.predict_proba(X) * w
 
-class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
+class MR_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         n_shapelets_per_estimator=10000,
@@ -96,7 +96,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                 X, y, 
                 make_pipeline(
                     input_transformer[i],
-                    R_DST(
+                    MR_DST(
                         n_shapelets=self.n_shapelets_per_estimator,
                         alpha=self.shp_alpha, n_samples=self.n_samples, p_norm=p_norms[i],
                         n_jobs=self.n_jobs_rdst, shapelet_sizes=self.shapelet_sizes

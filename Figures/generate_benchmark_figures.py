@@ -7,7 +7,7 @@ import pandas as pd
 sns.set()
 sns.set_context('talk', font_scale=1.0)
 
-base_path = r"C:\Users\a694772\OneDrive - Worldline\Documents\git_projects\convst\results\\"
+base_path = r"results/"
 n_samples = base_path + "n_samples_benchmarks.csv"
 n_timepoints = base_path + "n_timepoints_benchmarks.csv"
 
@@ -42,8 +42,8 @@ ax[1].set_title('Rock')
 
 # In[]:
     
-cols = ['RDST','RDST sub=0.5 alpha=0.5', 'RDST sub=0.5 alpha=1.0','RDST + alpha=0.5', 'RDST + alpha=1.0']
-
+#cols = ['RDST','RDST + sub=0.5 alpha=0.5', 'RDST + sub=0.5 alpha=1.0','RDST + alpha=0.5', 'RDST + alpha=1.0']
+cols = ['RDST + alpha=0.5','RDST + alpha=0.5 CID','RDST + alpha=0.5 Phase']
 df_perf['Total size'] = (df_perf['Train size'] + df_perf['Test size'])*df_perf['Length']
 s = 'Total size'
 bins=20
@@ -66,9 +66,17 @@ for i, col in enumerate(cols):
     plt.bar(r + i*barWidth, bars[i,idx], width = barWidth, label=col)
   
 # general layout
+xlab = []
+for i in idx:
+    n_df = df_perf.loc[df_perf[s].between(bin_ranges[i],bin_ranges[i+1]), 'dataset'].shape[0]
+    if n_df == 1:
+        xlab.append(df_perf.loc[df_perf[s].between(bin_ranges[i],bin_ranges[i+1]), 'dataset'].values[0])
+    else:
+        xlab.append("[{}, {}] ({})".format(int(bin_ranges[i]), int(bin_ranges[i+1]), n_df))
+
 plt.xticks(
     [r + (len(cols)*barWidth)/2 for r in range(len(idx))],
-    ["[{}, {}]".format(int(bin_ranges[i]), int(bin_ranges[i+1])) for i in idx],
+    xlab,
     rotation=-80
 )
 plt.ylabel('total fit + predict time in seconds')

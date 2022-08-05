@@ -16,9 +16,9 @@ from sklearn.preprocessing import StandardScaler
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
-n_cv=30
+n_cv=10
 
-csv_name = 'CV_{}_results_phase.csv'.format(
+csv_name = 'CV_{}_results_IFG.csv'.format(
     n_cv)
 
 dataset_names = return_all_dataset_names()
@@ -29,7 +29,7 @@ df.to_csv(csv_name)
 #df = pd.read_csv(csv_name, index_col=0)
 print(df)
 dict_models = {
-    "R_DST_Sampling_Phase":R_DST_PH,
+    "R_DST_Sampling_IFG":R_DST_Sampling_ifg,
 }
 for model_name, model_class in dict_models.items():
     print("Compiling {}".format(model_name))
@@ -51,7 +51,7 @@ for name in dataset_names:
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == None or df.loc[i_df, 'acc_mean'] == 0.0:
             print(model_name)
             pipeline_RDST_rdg = make_pipeline(
-                model_class(n_jobs=90, n_samples=1.0), 
+                model_class(n_jobs=90), 
                 c_StandardScaler(with_mean=True),
                 RidgeClassifierCV(alphas=np.logspace(-3,3,20))
             )

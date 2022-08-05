@@ -2,8 +2,9 @@
 """
 from .rdst_ridge import R_DST_Ridge
 from .rdst_ensemble import R_DST_Ensemble
+from .multivariate_rdst_ensemble import MR_DST_Ensemble
 from .rotation_forest import RotationForest
 
 __author__ = 'Antoine Guillaume antoine.guillaume45@gmail.com'
 
-__all__ = ["R_DST_Ridge","R_DST_Ensemble","RotationForest"]
+__all__ = ["R_DST_Ridge","R_DST_Ensemble","RotationForest","MR_DST_Ensemble"]

@@ -82,9 +82,18 @@ for f in ['total_len', 'Type']:
         plt.xticks(df_perf[f].unique(), rotation=-70)
     plt.show()
 # In[]:
+df_perf = dfsota
+df_info = pd.read_csv('results/TSC_dataset_info.csv').set_index('Dataset')
+df_perf = df_perf.set_index('dataset')
+df_perf.loc[:, 'Type'] = df_info.loc[df_perf.index,'Type']
+df_perf.loc[:, 'Length'] = df_info.loc[df_perf.index,'Length']
+df_perf.loc[:, 'Train size'] = df_info.loc[df_perf.index,'Train size']
+df_perf.loc[:, 'Test size'] = df_info.loc[df_perf.index,'Test size']
+df_perf = df_perf.reset_index()
+# In[]:
 
-baseline = 'RDST'
-competitors = ['RDST + CID', 'RDST + Phase']
+baseline = 'HC2'
+competitors = ['RDST', 'MultiRocket']
 #competitors = ['HIVE-COTE v1.0', 'RS Ridge', 'STC', 'InceptionTime']
 ncols = 2
 nrows = 1
@@ -92,7 +101,7 @@ limit_min = 0.2
 limit_max = 1.0
 margin = 0.05
 margin /= 2
-margin_names = 0.1
+margin_names = 0.15
 show_names = True
 fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 7), sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
@@ -159,11 +168,11 @@ for i, comp in enumerate(competitors):
                 x1 = df_perf.loc[j, comp]
                 y1 = df_perf.loc[j, baseline]
                 if abs(x1 - y1) > margin_names:
-                    if df_perf.loc[j, 'dataset'] == 'CricketY':
+                    if df_perf.loc[j, 'dataset'] == 'FiftyWords':
                         ax[i % ncols].annotate(
                             "{} ({})".format(
                                 df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
-                            (x1, y1-0.025),
+                            (x1, y1-0.037),
                             fontsize=14,
                             bbox=dict(boxstyle="round", alpha=0.1)
                         )

@@ -10,12 +10,23 @@ from numba import vectorize, int32, int64, float32, float64, njit, prange
 from pyts.approximation import DiscreteFourierTransform, SymbolicAggregateApproximation
 import numpy as np
 from scipy.signal import periodogram
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-@vectorize([int32(int32, int32), int64(int64, int64),
-            float32(float32, float32), float64(float64, float64)],
-           nopython=True, cache=True, fastmath=True)
-def _diff(a, b):
-    return a - b
+class c_StandardScaler(StandardScaler):
+    def fit(self, X, y=None):
+        self.usefull_atts = np.where(np.std(X, axis=0) != 0)[0]
+        return super().fit(X[:, self.usefull_atts], y=y)
+    
+    def transform(self, X):
+        return super().transform(X[:, self.usefull_atts])
+    
+class c_MinMaxScaler(MinMaxScaler):
+    def fit(self, X, y=None):
+        self.usefull_atts = np.where(np.std(X, axis=0) != 0)[0]
+        return super().fit(X[:, self.usefull_atts], y=y)
+    
+    def transform(self, X):
+        return super().transform(X[:, self.usefull_atts])
 
 @njit(cache=True)
 def z_norm_one_sample(x):
@@ -63,8 +74,7 @@ class Derivate(BaseEstimator, TransformerMixin):
     
     def transform(self, X):
         for i in range(self.order):
-            if X.shape[0]>3:
-                X = _diff(X[:,:,1:], X[:,:,:-1])        
+            X = np.diff(X)
         return X
 
     def _random_init(self):
@@ -82,7 +92,12 @@ class Periodigram(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X):
-        return periodogram(X[:,0,:], detrend=False, window=self.window_type)[1][:, np.newaxis, :]     
+        n_ts = periodogram(X[0,0,:], detrend=False, window=self.window_type)[1].shape[0]
+        X_new = np.empty((X.shape[0], X.shape[1], n_ts))
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                X_new[i,j] = periodogram(X[i,j], detrend=False, window=self.window_type)[1]
+        return X_new
     
     def _random_init(self):
         self.set_params(**{"window_type":np.random.choice(self._get_windows())})

@@ -470,7 +470,7 @@ class R_DST_CID(BaseEstimator, TransformerMixin):
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
     """
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1, n_samples=0.5,
+    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], n_jobs=1, n_samples=1.0,
                  p_norm=0.8, percentiles=[5, 10], random_state=None, alpha=0.5):
         self.n_shapelets = n_shapelets
         self.shapelet_sizes = np.asarray(shapelet_sizes)

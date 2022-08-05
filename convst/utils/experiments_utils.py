@@ -5,87 +5,118 @@ Created on Fri Mar 18 16:16:32 2022
 @author: a694772
 """
 import numpy as np
-
+import pandas as pd
 from sklearn.metrics import f1_score, make_scorer
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_validate
-from sklearn.utils import resample
+from sklearn.utils import resample, check_random_state
 
 from timeit import default_timer as timer
 
-from convst.utils.dataset_utils import load_sktime_arff_file_resample_id
+from convst.utils.dataset_utils import load_sktime_arff_file_resample_id, load_sktime_dataset_split
 
-class stratified_resample:
-    """
-    A random resampler used as a splitter for sklearn cross validation tools.
+#Reuse of the sktime function, modified for numpy array inputs rather than dataframes
+def _sktime_resample(X_train, y_train, X_test, y_test, random_state):
+    """Stratified resample data without replacement using a random state.
+
+    Reproducable resampling. Combines train and test, resamples to get the same class
+    distribution, then returns new train and test.
 
     Parameters
     ----------
-    n_splits : int
-        Number of cross validation step planed.
-    n_samples_train : int
-        Number of samples to include in the randomly generated 
-        training sets.
-
-
+    X_train : np.array
+        train data.
+    y_train : np.array
+        train data class labels.
+    X_test : np.array
+        test data.
+    y_test : np.array
+        test data class labes as np array.
+    random_state : int
+        seed to enable reproducable resamples
+    Returns
+    -------
+    new train and test attributes and class labels.
     """
-    def __init__(self, n_splits, n_samples_train):
+    all_labels = np.concatenate((y_train, y_test), axis=None)
+    all_data = np.concatenate([X_train, X_test],axis=0)
+    random_state = check_random_state(random_state)
+    # count class occurrences
+    unique_train, counts_train = np.unique(y_train, return_counts=True)
+    unique_test, counts_test = np.unique(y_test, return_counts=True)
+    assert list(unique_train) == list(
+        unique_test
+    )  # haven't built functionality to deal with classes that exist in
+    # test but not in train
+    # prepare outputs
+    X_train = np.empty((0,X_train.shape[1],X_train.shape[2]))
+    y_train = np.array([])
+    X_test = np.empty((0,X_test.shape[1],X_test.shape[2]))
+    y_test = np.array([])
+    # for each class
+    for label_index in range(0, len(unique_train)):
+        # derive how many instances of this class from the counts
+        num_instances = counts_train[label_index]
+        # get the indices of all instances with this class label
+        label = unique_train[label_index]
+        indices = np.where(all_labels == label)[0]
+        # shuffle them
+        random_state.shuffle(indices)
+        # take the first lot of instances for train, remainder for test
+        train_indices = indices[0:num_instances]
+        test_indices = indices[num_instances:]
+        del indices  # just to make sure it's not used!
+        # extract data from corresponding indices
+        train_instances = all_data[train_indices, :]
+        test_instances = all_data[test_indices, :]
+        train_labels = all_labels[train_indices]
+        test_labels = all_labels[test_indices]
+        # concat onto current data from previous loop iterations
+        X_train = np.concatenate([X_train, train_instances],axis=0)
+        X_test = np.concatenate([X_test, test_instances],axis=0)
+        y_train = np.concatenate([y_train, train_labels], axis=None)
+        y_test = np.concatenate([y_test, test_labels], axis=None)
+    # get the counts of the new train and test resample
+    unique_train_new, counts_train_new = np.unique(y_train, return_counts=True)
+    unique_test_new, counts_test_new = np.unique(y_test, return_counts=True)
+    # make sure they match the original distribution of data
+    assert list(counts_train_new) == list(counts_train)
+    assert list(counts_test_new) == list(counts_test)
+    return X_train, y_train, X_test, y_test
+
+class cross_validate_UCR_UEA:
+    def __init__(self, n_split, dataset_name, scorers={"accuracy":accuracy_score}):
+        self.n_split = n_split
+        self.dataset_name = dataset_name
+        self.scorers = scorers
         
-        self.n_splits=n_splits
-        self.n_samples_train=n_samples_train
-        
-    def split(self, X, y=None, groups=None):
-        """
-        
-
-        Parameters
-        ----------
-        X : array, shape=(n_samples, n_features, n_timestamps)
-            Time series data to split
-        y : ignored
-
-        groups : ignored
-
-        Yields
-        ------
-        idx_Train : array, shape(n_samples_train)
-            Index of the training data in the original dataset X.
-        idx_Test : array, shape(n_samples_test)
-            Index of the testing data in the original dataset X.
-
-        """
-        idx_X = np.asarray(range(X.shape[0]))
-        for i in range(self.n_splits):
+    def score(self, pipeline):
+        X_train_0, X_test_0, y_train_0, y_test_0, _ = load_sktime_dataset_split(
+            self.dataset_name
+        )
+        _score = pd.DataFrame()
+        for i in range(self.n_split):
+            
             if i == 0:
-                idx_train = np.asarray(range(self.n_samples_train))
+                X_train = np.copy(X_train_0)
+                X_test = np.copy(X_test_0)
+                y_train = np.copy(y_train_0)
+                y_test = np.copy(y_test_0)
             else:
-                idx_train = resample(idx_X, n_samples=self.n_samples_train, replace=False, random_state=i, stratify=y)
-            idx_test = np.asarray(list(set(idx_X) - set(idx_train)))
-            yield idx_train, idx_test
-            
-    def get_n_splits(self, X=None, y=None, groups=None):
-        """
-        Return the number of split made by the splitter. 
+                X_train, y_train, X_test, y_test = _sktime_resample(
+                    X_train_0, y_train_0, X_test_0, y_test_0, i
+                )
+            t0 = timer()
+            pipeline = pipeline.fit(X_train, y_train)
+            y_pred = pipeline.predict(X_test)
+            t1 = timer()
+            for scorer_name, scorer in self.scorers.items():
+                _score.loc[i, scorer_name] = scorer(y_test, y_pred)
+            _score.loc[i, 'time'] = t1 - t0
+        return _score
         
 
-        Parameters
-        ----------
-        X : ignored
-            
-        y : ignored
-        
-        groups : ignored
-            
-
-        Returns
-        -------
-        n_splits : int
-            The n_splits attribute of the object.
-
-        """
-        return self.n_splits
-
-class UCR_stratified_resample:
+class ARFF_stratified_resample:
     """
     Class used as a splitter for sklearn cross validation tools. 
     It will take previsouly resampled arff files at a location and
@@ -156,7 +187,7 @@ class UCR_stratified_resample:
         """
         return self.n_splits
 
-
+# To be used with ARFF_stratified_resample
 def run_pipeline(pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs=1):
     """
     Run a sklearn compatible model or pipeline on the specified dataset.
@@ -202,7 +233,7 @@ def run_pipeline(pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs=1)
     """
     if splitter.n_splits > 1:
         X = np.concatenate([X_train, X_test], axis=0).astype(np.float64)
-        y = np.concatenate([y_train, y_test], axis=0).astype(np.float64)
+        y = np.concatenate([y_train, y_test], axis=0).astype(np.int64)
         cv = cross_validate(pipeline, X, y, cv=splitter, n_jobs=n_jobs,
                             scoring={'f1': make_scorer(f1_score, average='macro'),
                                      'acc':make_scorer(accuracy_score)})
