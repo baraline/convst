@@ -3,14 +3,13 @@
 @author: Antoine Guillaume
 """
 import numpy as np
-import pandas as pd
 import warnings
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 from sklearn.utils import resample
 
-from ATM_final.utils.check_utils import check_array_3D, check_array_1D,check_n_jobs
+from convst.utils.checks_utils import check_array_3D, check_array_1D,check_n_jobs
 
 from numba import set_num_threads
 from numba import njit, prange
@@ -497,7 +496,7 @@ def apply_one_shapelet_one_sample(x, values, threshold):
     return _min, np.float64(_argmin), np.float64(_n_match)
 
 
-class GR_DST(BaseEstimator, TransformerMixin):
+class MR_DST(BaseEstimator, TransformerMixin):
     #TODO : add reference to thesis for new additions
     """
     Implementation of univariate Random Dilated Shapelet Transform (RDST).

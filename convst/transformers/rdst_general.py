@@ -10,7 +10,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 from sklearn.utils import resample
 
-from ATM_final.utils.check_utils import check_array_3D, check_array_1D,check_n_jobs
+from convst.utils.checks_utils import check_array_3D, check_array_1D,check_n_jobs
 
 from numba import set_num_threads
 from numba import njit, prange
@@ -619,7 +619,7 @@ class GR_DST(BaseEstimator, TransformerMixin):
         n_samples, n_features, n_timestamps = X.shape
         
         if self.shapelet_sizes.dtype == float:
-            self.shapelet_sizes = np.floor(self.min_len*.self.shapelet_sizes)
+            self.shapelet_sizes = np.floor(self.min_len*self.shapelet_sizes)
             
         if self.max_channels is None:
             self.max_channels = n_features
