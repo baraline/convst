@@ -10,9 +10,9 @@ This work was supported by the following organisations:
   <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png" width="32%" />
 </p>
 
-## What's comming for next release
+## What's coming for the next release
 
-A new release will soon be available, which will include the works which will be presentend for the thesis defense. New exciting developments are presented, such as an fast ensemble version of RDST, reaching state of the art results, more documentation, examples and unit tests. Expected release : mid-to-end september.
+A new release will soon be available, which will include the works which will be presented for the thesis defense. New exciting developments are presented, such as a fast ensemble version of RDST reaching state-of-the-art results, more documentation, examples and unit tests. Expected release : mid-to-end September.
 
 <p float="center">
   <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/cd_ensemble.png" width="100%" />
