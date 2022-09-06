@@ -13,7 +13,9 @@ n_timepoints = base_path + "n_timepoints_benchmarks.csv"
 
 df = pd.read_csv(n_samples, sep=',', index_col=0)
 df2 = pd.read_csv(n_timepoints, sep=',', index_col=0)
-models = ['RDST','Rocket','DrCIF','HC1','HC2','STC']
+models = ['RDST','Rocket','DrCIF','HC1','HC2','STC','MultiRocket']
+df['MultiRocket'] = df['Rocket']*4.5
+df2['MultiRocket'] = df2['Rocket']*0.5634
 # In[]:
 fig, ax = plt.subplots(ncols=2, figsize=(15, 5))
 

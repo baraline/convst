@@ -4,46 +4,93 @@ from convst.transformers import R_DST
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
+from convst.utils.shapelets_utils import generate_strides_1D
 sns.set()
 sns.set_context("talk")
 
 # In[Class differences graph]:
-fig, ax =plt.subplots(ncols=4, figsize=(20,5), sharey=True)
+fig, ax =plt.subplots(ncols=4, nrows=2, figsize=(20,11), sharey=True)
 al = 0.75
-scale = np.zeros((2,100))
-scale[0, 20:40] = np.arange(0,1,0.05)
-scale[1, 20:40] = np.arange(0,1,0.05)*2
-ax[0].plot(scale[0],alpha=al, label='class 0')
-ax[0].plot(scale[1],alpha=al, label='class 1')
-ax[0].legend()
-ax[0].set_title('Class difference by scale')
+noise = np.random.rand(2,100)*0.5
+ld=1.1
+ax[0,0].set_ylabel('Time series')
+ax[1,0].set_ylabel('Distance vectors')
+scale = np.zeros((2,100)) + noise
+scale[0, 20:40] += np.arange(0,1,0.05)*4
+scale[1, 20:40] += np.arange(0,1,0.05)*8
+shp = np.asarray([0] + list(np.arange(0,1,0.05)) + [0])
+shp = (shp - shp.mean())/shp.std()
+dist0 = generate_strides_1D(scale[0], shp.shape[0], 1)
+dist0 = (dist0 - dist0.mean(axis=-1, keepdims=True)) / dist0.std(axis=-1, keepdims=True)
+dist0 = np.sqrt(((dist0 - shp)**2).sum(axis=1))
+dist1 = generate_strides_1D(scale[1], shp.shape[0], 1)
+dist1 = (dist1 - dist1.mean(axis=-1, keepdims=True)) / dist1.std(axis=-1, keepdims=True)
+dist1 = np.sqrt(((dist1 - shp)**2).sum(axis=1))
+ax[0,0].plot(scale[0],alpha=al, label='class 0')
+ax[0,0].plot(scale[1],alpha=al, label='class 1')
+ax[1,0].plot(dist0)
+ax[1,0].plot(dist1)
+ax[1,0].hlines(ld,0,dist0.shape[0], linestyle='--',color='purple')
+ax[0,0].legend()
+ax[0,0].set_title('Class difference by scale')
+ax[1,0].text(35,1.35,'λ threshold',fontsize=22, color='purple')
 
-presence = np.zeros((2,100))
-presence[0, 20:40] = np.arange(0,1,0.05)
-presence[1, 20:40] = np.arange(0,1,0.05)[::-1]
-ax[1].plot(presence[0],alpha=al, label='class 0')
-ax[1].plot(presence[1],alpha=al, label='class 1')
-ax[1].legend()
-ax[1].set_title('Class Difference by motif')
+presence = np.zeros((2,100)) + noise
+presence[0, 20:40] += np.arange(0,1,0.05)*4
+presence[1, 20:40] += np.arange(0,1,0.05)[::-1]*4
+dist0 = generate_strides_1D(presence[0], shp.shape[0], 1)
+dist0 = (dist0 - dist0.mean(axis=-1, keepdims=True)) / dist0.std(axis=-1, keepdims=True)
+dist0 = np.sqrt(((dist0 - shp)**2).sum(axis=1))
+dist1 = generate_strides_1D(presence[1], shp.shape[0], 1)
+dist1 = (dist1 - dist1.mean(axis=-1, keepdims=True)) / dist1.std(axis=-1, keepdims=True)
+dist1 = np.sqrt(((dist1 - shp)**2).sum(axis=1))
+
+ax[0,1].plot(presence[0],alpha=al, label='class 0')
+ax[0,1].plot(presence[1],alpha=al, label='class 1')
+ax[0,1].legend()
+ax[1,1].plot(dist0)
+ax[1,1].plot(dist1)
+ax[1,1].hlines(ld,0,dist0.shape[0], linestyle='--',color='purple')
+ax[0,1].set_title('Class Difference by motif')
 
 
-location = np.zeros((2,100))
-location[0, 20:40] = np.arange(0,1,0.05)
-location[1, 60:80] = np.arange(0,1,0.05)
-ax[2].plot(location[0],alpha=al, label='class 0')
-ax[2].plot(location[1],alpha=al, label='class 1')
-ax[2].legend()
-ax[2].set_title('Class Difference by location')
+location = np.zeros((2,100)) + noise
+location[0, 20:40] += np.arange(0,1,0.05)*4
+location[1, 60:80] += np.arange(0,1,0.05)*4
+dist0 = generate_strides_1D(location[0], shp.shape[0], 1)
+dist0 = (dist0 - dist0.mean(axis=-1, keepdims=True)) / dist0.std(axis=-1, keepdims=True)
+dist0 = np.sqrt(((dist0 - shp)**2).sum(axis=1))
+dist1 = generate_strides_1D(location[1], shp.shape[0], 1)
+dist1 = (dist1 - dist1.mean(axis=-1, keepdims=True)) / dist1.std(axis=-1, keepdims=True)
+dist1 = np.sqrt(((dist1 - shp)**2).sum(axis=1))
+
+ax[0,2].plot(location[0],alpha=al, label='class 0')
+ax[0,2].plot(location[1],alpha=al, label='class 1')
+ax[0,2].legend()
+ax[1,2].plot(dist0)
+ax[1,2].plot(dist1)
+ax[1,2].hlines(ld,0,dist0.shape[0], linestyle='--',color='purple')
+ax[0,2].set_title('Class Difference by location')
 
 
-location = np.zeros((2,100))
-location[0, 10:30] = np.arange(0,1,0.05)
-location[0, 65:85] = np.arange(0,1,0.05)
-location[1, 10:30] = np.arange(0,1,0.05)
-ax[3].plot(location[0],alpha=al, label='class 0')
-ax[3].plot(location[1],alpha=al, label='class 1')
-ax[3].legend()
-ax[3].set_title('Class Difference by # occurence')
+location = np.zeros((2,100)) + noise
+location[0, 10:30] += np.arange(0,1,0.05)*4
+location[0, 65:85] += np.arange(0,1,0.05)*4
+location[1, 10:30] += np.arange(0,1,0.05)*4
+dist0 = generate_strides_1D(location[0], shp.shape[0], 1)
+dist0 = (dist0 - dist0.mean(axis=-1, keepdims=True)) / dist0.std(axis=-1, keepdims=True)
+dist0 = np.sqrt(((dist0 - shp)**2).sum(axis=1))
+dist1 = generate_strides_1D(location[1], shp.shape[0], 1)
+dist1 = (dist1 - dist1.mean(axis=-1, keepdims=True)) / dist1.std(axis=-1, keepdims=True)
+dist1 = np.sqrt(((dist1 - shp)**2).sum(axis=1))
+
+ax[0,3].plot(location[0],alpha=al, label='class 0')
+ax[0,3].plot(location[1],alpha=al, label='class 1')
+ax[0,3].legend()
+ax[1,3].plot(dist0)
+ax[1,3].plot(dist1)
+ax[1,3].hlines(ld,0,dist0.shape[0], linestyle='--',color='purple')
+ax[0,3].set_title('Class Difference by # occurence')
 
 # In[dilated and non dilated shapelet]:
     

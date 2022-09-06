@@ -91,17 +91,16 @@ df_perf.loc[:, 'Train size'] = df_info.loc[df_perf.index,'Train size']
 df_perf.loc[:, 'Test size'] = df_info.loc[df_perf.index,'Test size']
 df_perf = df_perf.reset_index()
 # In[]:
-
-baseline = 'HC2'
-competitors = ['RDST', 'MultiRocket']
+baseline = 'RDST Euclidean'
+competitors = ['RDST Squared','RDST Manhattan']
 #competitors = ['HIVE-COTE v1.0', 'RS Ridge', 'STC', 'InceptionTime']
 ncols = 2
 nrows = 1
-limit_min = 0.2
+limit_min = 0.0
 limit_max = 1.0
-margin = 0.05
+margin = 0.025
 margin /= 2
-margin_names = 0.15
+margin_names = 0.1
 show_names = True
 fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(15, 7), sharey=True)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
@@ -145,53 +144,106 @@ for i, comp in enumerate(competitors):
         ax[i // ncols, i % ncols].text(0.05, 0.95, textstr, transform=ax[i // ncols, i % ncols].transAxes, fontsize=14,
                                        verticalalignment='top', bbox=props)
     if nrows == 1:
-        limp = (limit_max-limit_min)*0.05
-        ax[i % ncols].set_xlim(limit_min-limp, limit_max+limp)
-        ax[i % ncols].set_ylim(limit_min-limp, limit_max+limp)
-        ax[i %
-            ncols].plot([limit_min, limit_max], [limit_min, limit_max], color='r')
-        ax[i % ncols].plot([limit_min, limit_max-margin], [
-                                       limit_min + margin, limit_max], color='orange', linestyle='--', alpha=0.75)
-        ax[i % ncols].plot([limit_min + margin, limit_max], [
-                                       limit_min, limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+        if ncols==1:
         
-        ax[i % ncols].annotate(
-            '{}'.format(margin),
-            (limit_min + margin/2 + 0.0125, limit_min+margin/2 - 0.01),
-            fontsize=12
-        )
-        x = df_perf[comp].values
-        y = df_perf[baseline].values
-        ax[i % ncols].scatter(x, y, s=15, alpha=0.75, zorder=2)
-        if show_names:
-            for j in range(df_perf.shape[0]):
-                x1 = df_perf.loc[j, comp]
-                y1 = df_perf.loc[j, baseline]
-                if abs(x1 - y1) > margin_names:
-                    if df_perf.loc[j, 'dataset'] == 'FiftyWords':
-                        ax[i % ncols].annotate(
-                            "{} ({})".format(
-                                df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
-                            (x1, y1-0.037),
-                            fontsize=14,
-                            bbox=dict(boxstyle="round", alpha=0.1)
-                        )
-                    else:
-                        ax[i % ncols].annotate(
-                            "{} ({})".format(
-                                df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
-                            (x1, y1),
-                            fontsize=14,
-                            bbox=dict(boxstyle="round", alpha=0.1)
-                        )
-        if i % ncols == 0:
-            ax[i % ncols].set_ylabel(baseline)
-        ax[i % ncols].set_xlabel(comp)
+            limp = (limit_max-limit_min)*0.05
+            ax.set_xlim(limit_min-limp, limit_max+limp)
+            ax.set_ylim(limit_min-limp, limit_max+limp)
+            ax.plot([limit_min, limit_max], [limit_min, limit_max], color='r')
+            ax.plot([limit_min, limit_max-margin], [
+                                           limit_min + margin, limit_max], color='orange', linestyle='--', alpha=0.75)
+            ax.plot([limit_min + margin, limit_max], [
+                                           limit_min, limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+            
+            ax.annotate(
+                '{}'.format(margin),
+                (limit_min + margin/2 + 0.0125, limit_min+margin/2 - 0.01),
+                fontsize=12
+            )
+            x = df_perf[comp].values
+            y = df_perf[baseline].values
+            ax.scatter(x, y, s=15, alpha=0.75, zorder=2)
+            if show_names:
+                for j in range(df_perf.shape[0]):
+                    x1 = df_perf.loc[j, comp]
+                    y1 = df_perf.loc[j, baseline]
+                    if abs(x1 - y1) > margin_names:
+                        if df_perf.loc[j, 'dataset'] == 'FiftyWords':
+                            ax.annotate(
+                                "{} ({})".format(
+                                    df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                                (x1, y1-0.037),
+                                fontsize=14,
+                                bbox=dict(boxstyle="round", alpha=0.1)
+                            )
+                        else:
+                            ax.annotate(
+                                "{} ({})".format(
+                                    df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                                (x1, y1),
+                                fontsize=14,
+                                bbox=dict(boxstyle="round", alpha=0.1)
+                            )
+            if i % ncols == 0:
+                ax.set_ylabel(baseline)
+            ax.set_xlabel(comp)
 
-        textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum(
-            (x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
-        ax[i % ncols].text(0.05, 0.95, textstr, transform=ax[i % ncols].transAxes, fontsize=14,
-                                       verticalalignment='top', bbox=props)
+            textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum(
+                (x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+            ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+                                           verticalalignment='top', bbox=props)
+        else:
+            
+            
+            limp = (limit_max-limit_min)*0.05
+            ax[i % ncols].set_xlim(limit_min-limp, limit_max+limp)
+            ax[i % ncols].set_ylim(limit_min-limp, limit_max+limp)
+            ax[i %
+                ncols].plot([limit_min, limit_max], [limit_min, limit_max], color='r')
+            ax[i % ncols].plot([limit_min, limit_max-margin], [
+                                           limit_min + margin, limit_max], color='orange', linestyle='--', alpha=0.75)
+            ax[i % ncols].plot([limit_min + margin, limit_max], [
+                                           limit_min, limit_max-margin], color='orange', linestyle='--', alpha=0.75)
+            
+            ax[i % ncols].annotate(
+                '{}'.format(margin),
+                (limit_min + margin/2 + 0.0125, limit_min+margin/2 - 0.01),
+                fontsize=12
+            )
+            x = df_perf[comp].values
+            y = df_perf[baseline].values
+            ax[i % ncols].scatter(x, y, s=15, alpha=0.75, zorder=2)
+            if show_names:
+                for j in range(df_perf.shape[0]):
+                    x1 = df_perf.loc[j, comp]
+                    y1 = df_perf.loc[j, baseline]
+                    if abs(x1 - y1) > margin_names:
+                        if df_perf.loc[j, 'dataset'] == 'FiftyWords':
+                            ax[i % ncols].annotate(
+                                "{} ({})".format(
+                                    df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                                (x1, y1-0.037),
+                                fontsize=14,
+                                bbox=dict(boxstyle="round", alpha=0.1)
+                            )
+                        else:
+                            ax[i % ncols].annotate(
+                                "{} ({})".format(
+                                    df_perf.loc[j, 'dataset'], df_perf.loc[j, 'Type']),
+                                (x1, y1),
+                                fontsize=14,
+                                bbox=dict(boxstyle="round", alpha=0.1)
+                            )
+            if i % ncols == 0:
+                ax[i % ncols].set_ylabel(baseline)
+            ax[i % ncols].set_xlabel(comp)
+    
+            textstr = 'W - D - L\n{} - {} - {}'.format(sum(x+margin < y), sum(
+                (x <= y+margin) & (y-margin <= x)), sum(x-margin > y))
+            ax[i % ncols].text(0.05, 0.95, textstr, transform=ax[i % ncols].transAxes, fontsize=14,
+                                           verticalalignment='top', bbox=props)
+            
+        
 # In[]:
 
 model_cols = df_perf.columns.difference(

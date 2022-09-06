@@ -9,8 +9,6 @@ from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import RidgeClassifierCV
 
-# Most of the following have been developed for the ATM case using a binary classification.
-# Multi-class might not be supported for all functions and some would need to be adapted.
 from sklearn.utils.extmath import softmax
 from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.preprocessing import StandardScaler
@@ -58,6 +56,8 @@ def _parallel_fit(X, y, model):
 def _parallel_predict(X, model, w):
     return model.predict_proba(X) * w
 
+
+#TODO: add class weight options, pnorms has parameter
 class MR_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,

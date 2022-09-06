@@ -227,7 +227,7 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_
         indicators as array with first dimension of size (n_shapelets)
     """
     n_samples, n_features, n_timestamps = X.shape
-    # Fix the random see
+    # Fix the random seed
     np.random.seed(seed)
 
     values, lengths, dilations, threshold, normalize = _init_random_shapelet_params(
@@ -235,9 +235,6 @@ def generate_shapelet(X, y, n_shapelets, shapelet_sizes, seed, p_norm, p_min, p_
     )
     unique_dil = np.unique(dilations)
     mask_sampling = np.ones((2,unique_dil.shape[0],n_samples,n_timestamps),dtype=np.bool_)
-    # For Values, draw from random uniform (0,n_samples*(n_ts-(l-1)*d))
-    # for each l,d combinations. Then take by index the values instead
-    # of generating strides.
     for i_d in prange(unique_dil.shape[0]):
         for i in np.where(dilations==unique_dil[i_d])[0]:
             d = dilations[i]

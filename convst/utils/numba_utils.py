@@ -10,102 +10,222 @@ from numba import types
 from numba.extending import overload, register_jitable
 from numba.core.errors import TypingError
 from numpy.random import seed as _seed, uniform as _uniform
-from numba import njit, float64
+from numba import njit, prange
 
 
-@njit(fastmath = True, nogil = True, cache = True)
+
+@njit(  
+  cache=True
+)
 def arange(i):
 	return np.arange(i)
 
-@njit(fastmath = True, nogil = True, cache = True)
+arange(10)
+
+@njit(
+  cache=True
+)
 def arange2(a, b):
 	return np.arange(a, b)
 
-@njit(fastmath = True, nogil = True, cache = True)
+arange2(10, 2)
+
+@njit(
+  cache=True
+)
 def arange3(a, b, c):
 	return np.arange(a, b, c)
 
-@njit(fastmath = True, nogil = True, cache = True)
+arange3(10, 2, 2)
+
+@njit(
+  cache=True
+)
 def _abs(v):
-	return np.abs(v)
+	return abs(v)
 
-@njit(fastmath = True, nogil = True, cache = True)
-def empty(shape, dtype=float64):
-    return np.empty(shape, dtype=dtype)
+_abs(-5)
 
-@njit(fastmath = True, nogil = True, cache = True)
-def zeros(shape, dtype=float64):
-    return np.zeros(shape, dtype=dtype)
+@njit(
+  cache=True
+)
+def empty(shape):
+    return np.empty(shape)
 
-@njit(fastmath = True, nogil = True, cache = True)
-def ones(shape, dtype=float64):
+empty(5)
+empty((5,5))
+empty((5,5,5))
+
+@njit(
+  cache=True
+)
+def zeros(shape):
+    return np.zeros(shape)
+
+
+zeros(5)
+zeros((5,5))
+zeros((5,5,5))
+
+@njit(
+  cache=True
+)
+def ones(shape, dtype):
     return np.ones(shape, dtype=dtype)
 
-@njit(nogil = True, cache = True)
-def seed(v):
-    return _seed(v)
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def uniform(v):
     return _uniform(0, v)
 
-@njit(fastmath = True, nogil = True, cache = True)
+uniform(1)
+uniform(1.5)
+
+@njit(
+  cache=True, fastmath=True
+)
 def sum_axis(a, axis):
     return np.sum(a, axis=axis)
 
-@njit(fastmath = True, nogil = True, cache = True)
+sum_axis(np.ones((3,2),dtype=int),1)
+sum_axis(np.ones((3,2),dtype=float),1)
+
+@njit(
+  cache=True, fastmath=True
+)
 def _sum(a):
-    return np.sum(a)
+    a = a.ravel()
+    s = 0
+    for i in prange(a.shape[0]):
+        s+=a[i]
+    return s
 
-@njit(fastmath = True, nogil = True, cache = True)
+# TODO : numpy a bit faster for size <30, and >30000 
+
+_sum(np.ones((3,2),dtype=int))
+_sum(np.ones((3,2),dtype=float))
+_sum(np.ones(3,dtype=int))
+_sum(np.ones(3,dtype=float))
+
+
+@njit(
+  cache=True, fastmath=True
+)
 def cumsum(a):
-    return np.cumsum(a)
+    s = 0
+    for i in prange(a.shape[0]):
+        s += a[i]
+        a[i] = s
+    return a
 
-@njit(fastmath = True, nogil = True, cache = True)
+cumsum(np.ones(3,dtype=int))
+cumsum(np.ones(3,dtype=float))
+
+@njit(
+  cache=True, fastmath=True
+)
 def power(b,v):
     return np.power(b,v)
 
-@njit(fastmath = True, nogil = True, cache = True)
+power(5, 2)
+power(5, 2.1)
+power(5.1, 2)
+power(5.1, 2.1)
+
+@njit(
+  cache=True, fastmath=True
+)
 def sqrt(v):
     return np.sqrt(v)
 
-@njit(fastmath = True, nogil = True, cache = True)
+sqrt(10)
+sqrt(np.ones(5))
+
+@njit(
+  cache=True, fastmath=True
+)
 def floor_divide(a,b):
     return np.floor_divide(a,b)
 
-@njit(fastmath = True, nogil = True, cache = True)
+floor_divide(2,1)
+floor_divide(2,1.1)
+floor_divide(2.1,1)
+floor_divide(2.1,1.1)
+
+@njit(
+  cache=True, fastmath=True
+)
 def mean_axis(a, axis):
     return np.sum(a, axis=axis)/a.shape[axis]
 
-@njit(fastmath = True, nogil = True, cache = True)
-def mean(a):
-    return np.sum(a)/a.size
+mean_axis(np.ones((3,2),dtype=int),1)
+mean_axis(np.ones((3,2),dtype=float),1)
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
+def mean(a):
+    return _sum(a)/a.size
+
+mean(np.ones(3,dtype=int))
+mean(np.ones(3,dtype=float))
+
+
+@njit(
+  cache=True, fastmath=True
+)
 def std_axis(a, axis):
     return np.std(a, axis=axis)
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def std(a):
     return np.std(a)
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def argmin(a):
-    return np.argmin(a)
+    s = np.inf
+    loc = 0
+    for i in prange(a.shape[0]):
+        if a[i] < s:
+            s = a[i]
+            loc = i
+    return loc
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def _min(a):
-    return np.min(a)
+    s = np.inf
+    for i in prange(a.shape[0]):
+        if a[i] < s:
+            s = a[i]
+    return s
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def _max(a):
-    return np.max(a)
+    s = np.ninf
+    for i in prange(a.shape[0]):
+        if a[i] > s:
+            s = a[i]
+    return s
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def log2(v):
     return np.log2(v)
 
-@njit(fastmath = True, nogil = True, cache = True)
+@njit(
+  cache=True, fastmath=True
+)
 def floor(v):
     return np.floor(v)
 

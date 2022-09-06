@@ -11,6 +11,22 @@ def is_int(x):
     # boolean are subclasses of integers in Python, so explicitly exclude them
     return isinstance(x, (int, np.integer)) and not isinstance(x, bool)
 
+def check_is_numeric(x):
+    if (isinstance(x, (int, np.integer)) or isinstance(x, (float, np.floating))) and not isinstance(x, bool):
+        return x
+    else:
+        raise ValueError('Expected a numerical value, but got {}'.format(type(x)))
+
+def check_is_boolean(x):
+    if isinstance(x, bool):
+        if x == 0 or x == 1:
+            x = bool(x)
+        return x
+    else:
+        raise ValueError('Expected a boolean, but got {}'.format(type(x)))
+
+
+
 def check_n_jobs(n_jobs):
     """Check `n_jobs` parameter according to the scikit-learn convention.
 

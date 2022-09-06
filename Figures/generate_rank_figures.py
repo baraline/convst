@@ -461,7 +461,8 @@ bp = '/home/lifo/Documents/git_projects/convst/results/'
 filelist = [
     'CV_10_results_subs.csv',
     'CV_10_results_invariances.csv',
-    'CV_10_results_invariances_no_sub.csv'
+    'CV_10_results_invariances_no_sub.csv',
+    'CV_10_results_IFG.csv',
 ]
 df = pd.concat([pd.read_csv(bp+file, index_col=0) for file in filelist],axis=0)    
 # Rank dummies
@@ -481,7 +482,7 @@ a=0
 for i, grp in df.groupby('dataset'):
     df_perf.loc[a,'dataset'] = i
     for j, d in grp.groupby('model'):
-        df_perf.loc[a,j] = d['acc_mean'].values[0]
+        df_perf.loc[a,j] = d['time_mean'].values[0]
     a+=1
 
 
@@ -496,18 +497,20 @@ df_perf = df_perf.reset_index()
 
 models = {
     'R_ST_NL':'RST baseline',
-    'R_DST':'RDST',
+    'RDST':'RDST baseline',
     'R_DST_NL':'RST + dilation',
     'R_ST':'RST + lambda',
-    'R_DST_Sampling_Phase':'RDST + alpha=0.5 Phase',
+    'R_DST_Sampling_Phase':'RDST',
     'R_DST_Sampling_CID':'RDST + alpha=0.5 CID',
     'R_DST_Sampling_0.5':'RDST + alpha=0.5',
+    'R_DST_Sampling_IFG':'RDST IFG',
     'R_DST_Sampling_1.0':'RDST + alpha=1.0',
     'R_DST_SubSampling_0.5':'RDST + sub=0.5 alpha=0.5',
     'R_DST_SubSampling_1.0':'RDST + sub=0.5 alpha=1.0',
     'R_DST_Subsampling_CID':'RDST + sub=0.5 alpha=0.5 CID',
     'R_DST_Subsampling_Phase':'RDST + sub=0.5 alpha=0.5 Phase'
 }
+
 df_perf = df_perf.rename(columns=models)
 df_res = pd.DataFrame()
 for col in list(models.values()):
@@ -527,9 +530,9 @@ for model in list(models.values()):
                         labels=True, width=7)
         plt.show()
 # In[]:
-cols = ['RDST + alpha=0.5',
-        'RDST + alpha=0.5 CID',
-        'RDST + alpha=0.5 Phase']
+cols = ['RDST + alpha=0.5 IFG',
+        'RDST + alpha=0.5 Phase',
+        'RDST']
 draw_cd_diagram(df_perf=df_res[df_res['classifier_name'].isin(cols)], alpha=0.05,
                 title='Results for invariance properties', 
                 labels=True, width=7)
@@ -588,19 +591,22 @@ for i, grp in df_30.groupby('dataset'):
     for j, d in grp.groupby('model'):
         df_perf_30.loc[a,j] = d['acc_mean'].values[0]
     a+=1
-
+# In[]:        
 #dfsota = pd.read_csv("results/all_resamples_average_all.csv").rename(columns={'dataset_name': 'dataset'})
 dfsota = pd.read_csv("results/SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
-dataset_names = df_perf_30['dataset']
+dataset_names = dfsota['dataset']
 df_perf_30 = df_perf_30[df_perf_30['dataset'].isin(dataset_names)]
-#df_perf2 = df_perf2[df_perf2['dataset'].isin(dataset_names)]
+#df_perf = df_perf[df_perf['dataset'].isin(dataset_names)]
 dfsota = dfsota.set_index('dataset')
 df_perf_30 = df_perf_30.set_index("dataset")
-#df_perf2 = df_perf2.set_index("dataset")
+#df_perf = df_perf.set_index("dataset")
 dfsota['RDST Ensemble'] = df_perf_30.loc[dfsota.index,'R_DST_Ensemble']
+#dfsota['RDST RoT'] = df_perf_30.loc[dfsota.index,'R_DST_RoT']
+#dfsota['RDST'] = df_perf_30.loc[dfsota.index,'R_DST_Sampling_Phase']
+#dfsota['RST baseline'] = df_perf.loc[dfsota.index,'RST baseline']
 #dfsota['Ensemble RDST'] = df_perf.loc[dfsota.index,'Ensemble RDST']
 dfsota = dfsota.reset_index()
-df_perf_30 = df_perf_30.reset_index()
+#df_perf_30 = df_perf_30.reset_index()
 
 
 df_res = pd.DataFrame()
@@ -615,6 +621,87 @@ for col in dfsota.columns.difference(['dataset']):
 draw_cd_diagram(df_perf=df_res, alpha=0.05,
                 title='', highlight='RDST Ensemble',
                 labels=True, width=11)
+# In[]:        
+
+dfsota = pd.read_csv("results/MTSC-SOTA-AverageOver30.csv").rename(columns={'TESTACC': 'dataset'})
+df_erdst = pd.read_csv("results/CV_30_results_multivariate_ensemble.csv", index_col=0)
+df_erdst = df_erdst.set_index('dataset')
+dfsota = dfsota.set_index('dataset')
+dfsota['RDST Ensemble'] = df_erdst['acc_mean']
+dfsota = dfsota.reset_index()
+# In[]:        
+
+
+df_res = pd.DataFrame()
+for col in dfsota.columns.difference(['dataset']):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, dfsota.shape[0]))
+    d['accuracy'] = dfsota[col]
+    d['dataset_name'] = dfsota['dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                title='', highlight='RDST Ensemble',
+                labels=True, width=11)
+
+# In[]:
+    
+bp = '/home/lifo/Documents/git_projects/convst/results/'
+filelist = [
+    'CV_30_results_phase.csv',
+    'CV_30_results_EUC.csv'
+]
+df = pd.concat([pd.read_csv(bp+file, index_col=0) for file in filelist],axis=0)    
+# Rank dummies
+import seaborn as sns
+sns.set()
+sns.set_context('talk')
+df = df[df['dataset']!='0'].reset_index(drop=True)
+
+dnames = df['dataset'].value_counts()
+dataset_names = dnames[dnames == dnames.max()].index.values
+
+#dataset_names = df[df['model']=='R_DST_Ensemble']['dataset'].unique()
+df = df[df['dataset'].isin(dataset_names)]
+
+df_perf = pd.DataFrame()    
+a=0
+for i, grp in df.groupby('dataset'):
+    df_perf.loc[a,'dataset'] = i
+    for j, d in grp.groupby('model'):
+        df_perf.loc[a,j] = d['time_mean'].values[0]
+    a+=1
+
+
+df_info = pd.read_csv('results/TSC_dataset_info.csv').set_index('Dataset')
+df_perf = df_perf.set_index('dataset')
+df_perf.loc[:, 'Type'] = df_info.loc[df_perf.index,'Type']
+df_perf.loc[:, 'Length'] = df_info.loc[df_perf.index,'Length']
+df_perf.loc[:, 'Train size'] = df_info.loc[df_perf.index,'Train size']
+df_perf.loc[:, 'Test size'] = df_info.loc[df_perf.index,'Test size']
+df_perf = df_perf.reset_index()
+
+
+models = {
+    'R_DST_Sampling_Phase':'RDST Manhattan',
+    'R_DST_EUC':'RDST Euclidean',
+    'R_DST_SQ_EUC':'RDST Squared',
+}
+
+df_perf = df_perf.rename(columns=models)
+df_res = pd.DataFrame()
+for col in list(models.values()):
+    d = pd.DataFrame()
+    d['classifier_name'] = pd.Series(col, index=range(0, df_perf.shape[0]))
+    d['accuracy'] = df_perf[col]
+    d['dataset_name'] = df_perf['dataset']
+    df_res = pd.concat([df_res, d], axis=0, ignore_index=True)
+
+
+draw_cd_diagram(df_perf=df_res, alpha=0.05,
+                title='',
+                labels=True, width=7)
 # In[]:
 #Ranks params
 csv_name = base_path + 'params_csv.csv'
