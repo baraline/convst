@@ -9,16 +9,15 @@ import numpy as np
 from numba import types
 from numba.extending import overload, register_jitable
 from numba.core.errors import TypingError
-from numpy.random import seed as _seed, uniform as _uniform
+from numpy.random import uniform as _uniform
 from numba import njit, prange
-
 
 
 @njit(  
   cache=True
 )
 def arange(i):
-	return np.arange(i)
+    return np.arange(i)
 
 arange(10)
 
@@ -26,7 +25,7 @@ arange(10)
   cache=True
 )
 def arange2(a, b):
-	return np.arange(a, b)
+    return np.arange(a, b)
 
 arange2(10, 2)
 
@@ -34,7 +33,7 @@ arange2(10, 2)
   cache=True
 )
 def arange3(a, b, c):
-	return np.arange(a, b, c)
+    return np.arange(a, b, c)
 
 arange3(10, 2, 2)
 
@@ -42,7 +41,7 @@ arange3(10, 2, 2)
   cache=True
 )
 def _abs(v):
-	return abs(v)
+    return abs(v)
 
 _abs(-5)
 
@@ -70,8 +69,8 @@ zeros((5,5,5))
 @njit(
   cache=True
 )
-def ones(shape, dtype):
-    return np.ones(shape, dtype=dtype)
+def ones(shape):
+    return np.ones(shape)
 
 
 @njit(
@@ -141,7 +140,10 @@ def sqrt(v):
     return np.sqrt(v)
 
 sqrt(10)
-sqrt(np.ones(5))
+sqrt(10.1)
+sqrt(np.ones(3,dtype=int))
+sqrt(np.ones(3,dtype=float))
+
 
 @njit(
   cache=True, fastmath=True
@@ -153,6 +155,10 @@ floor_divide(2,1)
 floor_divide(2,1.1)
 floor_divide(2.1,1)
 floor_divide(2.1,1.1)
+floor_divide(np.ones(3,dtype=int),np.ones(3,dtype=int))
+floor_divide(np.ones(3,dtype=float),np.ones(3,dtype=float))
+floor_divide(np.ones(3,dtype=int),np.ones(3,dtype=float))
+floor_divide(np.ones(3,dtype=float),np.ones(3,dtype=int))
 
 @njit(
   cache=True, fastmath=True
@@ -172,18 +178,14 @@ def mean(a):
 mean(np.ones(3,dtype=int))
 mean(np.ones(3,dtype=float))
 
-
-@njit(
-  cache=True, fastmath=True
-)
-def std_axis(a, axis):
-    return np.std(a, axis=axis)
-
 @njit(
   cache=True, fastmath=True
 )
 def std(a):
     return np.std(a)
+
+std(np.ones(3,dtype=int))
+std(np.ones(3,dtype=float))
 
 @njit(
   cache=True, fastmath=True
@@ -197,6 +199,10 @@ def argmin(a):
             loc = i
     return loc
 
+argmin(np.ones(3,dtype=int))
+argmin(np.ones(3,dtype=float))
+
+
 @njit(
   cache=True, fastmath=True
 )
@@ -207,15 +213,22 @@ def _min(a):
             s = a[i]
     return s
 
+_min(np.ones(3,dtype=int))
+_min(np.ones(3,dtype=float))
+
+
 @njit(
   cache=True, fastmath=True
 )
 def _max(a):
-    s = np.ninf
+    s = -np.inf
     for i in prange(a.shape[0]):
         if a[i] > s:
             s = a[i]
     return s
+
+_max(np.ones(3,dtype=int))
+_max(np.ones(3,dtype=float))
 
 @njit(
   cache=True, fastmath=True
@@ -223,11 +236,21 @@ def _max(a):
 def log2(v):
     return np.log2(v)
 
+log2(5)
+log2(5.1)
+log2(np.ones(3,dtype=int))
+log2(np.ones(3,dtype=float))
+
 @njit(
   cache=True, fastmath=True
 )
 def floor(v):
     return np.floor(v)
+
+floor(5)
+floor(5.1)
+floor(np.ones(3,dtype=int))
+floor(np.ones(3,dtype=float))
 
 @overload(np.all)
 def np_all(x, axis=None):

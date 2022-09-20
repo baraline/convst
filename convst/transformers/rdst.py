@@ -16,8 +16,11 @@ from convst.utils.checks_utils import (
     check_array_3D, check_array_1D, check_n_jobs, check_is_numeric, 
     check_is_boolean
 )
+from convst.transformers._commons import manhattan, euclidean, squared_euclidean
 
-from numba import njit, prange, set_num_threads
+
+
+from numba import set_num_threads
 
 STR_MUTLIVARIATE = 'multivariate'
 STR_UNIVARIATE = 'univariate'
@@ -162,21 +165,22 @@ class R_DST(BaseEstimator, TransformerMixin):
             y = y[id_X]
         n_samples, n_features, n_timestamps = X.shape
         
-        if self.shapelet_sizes.dtype == float:
-            self.shapelet_sizes = np.floor(self.min_len*self.shapelet_sizes)
+        if self.shapelet_lengths.dtype == float:
+            self.shapelet_lengths = np.floor(self.min_len*self.shapelet_lengths)
             
-        shapelet_sizes, seed = self._check_params(self.min_len)
+        shapelet_lengths, seed = self._check_params(self.min_len)
         # Generate the shapelets
         if self.transform_type in [STR_MULTIVARIATE_VARIABLE, STR_UNIVARIATE_VARIABLE]:
             self.shapelets_ = self.fitter(
-                X, y, self.n_shapelets, shapelet_sizes, seed, self.p_norm,
+                X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
                 self.min_len, X_len
             )
         else:
             self.shapelets_ = self.fitter(
-                X, y, self.n_shapelets, shapelet_sizes, seed, self.p_norm,
-                self.percentiles[0], self.percentiles[1], self.alpha
+                X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
+                self.percentiles[0], self.percentiles[1], self.alpha, 
+                self._get_distance_function(), self.phase_invariance
             )
         return self
 
@@ -210,7 +214,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         else:
             X = check_array_3D(X).astype(np.float64)
             X_new = self.transformer(
-                X, self.shapelets_ 
+                X, self.shapelets_, self._get_distance_function(), self.phase_invariance
             )
         return X_new
     
@@ -235,7 +239,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         """
         #[STR_UNIVARIATE,STR_MUTLIVARIATE,STR_UNIVARIATE,STR_MULTIVARIATE_VARIABLE]
         X = np.asarray(X)
-        if X.dtype == np.integer or X.dtype == np.floating:
+        if X.dtype == np.int_ or X.dtype == np.float_:
             #Even length
             X = check_array_3D(X)
             if X.shape[1] > 1:
@@ -271,12 +275,15 @@ class R_DST(BaseEstimator, TransformerMixin):
         else:
             _type = self.transform_type
         if _type == STR_UNIVARIATE:
-            self.transformer = None
-            self.fitter = None
+            from convst.transformers._univariate_same_length import (
+                U_SL_apply_all_shapelets, U_SL_generate_shapelet
+            )
+            self.transformer = U_SL_apply_all_shapelets
+            self.fitter = U_SL_generate_shapelet
         elif _type == STR_MUTLIVARIATE:
             self.transformer = None
             self.fitter = None
-        elif _type == STR_UNIVARIATE:
+        elif _type == STR_UNIVARIATE_VARIABLE:
             self.transformer = None
             self.fitter = None
         elif _type == STR_MULTIVARIATE_VARIABLE:
@@ -358,29 +365,29 @@ class R_DST(BaseEstimator, TransformerMixin):
             raise TypeError("'n_shapelets' must be an integer (got {})."
                             .format(self.n_shapelets))
 
-        if not isinstance(self.shapelet_sizes, (list, tuple, np.ndarray)):
-            raise TypeError("'shapelet_sizes' must be a list, a tuple or "
-                            "an array (got {}).".format(self.shapelet_sizes))
+        if not isinstance(self.shapelet_lengths, (list, tuple, np.ndarray)):
+            raise TypeError("'shapelet_lengths' must be a list, a tuple or "
+                            "an array (got {}).".format(self.shapelet_lengths))
         
-        shapelet_sizes = check_array_1D(self.shapelet_sizes).astype(np.int64)
+        shapelet_lengths = check_array_1D(self.shapelet_lengths).astype(np.int64)
         
-        if not np.all(1 <= shapelet_sizes):
-            raise ValueError("All the values in 'shapelet_sizes' must be "
+        if not np.all(1 <= shapelet_lengths):
+            raise ValueError("All the values in 'shapelet_lengths' must be "
                              "greater than or equal to 1 ({} < 1)."
-                             .format(shapelet_sizes.min()))
+                             .format(shapelet_lengths.min()))
             
-        if not np.all(shapelet_sizes <= n_timestamps):
+        if not np.all(shapelet_lengths <= n_timestamps):
             if n_timestamps < 5:
                 raise ValueError('Input data goint {} timestamps, at least 5 are requiered. Input format should be (n_samples, n_features, n_timestamps)'.format(n_timestamps))
             else:
-                warnings.warn("All the values in 'shapelet_sizes' must be lower than or equal to 'n_timestamps' (got {} > {}). Changed shapelet size to {}".format(shapelet_sizes.max(), n_timestamps, n_timestamps//2))
-                shapelet_sizes = np.array([n_timestamps//2])
+                warnings.warn("All the values in 'shapelet_lengths' must be lower than or equal to 'n_timestamps' (got {} > {}). Changed shapelet size to {}".format(shapelet_lengths.max(), n_timestamps, n_timestamps//2))
+                shapelet_lengths = np.array([n_timestamps//2])
 
 
         rng = check_random_state(self.random_state)
         seed = rng.randint(np.iinfo(np.uint32).max, dtype='u8')
 
-        return shapelet_sizes, seed    
+        return shapelet_lengths, seed    
     
     def _validate_transform_type(self, transform_type):
         transform_type = transform_type.lower()
