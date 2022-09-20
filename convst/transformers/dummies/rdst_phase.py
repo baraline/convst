@@ -12,7 +12,7 @@ from sklearn.utils.validation import check_is_fitted, check_random_state
 from sklearn.utils import resample
 
 from convst.utils.checks_utils import check_array_3D, check_array_1D
-from convst.utils.shapelets_utils import generate_strides_1D
+
 
 from numba import set_num_threads
 from numba import njit, prange

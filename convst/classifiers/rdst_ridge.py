@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
-from sklearn.preprocessing import StandardScaler
+from convst.transformers.input_transformers import c_StandardScaler
 from convst.transformers import R_DST
 
 from sklearn.metrics import accuracy_score
@@ -56,30 +56,67 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         The default is np.logspace(-4,4,10).
     """
     
-    def __init__(self, n_shapelets=10000, shapelet_sizes=[11], p_norm=0.8,
-                 percentiles=[5, 10], n_jobs=1, random_state=None,
-                 class_weight=None, fit_intercept=True,
-                 alphas=np.logspace(-4,4,10)):
+    def __init__(
+        self, 
+        transform_type='auto',
+        phase_invariance=False,
+        distance='manhattan',
+        alpha=0.5,
+        normalize_output=False,
+        n_samples=1.0,
+        n_shapelets=10_000,
+        shapelet_lengths=[11],
+        proba_norm=0.8,
+        percentiles=[5,10],
+        n_jobs=1,
+        random_state=None,
+        min_len=None,
+        class_weight=None, 
+        fit_intercept=True,
+        alphas_ridge=list(np.logspace(-3,3,10))
+    ):
 
+        self.alphas_ridge=alphas_ridge
+        self.class_weight=class_weight
+        self.fit_intercept=fit_intercept
+        self.transform_type=transform_type
+        self.phase_invariance=phase_invariance
+        self.distance=distance
+        self.alpha=alpha
+        self.normalize_output=normalize_output
+        self.n_samples=n_samples
+        self.n_shapelets=n_shapelets
+        self.shapelet_lengths=shapelet_lengths
+        self.proba_norm=proba_norm
+        self.percentiles=percentiles
+        self.n_jobs=n_jobs
+        self.random_state=random_state
+        self.min_len=min_len
+
+    def _init_components(self):
         self.classifier = make_pipeline(
-            StandardScaler(with_mean=True),
+            c_StandardScaler(with_mean=True),
             RidgeClassifierCV(
-                alphas=alphas, class_weight=class_weight, 
-                fit_intercept=fit_intercept
+                alphas=self.alphas_ridge,
+                class_weight=self.class_weight, 
+                fit_intercept=self.fit_intercept
             )
         )
         self.transformer = R_DST(
-            n_shapelets=n_shapelets, shapelet_sizes=shapelet_sizes, 
-            p_norm=p_norm, percentiles=percentiles,
-            n_jobs=n_jobs, random_state=random_state
+            transform_type=self.transform_type,
+            phase_invariance=self.phase_invariance,
+            distance=self.distance,
+            alpha=self.alpha,
+            normalize_output=self.normalize_output,
+            n_samples=self.n_samples,
+            n_shapelets=self.n_shapelets,
+            shapelet_lengths=self.shapelet_lengths,
+            proba_norm=self.proba_norm,
+            percentiles=self.percentiles,
+            n_jobs=self.n_jobs,
+            random_state=self.random_state,
+            min_len=self.min_len 
         )
-        
-        
-    def __repr__(self):
-        return self.transformer.__repr__() + " " + self.classifier.__repr__()
-    
-    def _more_tags(self):
-        return ["R_DST"]
     
     def fit(self, X, y):
         """
@@ -95,6 +132,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         y : array, shape=(n_samples)
             Class of the input time series.
         """
+        self._init_components()
         self.transformer = self.transformer.fit(X, y)
         self.classifier = self.classifier.fit(self.transformer.transform(X), y)
         return self
@@ -116,8 +154,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
 
         """
         check_is_fitted(self, ['classifier'])
-        X = self.transformer.transform(X)
-        return self.classifier.predict(X)
+        return self.classifier.predict(self.transformer.transform(X))
     
     def score(self, X, y):
         """

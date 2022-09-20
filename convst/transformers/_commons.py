@@ -49,18 +49,18 @@ def manhattan(x, y):
 )
 def generate_strides_1D(X, window_size, dilation, use_phase):
     if use_phase:
-        return _generate_strides_1D(X, window_size, dilation) 
+        return _generate_strides_1D_phase(X, window_size, dilation) 
     else:
-        return _generate_strides_1D_phase(X, window_size, dilation)
+        return _generate_strides_1D(X, window_size, dilation)
 
 @njit(
   cache=True
 )
 def generate_strides_2D(X, window_size, dilation, use_phase):
     if use_phase:
-        return _generate_strides_2D(X, window_size, dilation) 
+        return _generate_strides_2D_phase(X, window_size, dilation) 
     else:
-        return _generate_strides_2D_phase(X, window_size, dilation)
+        return _generate_strides_2D(X, window_size, dilation)
 
 
 @njit(
@@ -330,7 +330,7 @@ def _compute_shapelet_dist_vector(x, values, length, dilation, dist_func):
         The resulting distance vector
 
     """
-    c = _generate_strides_1D_phase(x, length, dilation)
+    c = _generate_strides_1D(x, length, dilation)
     x_conv = zeros(c.shape[0])
     for i in prange(x_conv.shape[0]):
         x_conv[i] = dist_func(c[i], values)
@@ -363,9 +363,9 @@ def _compute_shapelet_dist_vector_norm(x, values, length, dilation, dist_func):
         The resulting distance vector
 
     """
-    c = _generate_strides_1D_phase(x, length, dilation)
+    c = _generate_strides_1D(x, length, dilation)
     x_conv = zeros(c.shape[0])
-    for i in range(x_conv.shape[0]):
+    for i in prange(x_conv.shape[0]):
         x0 = (c[i] - c[i].mean())/(c[i].std()+1e-8)
         x_conv[i] = dist_func(x0, values)
     return x_conv
@@ -432,7 +432,7 @@ def _compute_shapelet_dist_vector_norm_phase(x, values, length, dilation, dist_f
     """
     c = _generate_strides_1D_phase(x, length, dilation)
     x_conv = zeros(c.shape[0])
-    for i in range(x_conv.shape[0]):
+    for i in prange(x_conv.shape[0]):
         x0 = (c[i] - c[i].mean())/(c[i].std()+1e-8)
         x_conv[i] = dist_func(x0, values)
     return x_conv

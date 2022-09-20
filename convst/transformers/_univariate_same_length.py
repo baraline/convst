@@ -18,7 +18,7 @@ from convst.utils.numba_utils import (
 
 from numba import njit, prange
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def _init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm
 ):
@@ -148,7 +148,6 @@ def U_SL_generate_shapelet(
                 d_shape = n_timestamps
             else:
                 d_shape = n_timestamps-(l-1)*d
-        
             mask_dil = mask_sampling[norm,i_d]
             
             #Possible sampling points given self similarity mask
@@ -202,7 +201,7 @@ def U_SL_generate_shapelet(
         lengths[mask_values],
         dilations[mask_values],
         threshold[mask_values],
-        normalize.astype(int_)[mask_values]
+        normalize[mask_values]
     )
 
 
@@ -267,8 +266,8 @@ def U_SL_apply_all_shapelets(
         n_shp_params[i+1] = ix_shapelets.shape[0]
         
         a = b
-    
     n_shp_params = cumsum(n_shp_params)
+    
     X_new = zeros((n_samples, n_features * n_shapelets))
     for i_sample in prange(n_samples):
         #n_shp_params is a cumsum starting at 0
@@ -282,7 +281,7 @@ def U_SL_apply_all_shapelets(
             # Indexes of shapelets corresponding to the params of i_shp_param
             _idx_shp = idx_shp[n_shp_params[i_shp_param]:n_shp_params[i_shp_param+1]]
             
-            _idx_no_norm = _idx_shp[where(normalize[_idx_shp] == 0)[0]]
+            _idx_no_norm = _idx_shp[where(normalize[_idx_shp] == False)[0]]
             for i_idx in range(_idx_no_norm.shape[0]):               
                 i_shp = _idx_no_norm[i_idx]
                 _values = values[i_shp, :_length]
@@ -291,11 +290,11 @@ def U_SL_apply_all_shapelets(
                     strides, _values, threshold[i_shp], dist_func
                 )
             
-            _idx_norm = _idx_shp[where(normalize[_idx_shp] == 1)[0]]
+            _idx_norm = _idx_shp[where(normalize[_idx_shp] == True)[0]]
             if _idx_norm.shape[0] > 0:
                 for i_stride in range(strides.shape[0]):
                     _str = strides[i_stride]
-                    strides[i_stride] = _str - mean(_str)/(std(_str)+1e-8)
+                    strides[i_stride] = (_str - mean(_str))/(std(_str)+1e-8)
                         
                 for i_idx in range(_idx_norm.shape[0]):               
                     i_shp = _idx_norm[i_idx]
