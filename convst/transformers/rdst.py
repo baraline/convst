@@ -174,7 +174,7 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self.min_len, X_len
+                self.min_len, X_len, self._get_distance_function(), self.phase_invariance
             )
         else:
             self.shapelets_ = self.fitter(
@@ -209,12 +209,14 @@ class R_DST(BaseEstimator, TransformerMixin):
             X, X_len = self._format_uneven_timestamps(X)
             X = check_array_3D(X).astype(np.float64)
             X_new = self.transformer(
-                X, X_len, self.shapelets_ 
+                X, self.shapelets_ , self._get_distance_function(),
+                self.phase_invariance, X_len
             )
         else:
             X = check_array_3D(X).astype(np.float64)
             X_new = self.transformer(
-                X, self.shapelets_, self._get_distance_function(), self.phase_invariance
+                X, self.shapelets_, self._get_distance_function(),
+                self.phase_invariance
             )
         return X_new
     
@@ -229,7 +231,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         X : array, shape=(n_samples, n_featrues, n_timestamps)
             The input time series data. For variable length time series, it 
             can either be a list of 2D array, or a numpy array with object
-            dtype.
+            dtype or a python list of arrays.
 
         Returns
         -------
@@ -246,7 +248,7 @@ class R_DST(BaseEstimator, TransformerMixin):
                 return STR_MUTLIVARIATE
             else:
                 return STR_UNIVARIATE
-        elif X.dtype == np.object_:
+        elif X.dtype == np.object_ or isinstance(X, list):
             if len(X[0]) > 1:
                 return STR_MULTIVARIATE_VARIABLE
             else:
@@ -274,18 +276,25 @@ class R_DST(BaseEstimator, TransformerMixin):
             _type = self._auto_class(X)
         else:
             _type = self.transform_type
+            
         if _type == STR_UNIVARIATE:
             from convst.transformers._univariate_same_length import (
                 U_SL_apply_all_shapelets, U_SL_generate_shapelet
             )
-            self.transformer = U_SL_apply_all_shapelets
             self.fitter = U_SL_generate_shapelet
+            self.transformer = U_SL_apply_all_shapelets
+            
         elif _type == STR_MUTLIVARIATE:
             self.transformer = None
             self.fitter = None
+            
         elif _type == STR_UNIVARIATE_VARIABLE:
-            self.transformer = None
-            self.fitter = None
+            from convst.transformers._univariate_variable_length import (
+                U_VL_apply_all_shapelets, U_VL_generate_shapelet
+            )
+            self.fitter = U_VL_generate_shapelet
+            self.transformer = U_VL_apply_all_shapelets
+            
         elif _type == STR_MULTIVARIATE_VARIABLE:
             self.transformer = None
             self.fitter = None

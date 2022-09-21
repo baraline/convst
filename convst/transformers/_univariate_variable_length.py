@@ -4,7 +4,7 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int_, bool_, float_, concatenate
+    unique, where, percentile, all as _all, int_, bool_, float_, concatenate,
 )
 
 from convst.transformers._commons import (
@@ -73,10 +73,11 @@ def _init_random_shapelet_params(
 
     return values, lengths, dilations, threshold, normalize
 
+
 @njit(cache=True, parallel=True)
-def U_SL_generate_shapelet(
+def U_VL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
-    dist_func, use_phase
+    min_len, X_len, dist_func, use_phase
 ):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -85,7 +86,8 @@ def U_SL_generate_shapelet(
     Parameters
     ----------
     X : array, shape=(n_samples, n_features, n_timestamps)
-        Time series dataset
+        Time series dataset, n_timestamps is equal to the maximum observed 
+        length.
     y : array, shape=(n_samples)
         Class of each input time series
     n_shapelets : int
@@ -102,6 +104,10 @@ def U_SL_generate_shapelet(
         Upper bound for the percentile during the choice of threshold
     alpha : float
         Alpha similarity parameter
+    min_len : int
+        Minimum length for input time series
+    X_len : array, shape=(n_samples)
+        The length of each input time series
     dist_func: function
         A distance function implemented with Numba taking two 1D vectors as
         input.
@@ -124,18 +130,20 @@ def U_SL_generate_shapelet(
         normalize : array, shape=(n_shapelets)
             Normalization indicatorr of the shapelets
     """
-    n_samples, n_features, n_timestamps = X.shape
+    n_samples = len(X)
+    max_len = max(X_len)
     # Fix the random seed
     seed(r_seed)
-
+    
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize = _init_random_shapelet_params(
-        n_shapelets, shapelet_sizes, n_timestamps, p_norm
+        n_shapelets, shapelet_sizes, min_len, p_norm
     )
     #Initialize self similarity mask
     unique_dil = unique(dilations)
-    mask_sampling = ones((2,unique_dil.shape[0],n_samples,n_timestamps)).astype(bool_)
-
+    mask_sampling = ones((2,unique_dil.shape[0],n_samples,max_len)).astype(bool_)
+    for i in range(n_samples):
+        mask_sampling[:,:,i,X_len[i]:] = False
     
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
@@ -144,33 +152,45 @@ def U_SL_generate_shapelet(
             d = dilations[i]
             l = lengths[i]
             norm = int_(normalize[i])
-            if use_phase:
-                d_shape = n_timestamps
-            else:
-                d_shape = n_timestamps-(l-1)*d
+            
             mask_dil = mask_sampling[norm,i_d]
             
-            #Possible sampling points given self similarity mask
-            i_mask = where(mask_dil[:,:d_shape])
+            i_mask = zeros(n_samples)
+            # TODO : the choice of sample don't have the same probability
+            # compared to same length version, evaluate the impact.
+            if use_phase:
+                for i_x in range(n_samples):
+                    i_mask[i_x] = any(mask_dil[i_x, :X_len[i_x]])
+            else:
+                for i_x in range(n_samples):
+                    i_mask[i_x] = any(mask_dil[i_x, :X_len[i_x]-(l-1)*d])
+                
+            i_mask = where(i_mask)
             
             if i_mask[0].shape[0] > 0:
                 #Choose a sample
-                id_sample = choice(i_mask[0])
+                id_sample = choice(i_mask)
                 #Choose a timestamp
-                index = choice(i_mask[1][i_mask[0]==id_sample])
+                if use_phase:
+                    t_mask = where(mask_dil[id_sample, :X_len[id_sample]])
+                else:
+                    t_mask = where(mask_dil[id_sample, :X_len[id_sample]-(l-1)*d])
+                
+                index = choice(t_mask)    
+                
                 #Update the mask
                 for j in range(int_(floor(l*alpha))):
                     #We can use modulo event without phase invariance, as we
                     #limit the sampling to d_shape
-                    mask_sampling[norm, i_d, id_sample, (index-(j*d))%n_timestamps] = False
-                    mask_sampling[norm, i_d, id_sample, (index+(j*d))%n_timestamps] = False
+                    mask_sampling[norm, i_d, id_sample, (index-(j*d))%X_len[id_sample]] = False
+                    mask_sampling[norm, i_d, id_sample, (index+(j*d))%X_len[id_sample]] = False
                 
                 #Extract the values
                 v = get_subsequence(
-                    X[id_sample, 0], index, l, d, norm, use_phase
+                    X[id_sample, 0, :X_len[id_sample]], index, l, d, norm, use_phase
                 )
         
-                #Select another sample of the same class as the sample used to
+                #Select another sample of the same class as the sample used
                 loc_others = where(y == y[id_sample])[0]
                 if loc_others.shape[0] > 1:
                     loc_others = loc_others[loc_others != id_sample]
@@ -180,7 +200,7 @@ def U_SL_generate_shapelet(
                 
                 #Compute distance vector
                 x_dist = compute_shapelet_dist_vector(
-                    X[id_test, 0], v, l, d, dist_func, norm,
+                    X[id_test, 0, :X_len[id_test]], v, l, d, dist_func, norm,
                     use_phase
                 )
                 
@@ -206,8 +226,8 @@ def U_SL_generate_shapelet(
 
 
 @njit(cache=True, parallel=True, fastmath=True)
-def U_SL_apply_all_shapelets(
-    X, shapelets, dist_func, use_phase
+def U_VL_apply_all_shapelets(
+    X, shapelets, dist_func, use_phase, X_len
 ):
     """
     Apply a set of generated shapelet using the parameter arrays previously 
@@ -216,7 +236,8 @@ def U_SL_apply_all_shapelets(
     Parameters
     ----------
     X : array, shape=(n_samples, n_features, n_timestamps)
-        Input time series
+        Input time series, n_timestamps is equal to the maximum observed 
+        length.
     shapelets: set of array, shape=(5)
         values : array, shape=(n_shapelets, max(shapelet_sizes))
             Values of the shapelets. If the shapelet use z-normalized distance,
@@ -235,7 +256,9 @@ def U_SL_apply_all_shapelets(
         input.
     use_phase: bool
         Wheter to use phase invariance
-    
+    X_len : array, shape=(n_samples)
+        The length of each input time series
+        
     Returns
     -------
     X_new : array, shape=(n_samples, 3*n_shapelets)
@@ -245,7 +268,7 @@ def U_SL_apply_all_shapelets(
     """
     (values, lengths, dilations, threshold, normalize) = shapelets
     n_shapelets = len(lengths)
-    n_samples, n_ft, n_timestamps = X.shape
+    n_samples = len(X)
     n_features = 3
 
     unique_lengths = unique(lengths)
@@ -281,7 +304,7 @@ def U_SL_apply_all_shapelets(
             _dilation = params_shp[i_shp_param, 1]
             
             strides = generate_strides_1D(
-                X[i_sample, 0], _length, _dilation, use_phase
+                X[i_sample, 0, :X_len[i_sample]], _length, _dilation, use_phase
             )
             # Indexes of shapelets corresponding to the params of i_shp_param
             _idx_shp = idx_shp[n_shp_params[i_shp_param]:n_shp_params[i_shp_param+1]]
