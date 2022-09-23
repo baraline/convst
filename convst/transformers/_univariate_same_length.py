@@ -4,16 +4,14 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int_, bool_, float_, concatenate
+    unique, where, percentile, all as _all, int_, bool_,
+    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
 )
 
 from convst.transformers._commons import (
     get_subsequence, compute_shapelet_dist_vector,
     apply_one_shapelet_one_sample_univariate, _combinations_1d,
     generate_strides_1D
-)
-from convst.utils.numba_utils import (
-    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
 )
 
 from numba import njit, prange
@@ -129,25 +127,28 @@ def U_SL_generate_shapelet(
     seed(r_seed)
 
     #Initialize shapelets
-    values, lengths, dilations, threshold, normalize = _init_random_shapelet_params(
+    values, lengths, dilations, threshold, normalize = \
+    _init_random_shapelet_params(
         n_shapelets, shapelet_sizes, n_timestamps, p_norm
     )
     #Initialize self similarity mask
     unique_dil = unique(dilations)
-    mask_sampling = ones((2,unique_dil.shape[0],n_samples,n_timestamps)).astype(bool_)
+    mask_sampling = ones(
+        (2,unique_dil.shape[0],n_samples,n_timestamps)
+    ).astype(bool_)
 
     
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
         for i in where(dilations==unique_dil[i_d])[0]:
-            d = dilations[i]
-            l = lengths[i]
+            _dilation = dilations[i]
+            _length = lengths[i]
             norm = int_(normalize[i])
             if use_phase:
                 d_shape = n_timestamps
             else:
-                d_shape = n_timestamps-(l-1)*d
+                d_shape = n_timestamps-(_length-1)*_dilation
             mask_dil = mask_sampling[norm,i_d]
             
             #Possible sampling points given self similarity mask
@@ -159,15 +160,21 @@ def U_SL_generate_shapelet(
                 #Choose a timestamp
                 index = choice(i_mask[1][i_mask[0]==id_sample])
                 #Update the mask
-                for j in range(int_(floor(l*alpha))):
+                for j in range(int_(floor(_length*alpha))):
                     #We can use modulo event without phase invariance, as we
                     #limit the sampling to d_shape
-                    mask_sampling[norm, i_d, id_sample, (index-(j*d))%n_timestamps] = False
-                    mask_sampling[norm, i_d, id_sample, (index+(j*d))%n_timestamps] = False
+                    mask_sampling[
+                        norm, i_d, id_sample,
+                        (index-(j*_dilation))%n_timestamps
+                    ] = False
+                    mask_sampling[
+                        norm, i_d, id_sample,
+                        (index+(j*_dilation))%n_timestamps
+                    ] = False
                 
                 #Extract the values
                 v = get_subsequence(
-                    X[id_sample, 0], index, l, d, norm, use_phase
+                    X[id_sample, 0], index, _length, _dilation, norm, use_phase
                 )
         
                 #Select another sample of the same class as the sample used to
@@ -180,7 +187,7 @@ def U_SL_generate_shapelet(
                 
                 #Compute distance vector
                 x_dist = compute_shapelet_dist_vector(
-                    X[id_test, 0], v, l, d, dist_func, norm,
+                    X[id_test, 0], v, _length, _dilation, dist_func, norm,
                     use_phase
                 )
                 
@@ -189,7 +196,7 @@ def U_SL_generate_shapelet(
                 threshold[i] = uniform(
                     ps[0], ps[1]
                 )
-                values[i, :l] = v
+                values[i, :_length] = v
                 
     mask_values = ones(n_shapelets).astype(bool_)
     for i in prange(n_shapelets):
@@ -291,7 +298,8 @@ def U_SL_apply_all_shapelets(
                 i_shp = _idx_no_norm[i_idx]
                 _values = values[i_shp, :_length]
                 
-                X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = apply_one_shapelet_one_sample_univariate(
+                X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
+                apply_one_shapelet_one_sample_univariate(
                     strides, _values, threshold[i_shp], dist_func
                 )
             
@@ -305,7 +313,8 @@ def U_SL_apply_all_shapelets(
                     i_shp = _idx_norm[i_idx]
                     _values = values[i_shp, :_length]
                     
-                    X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = apply_one_shapelet_one_sample_univariate(
+                    X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
+                    apply_one_shapelet_one_sample_univariate(
                         strides, _values, threshold[i_shp], dist_func
                     )
                 

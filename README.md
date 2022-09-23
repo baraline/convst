@@ -71,7 +71,7 @@ If you use our algorithm or publication in any work, please cite the following p
 author="Guillaume, Antoine
 and Vrain, Christel
 and Elloumi, Wael",
-title="Random Dilated Shapelet Transform: A New Approach for Time Series Shapelets",
+title="Random Dilated Shapelet Transform: A New Approach for Time Series Shapelets",
 booktitle="Pattern Recognition and Artificial Intelligence",
 year="2022",
 publisher="Springer International Publishing",
@@ -89,8 +89,10 @@ isbn="978-3-031-09037-0"
 - [ ] Finish Numpy docs in all python files
 - [ ] Update documentation and examples
 - [ ] Enhance interface for interpretability tools
-- [ ] Add the Generalised version of RDST
+- [X] Add the Generalised version of RDST
 - [ ] Continue unit tests and code coverage/quality
+- [ ] Check the effect of nogil option for numba with nopython
+- [ ] Add function signatures to numba functions
 
 ## Citations
 

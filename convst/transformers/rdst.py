@@ -99,16 +99,17 @@ class R_DST(BaseEstimator, TransformerMixin):
         self,
         transform_type='auto',
         phase_invariance=False,
-        distance='euclidean',
+        distance='manhattan',
         alpha=0.5,
         normalize_output=False,
-        n_samples=1.0,
+        n_samples=None,
         n_shapelets=10_000,
-        shapelet_lengths=[11],
+        shapelet_lengths=[0.01,0.025,0.05,0.075,0.1],
         proba_norm=0.8,
         percentiles=[5,10],
         n_jobs=1,
         random_state=None,
+        max_channels=None,
         min_len=None 
     ):
         self.transform_type = self._validate_transform_type(transform_type)
@@ -116,6 +117,8 @@ class R_DST(BaseEstimator, TransformerMixin):
         self.distance = self._validate_distances(distance)
         self.alpha = check_is_numeric(alpha)
         self.normalize_output = check_is_boolean(normalize_output)
+        if n_samples is None:
+            n_samples = 1.0
         self.n_samples = check_is_numeric(n_samples)
         self.n_shapelets = int(check_is_numeric(n_shapelets))
         self.shapelet_lengths = check_array_1D(shapelet_lengths)
@@ -123,6 +126,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         self.percentiles = self._validate_percentiles(percentiles)
         self.n_jobs = check_n_jobs(n_jobs)
         self.random_state = check_random_state(random_state)
+        self.max_channels=max_channels
         self.min_len=min_len
     
         
@@ -165,23 +169,45 @@ class R_DST(BaseEstimator, TransformerMixin):
             y = y[id_X]
         n_samples, n_features, n_timestamps = X.shape
         
+        if self.max_channels is None:
+            self.max_channels = n_features
+        
         if self.shapelet_lengths.dtype == float:
             self.shapelet_lengths = np.floor(self.min_len*self.shapelet_lengths)
             
         shapelet_lengths, seed = self._check_params(self.min_len)
+        
         # Generate the shapelets
-        if self.transform_type in [STR_MULTIVARIATE_VARIABLE, STR_UNIVARIATE_VARIABLE]:
+        if self.transform_type == STR_UNIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self.min_len, X_len, self._get_distance_function(), self.phase_invariance
+                self.min_len, X_len, self._get_distance_function(),
+                self.phase_invariance
             )
-        else:
+        elif self.transform_type == STR_MULTIVARIATE_VARIABLE:
+            self.shapelets_ = self.fitter(
+                X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
+                self.percentiles[0], self.percentiles[1], self.alpha,
+                self.min_len, X_len, self._get_distance_function(),
+                self.phase_invariance, self.max_channels
+            )
+        elif self.transform_type == STR_MUTLIVARIATE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
-                self._get_distance_function(), self.phase_invariance
+                self._get_distance_function(), self.phase_invariance, 
+                self.max_channels
             )
+        elif self.transform_type == STR_UNIVARIATE:
+            self.shapelets_ = self.fitter(
+                X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
+                self.percentiles[0], self.percentiles[1], self.alpha, 
+                self._get_distance_function(), self.phase_invariance, 
+            )
+        else:
+            raise ValueError('Unknown value for transform type parameter')
+        
         return self
 
 
@@ -274,6 +300,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         """
         if self.transform_type == 'auto':
             _type = self._auto_class(X)
+            self.transform_type = _type
         else:
             _type = self.transform_type
             
@@ -285,8 +312,12 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.transformer = U_SL_apply_all_shapelets
             
         elif _type == STR_MUTLIVARIATE:
-            self.transformer = None
-            self.fitter = None
+            from convst.transformers._multivariate_same_length import (
+                M_SL_apply_all_shapelets, M_SL_generate_shapelet
+            )
+            self.fitter = M_SL_generate_shapelet
+            self.transformer = M_SL_apply_all_shapelets
+            
             
         elif _type == STR_UNIVARIATE_VARIABLE:
             from convst.transformers._univariate_variable_length import (
@@ -298,6 +329,9 @@ class R_DST(BaseEstimator, TransformerMixin):
         elif _type == STR_MULTIVARIATE_VARIABLE:
             self.transformer = None
             self.fitter = None
+        
+        else:
+            raise ValueError('Unknwon transform type parameter')
         
     
     def _get_distance_function(self):

@@ -84,6 +84,7 @@ def _sktime_resample(X_train, y_train, X_test, y_test, random_state):
     assert list(counts_test_new) == list(counts_test)
     return X_train, y_train, X_test, y_test
 
+
 class cross_validate_UCR_UEA:
     def __init__(self, n_split, dataset_name, scorers={"accuracy":accuracy_score}):
         self.n_split = n_split

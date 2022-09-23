@@ -62,17 +62,19 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         n_shapelets_per_estimator=10000,
-        shapelet_sizes=[11],
+        shapelet_lengths=[0.01,0.025,0.05,0.075,0.1],
         n_samples=None,
         n_jobs=1,
         n_jobs_rdst=1,
         backend="processes",
         random_state=None,
         shp_alpha=0.5,
-        a_w = 4
+        a_w = 4,
+        proba_norm = [0.8, 0.8, 0.8],
+        phase_invariance=False
     ):
         self.n_shapelets_per_estimator=n_shapelets_per_estimator
-        self.shapelet_sizes=shapelet_sizes
+        self.shapelet_lengths=shapelet_lengths
         self.n_jobs = n_jobs
         self.backend=backend
         self.n_jobs_rdst = n_jobs_rdst
@@ -80,6 +82,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self.n_samples=n_samples
         self.shp_alpha = shp_alpha
         self.a_w = a_w
+        self.proba_norm = proba_norm 
+        self.phase_invariance = phase_invariance
         
     def fit(self, X, y):
         input_transformer = [
@@ -87,7 +91,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
             Derivate(),
             Periodigram()
         ]
-        p_norms = [0.8, 0.8, 0.8]
+        
         models = Parallel(
             n_jobs=self.n_jobs,
             prefer=self.backend,
@@ -98,8 +102,10 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                     input_transformer[i],
                     R_DST(
                         n_shapelets=self.n_shapelets_per_estimator,
-                        alpha=self.shp_alpha, n_samples=self.n_samples, p_norm=p_norms[i],
-                        n_jobs=self.n_jobs_rdst, shapelet_sizes=self.shapelet_sizes
+                        alpha=self.shp_alpha, n_samples=self.n_samples, 
+                        proba_norm=self.proba_norm[i], n_jobs=self.n_jobs_rdst,
+                        shapelet_lengths=self.shapelet_lengths,
+                        phase_invariance=self.phase_invariance
                     ),
                     _internalRidgeCV()
                 )
