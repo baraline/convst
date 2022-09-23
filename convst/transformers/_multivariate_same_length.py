@@ -69,7 +69,7 @@ def _init_random_shapelet_params(
     # channels (i.e. features)
     n_channels = choice(max_channels, size=n_shapelets)+1
 
-    channel_ids = zeros(n_channels.sum()).astype(int_)
+    channel_ids = zeros(n_channels.sum(), dtype=int_)
 
     # Init values array
     values = zeros(
@@ -147,9 +147,9 @@ def M_SL_generate_shapelet(
     #Initialize self similarity mask
     unique_dil = unique(dilations)
     mask_sampling = ones(
-        (2,unique_dil.shape[0],n_samples,n_features,n_timestamps)
-    ).astype(bool_)
-    mask_return = ones(n_shapelets).astype(bool_)
+        (2,unique_dil.shape[0],n_samples,n_features,n_timestamps), dtype=bool_
+    )
+    mask_return = ones(n_shapelets, dtype=bool_)
     #Counter for values array indexes
     a1 = 0
     #Counter for channels_ids array indexes
@@ -181,9 +181,8 @@ def M_SL_generate_shapelet(
                 mask_dil[:,_channel_ids,:d_shape].sum(axis=1)>=_n_channels*alpha
             )
             
-            x_dist = zeros(d_shape)
-            
             if i_mask[0].shape[0] > 0:
+                x_dist = zeros(d_shape)
                 #Choose a sample
                 id_sample = choice(i_mask[0])
                 #Choose a timestamp
@@ -305,14 +304,14 @@ def M_SL_apply_all_shapelets(
     #(u_l * u_d , 2)
     params_shp = _combinations_1d(unique_lengths, unique_dilations)
     #(u_l * u_d) + 1
-    n_shp_params = zeros(params_shp.shape[0]+1).astype(int_)
+    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int_)
     #(n_shapelets)
-    idx_shp = zeros(n_shapelets).astype(int_)
+    idx_shp = zeros(n_shapelets, dtype=int_)
     
     #Indexes per shapelets for values array
-    a1 = concatenate((zeros(1).astype(int_),cumsum(n_channels*lengths)))
+    a1 = concatenate((zeros(1, dtype=int_),cumsum(n_channels*lengths)))
     #Indexes per shapelets for channel_ids array
-    a2 = concatenate((zeros(1).astype(int_),cumsum(n_channels)))
+    a2 = concatenate((zeros(1, dtype=int_),cumsum(n_channels)))
     # Counter for shapelet params array
     a3 = 0
     

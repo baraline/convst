@@ -47,7 +47,7 @@ def check_n_jobs(n_jobs):
     elif n_jobs < 0:
         return cpu_count() + n_jobs + 1
     else:
-        return n_jobs
+        return min(n_jobs,cpu_count())
 
 def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=2):
     """

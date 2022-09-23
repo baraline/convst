@@ -134,8 +134,8 @@ def U_SL_generate_shapelet(
     #Initialize self similarity mask
     unique_dil = unique(dilations)
     mask_sampling = ones(
-        (2,unique_dil.shape[0],n_samples,n_timestamps)
-    ).astype(bool_)
+        (2,unique_dil.shape[0],n_samples,n_timestamps), dtype=bool_
+    )
 
     
     #For each dilation, we can do in parallel
@@ -198,7 +198,7 @@ def U_SL_generate_shapelet(
                 )
                 values[i, :_length] = v
                 
-    mask_values = ones(n_shapelets).astype(bool_)
+    mask_values = ones(n_shapelets, dtype=bool_)
     for i in prange(n_shapelets):
         if _all(values[i] == 0):
             mask_values[i] = False
@@ -261,9 +261,9 @@ def U_SL_apply_all_shapelets(
     #(u_l * u_d , 2)
     params_shp = _combinations_1d(unique_lengths, unique_dilations)
     #(u_l * u_d) + 1
-    n_shp_params = zeros(params_shp.shape[0]+1).astype(int_)
+    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int_)
     #(n_shapelets)
-    idx_shp = zeros(n_shapelets).astype(int_)
+    idx_shp = zeros(n_shapelets, dtype=int_)
     
     a = 0
     

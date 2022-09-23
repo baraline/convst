@@ -2,12 +2,23 @@
 
 import numpy as np
 from sktime.datasets import (load_UCR_UEA_dataset, 
-    load_from_tsfile_to_dataframe, load_from_arff_to_dataframe
+    load_from_tsfile_to_dataframe, load_from_arff_to_dataframe,
+    
 )
-from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
-
+from sktime.datatypes._panel._convert import (from_multiindex_to_dflist,
+    from_nested_to_multi_index
+)
 from sklearn.preprocessing import LabelEncoder
 from numba import njit, prange
+
+
+def _custom_from_nested_to_3d_numpy(X):
+    X = from_multiindex_to_dflist(from_nested_to_multi_index(X))
+    if all([X[i].shape[0] == X[0].shape[0] for i in range(len(X))]):
+        return np.array([X[i].values.T for i in range(len(X))])
+    else:
+        return [X[i].values.T for i in range(len(X))]
+    
 
 @njit(cache=True)
 def z_norm_3D(X):
@@ -30,6 +41,28 @@ def z_norm_3D(X):
     for i_x in prange(X.shape[0]):
         for i_ft in prange(X.shape[1]):
             X[i_x, i_ft] = (X[i_x, i_ft] - X[i_x, i_ft].mean())/(X[i_x, i_ft].std() + 1e-8)
+    return X
+    
+def z_norm_3D_list(X):
+    """
+    Z normalise a time series dataset assumed to be of even length. A small value
+    is added to the standard deviation for all samples and features to avoid
+    0 division.
+
+    Parameters
+    ----------
+    X : array, shape=(n_samples, n_features, n_timestamps)
+        Input numerical array to z-normalise
+
+    Returns
+    -------
+    X : array, shape=(n_samples, n_features, n_timestamps)
+        Z-normalised array
+
+    """
+    for i_x in range(len(X)):
+        for i_ft in range(len(X[i_x])):
+            X[i_x][i_ft] = (X[i_x][i_ft] - X[i_x][i_ft].mean())/(X[i_x][i_ft].std() + 1e-8)
     return X
     
 
@@ -66,8 +99,8 @@ def load_sktime_dataset_split(name, normalize=True):
     X_test, y_test = load_UCR_UEA_dataset(name, return_X_y=True, split='test')
 
     #Convert pandas DataFrames to numpy arrays
-    X_train = from_nested_to_3d_numpy(X_train)
-    X_test = from_nested_to_3d_numpy(X_test)
+    X_train = _custom_from_nested_to_3d_numpy(X_train)
+    X_test = _custom_from_nested_to_3d_numpy(X_test)
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y_train)
@@ -75,9 +108,12 @@ def load_sktime_dataset_split(name, normalize=True):
     y_test = le.transform(y_test)
 
     #Z-Normalize the data
-    if normalize:
+    if normalize and not isinstance(X_train, list):
         X_train = z_norm_3D(X_train)
         X_test = z_norm_3D(X_test)
+    if normalize and isinstance(X_train, list):
+        X_train = z_norm_3D_list(X_train)
+        X_test = z_norm_3D_list(X_test)
     return X_train, X_test, y_train, y_test, le
 
 
@@ -114,8 +150,8 @@ def load_sktime_arff_file(path, normalize=True):
     X_test, y_test = load_from_arff_to_dataframe(path+'_TEST.arff')
 
     #Convert pandas DataFrames to numpy arrays
-    X_train = from_nested_to_3d_numpy(X_train)
-    X_test = from_nested_to_3d_numpy(X_test)
+    X_train = _custom_from_nested_to_3d_numpy(X_train)
+    X_test = _custom_from_nested_to_3d_numpy(X_test)
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y_train)
@@ -168,8 +204,8 @@ def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
     X_test, y_test = load_from_arff_to_dataframe(path+'_{}_TEST.arff'.format(rs_id))
 
     #Convert pandas DataFrames to numpy arrays
-    X_train = from_nested_to_3d_numpy(X_train)
-    X_test = from_nested_to_3d_numpy(X_test)
+    X_train = _custom_from_nested_to_3d_numpy(X_train)
+    X_test = _custom_from_nested_to_3d_numpy(X_test)
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y_train)
@@ -218,8 +254,8 @@ def load_sktime_ts_file(path, normalize=True):
     X_test, y_test = load_from_tsfile_to_dataframe(path+'_TEST.ts')
 
     #Convert pandas DataFrames to numpy arrays
-    X_train = from_nested_to_3d_numpy(X_train)
-    X_test = from_nested_to_3d_numpy(X_test)
+    X_train = _custom_from_nested_to_3d_numpy(X_train)
+    X_test = _custom_from_nested_to_3d_numpy(X_test)
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y_train)
@@ -261,7 +297,7 @@ def load_sktime_dataset(name, normalize=True):
     X, y = load_UCR_UEA_dataset(name, return_X_y=True)
 
     #Convert pandas DataFrames to numpy arrays
-    X = from_nested_to_3d_numpy(X)
+    X = _custom_from_nested_to_3d_numpy(X)
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y)
@@ -273,7 +309,6 @@ def load_sktime_dataset(name, normalize=True):
             X.std(axis=-1, keepdims=True) + 1e-8)
 
     return X, y, le
-
 
 def return_all_multivariate_dataset_names():
     

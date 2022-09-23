@@ -4,8 +4,9 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int_, bool_,
+    unique, where, percentile, all as _all, int_, bool_, any as _any,
     log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
+
 )
 
 from convst.transformers._commons import (
@@ -77,7 +78,7 @@ def _init_random_shapelet_params(
 @njit(cache=True, parallel=True)
 def U_VL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
-    min_len, X_len, dist_func, use_phase
+    dist_func, use_phase, min_len, X_len
 ):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -104,15 +105,15 @@ def U_VL_generate_shapelet(
         Upper bound for the percentile during the choice of threshold
     alpha : float
         Alpha similarity parameter
-    min_len : int
-        Minimum length for input time series
-    X_len : array, shape=(n_samples)
-        The length of each input time series
     dist_func: function
         A distance function implemented with Numba taking two 1D vectors as
         input.
     use_phase: bool
         Wheter to use phase invariance
+    min_len : int
+        Minimum length for input time series
+    X_len : array, shape=(n_samples)
+        The length of each input time series
     
     Returns
     -------
@@ -130,6 +131,7 @@ def U_VL_generate_shapelet(
         normalize : array, shape=(n_shapelets)
             Normalization indicatorr of the shapelets
     """
+    
     n_samples = len(X)
     max_len = max(X_len)
     # Fix the random seed
@@ -140,11 +142,12 @@ def U_VL_generate_shapelet(
     _init_random_shapelet_params(
         n_shapelets, shapelet_sizes, min_len, p_norm
     )
+
     #Initialize self similarity mask
     unique_dil = unique(dilations)
     mask_sampling = ones(
-        (2,unique_dil.shape[0],n_samples,max_len)
-    ).astype(bool_)
+        (2,unique_dil.shape[0],n_samples,max_len), dtype=bool_
+    )
     
     for i in range(n_samples):
         mask_sampling[:,:,i,X_len[i]:] = False
@@ -159,23 +162,24 @@ def U_VL_generate_shapelet(
             
             mask_dil = mask_sampling[norm,i_d]
             
-            i_mask = zeros(n_samples)
+            i_mask = zeros(n_samples, dtype=bool_)
             # TODO : the choice of sample don't have the same probability
             # compared to same length version, evaluate the impact.
+            
             if use_phase:
                 for i_x in range(n_samples):
-                    i_mask[i_x] = any(mask_dil[i_x, :X_len[i_x]])
+                    i_mask[i_x] = _any(mask_dil[i_x, :X_len[i_x]])
             else:
                 for i_x in range(n_samples):
-                    i_mask[i_x] = any(
+                    i_mask[i_x] = _any(
                         mask_dil[i_x, :X_len[i_x]-(_length-1)*_dilation]
                     )
-                
+            
             i_mask = where(i_mask)
             
             if i_mask[0].shape[0] > 0:
                 #Choose a sample
-                id_sample = choice(i_mask)
+                id_sample = choice(i_mask[0])
                 #Choose a timestamp
                 if use_phase:
                     t_mask = where(mask_dil[id_sample, :X_len[id_sample]])
@@ -184,8 +188,7 @@ def U_VL_generate_shapelet(
                         mask_dil[id_sample, :X_len[id_sample]-(_length-1)*_dilation]
                     )
                 
-                index = choice(t_mask)    
-                
+                index = choice(t_mask[0])    
                 #Update the mask
                 for j in range(int_(floor(_length*alpha))):
                     #We can use modulo event without phase invariance, as we
@@ -198,7 +201,6 @@ def U_VL_generate_shapelet(
                         norm, i_d, id_sample, 
                         (index+(j*_dilation))%X_len[id_sample]
                     ] = False
-                
                 #Extract the values
                 v = get_subsequence(
                     X[id_sample, 0, :X_len[id_sample]], index,
@@ -212,7 +214,6 @@ def U_VL_generate_shapelet(
                     id_test = choice(loc_others)
                 else:
                     id_test = id_sample
-                
                 #Compute distance vector
                 x_dist = compute_shapelet_dist_vector(
                     X[id_test, 0, :X_len[id_test]], v, _length,
@@ -226,7 +227,7 @@ def U_VL_generate_shapelet(
                 )
                 values[i, :_length] = v
                 
-    mask_values = ones(n_shapelets).astype(bool_)
+    mask_values = ones(n_shapelets, dtype=bool_)
     for i in prange(n_shapelets):
         if _all(values[i] == 0):
             mask_values[i] = False
@@ -292,9 +293,9 @@ def U_VL_apply_all_shapelets(
     #(u_l * u_d , 2)
     params_shp = _combinations_1d(unique_lengths, unique_dilations)
     #(u_l * u_d) + 1
-    n_shp_params = zeros(params_shp.shape[0]+1).astype(int_)
+    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int_)
     #(n_shapelets)
-    idx_shp = zeros(n_shapelets).astype(int_)
+    idx_shp = zeros(n_shapelets, dtype=int_)
     
     a = 0
     

@@ -104,7 +104,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         normalize_output=False,
         n_samples=None,
         n_shapelets=10_000,
-        shapelet_lengths=[0.01,0.025,0.05,0.075,0.1],
+        shapelet_lengths=[11],
         proba_norm=0.8,
         percentiles=[5,10],
         n_jobs=1,
@@ -145,11 +145,11 @@ class R_DST(BaseEstimator, TransformerMixin):
             Class of the input time series.
 
         """
-        
         set_num_threads(self.n_jobs)
         self._set_fit_transform(X)
         if self.transform_type in [STR_MULTIVARIATE_VARIABLE, STR_UNIVARIATE_VARIABLE]:
             X, X_len = self._format_uneven_timestamps(X)
+            
             X = check_array_3D(X, is_univariate=False).astype(np.float64)
             if self.min_len is None:
                 self.min_len = X_len.min()
@@ -174,23 +174,21 @@ class R_DST(BaseEstimator, TransformerMixin):
         
         if self.shapelet_lengths.dtype == float:
             self.shapelet_lengths = np.floor(self.min_len*self.shapelet_lengths)
-            
         shapelet_lengths, seed = self._check_params(self.min_len)
-        
         # Generate the shapelets
         if self.transform_type == STR_UNIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self.min_len, X_len, self._get_distance_function(),
-                self.phase_invariance
+                self._get_distance_function(), self.phase_invariance,
+                self.min_len, X_len
             )
         elif self.transform_type == STR_MULTIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self.min_len, X_len, self._get_distance_function(),
-                self.phase_invariance, self.max_channels
+                self._get_distance_function(), self.phase_invariance,
+                self.max_channels, self.min_len, X_len
             )
         elif self.transform_type == STR_MUTLIVARIATE:
             self.shapelets_ = self.fitter(
@@ -266,19 +264,19 @@ class R_DST(BaseEstimator, TransformerMixin):
 
         """
         #[STR_UNIVARIATE,STR_MUTLIVARIATE,STR_UNIVARIATE,STR_MULTIVARIATE_VARIABLE]
-        X = np.asarray(X)
-        if X.dtype == np.int_ or X.dtype == np.float_:
+        if isinstance(X, list) or X.dtype == np.object_:
+            if len(X[0]) > 1:
+                return STR_MULTIVARIATE_VARIABLE
+            else:
+                return STR_UNIVARIATE_VARIABLE
+        elif X.dtype == np.int_ or X.dtype == np.float_:
             #Even length
             X = check_array_3D(X)
             if X.shape[1] > 1:
                 return STR_MUTLIVARIATE
             else:
                 return STR_UNIVARIATE
-        elif X.dtype == np.object_ or isinstance(X, list):
-            if len(X[0]) > 1:
-                return STR_MULTIVARIATE_VARIABLE
-            else:
-                return STR_UNIVARIATE_VARIABLE
+        
         
     def _set_fit_transform(self, X):
         """
@@ -318,7 +316,6 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.fitter = M_SL_generate_shapelet
             self.transformer = M_SL_apply_all_shapelets
             
-            
         elif _type == STR_UNIVARIATE_VARIABLE:
             from convst.transformers._univariate_variable_length import (
                 U_VL_apply_all_shapelets, U_VL_generate_shapelet
@@ -327,8 +324,11 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.transformer = U_VL_apply_all_shapelets
             
         elif _type == STR_MULTIVARIATE_VARIABLE:
-            self.transformer = None
-            self.fitter = None
+            from convst.transformers._multivariate_variable_length import (
+                M_VL_apply_all_shapelets, M_VL_generate_shapelet
+            )
+            self.fitter = M_VL_generate_shapelet
+            self.transformer = M_VL_apply_all_shapelets
         
         else:
             raise ValueError('Unknwon transform type parameter')
@@ -413,15 +413,14 @@ class R_DST(BaseEstimator, TransformerMixin):
                             "an array (got {}).".format(self.shapelet_lengths))
         
         shapelet_lengths = check_array_1D(self.shapelet_lengths).astype(np.int64)
-        
-        if not np.all(1 <= shapelet_lengths):
+        if not np.all(1 < shapelet_lengths):
             raise ValueError("All the values in 'shapelet_lengths' must be "
-                             "greater than or equal to 1 ({} < 1)."
-                             .format(shapelet_lengths.min()))
+                             "greater than 1, but got {} ({} < 1)."
+                             .format(shapelet_lengths, shapelet_lengths.min()))
             
         if not np.all(shapelet_lengths <= n_timestamps):
-            if n_timestamps < 5:
-                raise ValueError('Input data goint {} timestamps, at least 5 are requiered. Input format should be (n_samples, n_features, n_timestamps)'.format(n_timestamps))
+            if n_timestamps < 3:
+                raise ValueError('Input data goint {} timestamps, at least 4 are requiered. Input format should be (n_samples, n_features, n_timestamps)'.format(n_timestamps))
             else:
                 warnings.warn("All the values in 'shapelet_lengths' must be lower than or equal to 'n_timestamps' (got {} > {}). Changed shapelet size to {}".format(shapelet_lengths.max(), n_timestamps, n_timestamps//2))
                 shapelet_lengths = np.array([n_timestamps//2])

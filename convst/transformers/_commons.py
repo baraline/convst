@@ -55,6 +55,7 @@ def generate_strides_1D(X, window_size, dilation, use_phase):
 @njit(
   cache=True
 )
+
 def generate_strides_2D(X, window_size, dilation, use_phase):
     if use_phase:
         return _generate_strides_2D_phase(X, window_size, dilation) 
@@ -92,9 +93,11 @@ def _generate_strides_1D(X, window_size, dilation):
     strides_new = (s0, dilation * s0)
     return as_strided(X, shape=shape_new, strides=strides_new)
 
+
 @njit(
   cache=True
 )
+
 def _generate_strides_2D(X, window_size, dilation):
     """
     Generate strides from an ensemble of univariate time series with specified 
@@ -155,9 +158,7 @@ def _generate_strides_1D_phase(X, window_size, dilation):
     return X_new
 
 
-@njit(
-  cache=True
-)
+@njit(cache=True)
 def _generate_strides_2D_phase(X, window_size, dilation):
     """
     Generate strides from an ensemble of univariate time series with specified 
@@ -542,7 +543,7 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
 def _combinations_1d(x,y):
     x_size = x.shape[0]
     y_size = y.shape[0]
-    mesh = zeros((x_size * y_size, 2)).astype(x.dtype)
+    mesh = zeros((x_size * y_size, 2), dtype=x.dtype)
     for i in prange(x.size):
         for j in prange(y.size):
             mesh[i*x_size + j, 0] = x[i]

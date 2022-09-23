@@ -4,13 +4,12 @@ import numpy as np
 
 from joblib import Parallel
 
+from convst.utils.checks_utils import check_n_jobs
 from convst.transformers import R_DST, Raw, Derivate, Periodigram
+
 from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import RidgeClassifierCV
-
-# Most of the following have been developed for the ATM case using a binary classification.
-# Multi-class might not be supported for all functions and some would need to be adapted.
 from sklearn.utils.extmath import softmax
 from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.preprocessing import StandardScaler
@@ -62,10 +61,9 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         n_shapelets_per_estimator=10000,
-        shapelet_lengths=[0.01,0.025,0.05,0.075,0.1],
+        shapelet_lengths=[11],
         n_samples=None,
         n_jobs=1,
-        n_jobs_rdst=1,
         backend="processes",
         random_state=None,
         shp_alpha=0.5,
@@ -77,7 +75,6 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self.shapelet_lengths=shapelet_lengths
         self.n_jobs = n_jobs
         self.backend=backend
-        self.n_jobs_rdst = n_jobs_rdst
         self.random_state = random_state
         self.n_samples=n_samples
         self.shp_alpha = shp_alpha
@@ -85,7 +82,13 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self.proba_norm = proba_norm 
         self.phase_invariance = phase_invariance
         
+    def _manage_n_jobs(self):
+        total_jobs = check_n_jobs(self.n_jobs)
+        self.n_jobs = min(3,total_jobs)
+        self.n_jobs_rdst = max(1,(total_jobs)//self.n_jobs)
+        
     def fit(self, X, y):
+        self._manage_n_jobs()
         input_transformer = [
             Raw(),
             Derivate(),
