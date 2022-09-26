@@ -44,3 +44,5 @@ setup(
     ],
     zip_safe=False
 )
+#TODO : remove docs and test packages, update versions and look for
+# python versions compatibility.

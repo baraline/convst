@@ -91,7 +91,7 @@ class R_DST(BaseEstimator, TransformerMixin):
 
 
     .. [1] Antoine Guillaume et al, "Random Dilated Shapelet Transform: A new approach of time series shapelets" (2022)
-    .. [2] Antoine Guillaume, "Time series classification with shapelets: Application to early classification for predictive maintenance on event logs" (2023)
+    .. [2] Antoine Guillaume, "Time series classification with shapelets: Application to predictive maintenance on event logs" (2023)
 
     """
     
@@ -404,6 +404,34 @@ class R_DST(BaseEstimator, TransformerMixin):
     
 
     def _check_params(self, n_timestamps):
+        """
+        Check the validity of the input parameters, notably that shapelet 
+        length do not exceed time series lengths, and that we have at least 3
+        timestamp in all series.
+
+        Parameters
+        ----------
+        n_timestamps : int
+            Number of timestamps of input time series, if the input is of 
+            variable length, it must be the minimum number of timestamps.
+
+        Raises
+        ------
+        TypeError
+            If the number of shapelet is not an integer, or the shapelet lengths
+            are not a collection.
+        ValueError
+            If the size of the shapelets is not valid or the time series have
+            less than 3 timestamps.
+
+        Returns
+        -------
+        shapelet_lengths : array
+            The possible size of the shapelets.
+        seed : int
+            The random seed to be passed to the shapelet generator.
+
+        """
         if not isinstance(self.n_shapelets, (int, np.integer)):
             raise TypeError("'n_shapelets' must be an integer (got {})."
                             .format(self.n_shapelets))
@@ -444,7 +472,6 @@ class R_DST(BaseEstimator, TransformerMixin):
             if percentiles[0] <= percentiles[1]:
                 return percentiles
         raise ValueError('Wrong percetniles parameter value, got {}, expected a numerical array of size 2'.format(percentiles))
-                
     
     def _validate_distances(self, distance_str):
         distance_str = distance_str.lower()

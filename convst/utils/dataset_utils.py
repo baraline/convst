@@ -341,7 +341,7 @@ def return_all_multivariate_dataset_names():
         "UWaveGestureLibrary"
     ])
 
-def return_all_uneven_multivariate_dataset_names():
+def return_all_variable_multivariate_dataset_names():
     return np.asarray([
         "AsphaltObstaclesCoordinates",
         "AsphaltPavementTypeCoordinates",
@@ -353,7 +353,7 @@ def return_all_uneven_multivariate_dataset_names():
     ])
 
 
-def return_all_uneven_dataset_names():
+def return_all_variable_univariate_dataset_names():
     return np.asarray([
         "AllGestureWiimoteX",
         "AllGestureWiimoteY",
@@ -369,7 +369,7 @@ def return_all_uneven_dataset_names():
     ])
 
 
-def return_all_dataset_names():
+def return_all_univariate_dataset_names():
     """
     Return the names of the 112 univariate datasets of the UCR archive.
 
