@@ -246,7 +246,7 @@ def run_pipeline(pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs=1)
         pipeline = pipeline.fit(X_train, y_train)
         pred = pipeline.predict(X_test)
         t1 = timer()
-        return  accuracy_score(y_test, pred), 0, f1_score(y_test, pred, average='macro'), 0, (t1-t0), 0
+        return accuracy_score(y_test, pred), 0, f1_score(y_test, pred, average='macro'), 0, (t1-t0), 0
     
     raise ValueError("Invalid value for n_split in splitter,"
                      " got {} splits".format(splitter.n_splits))

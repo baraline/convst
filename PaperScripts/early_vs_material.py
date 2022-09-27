@@ -2,7 +2,13 @@
     
 from numba import njit, prange
 from convst.utils.shapelets_utils import generate_strides_1D
+from timeit import default_timer as timer
+import pandas as pd
+import numpy as np
+from convst.utils.dataset_utils import load_sktime_dataset_split, return_all_dataset_names
+import seaborn as sns
 
+# Re run the script by commenting njits to get py results
 
 @njit(fastmath=True, cache=True)
 def apply_one_shapelet_one_sample(x, values):
@@ -87,17 +93,12 @@ def apply_one_shapelet(X, values):
         apply_one_shapelet_one_sample(X[i], values)
 
 
-from timeit import default_timer as timer
-
 def time_func(f, x, shp):
     t0 = timer()    
     f(x, shp)
     t1 = timer()
     return t1-t0
 
-import pandas as pd
-import numpy as np
-from convst.utils.dataset_utils import load_sktime_dataset_split, return_all_dataset_names
 
 df_name = 'early_abandon_benchmark.csv'
 data_names = return_all_dataset_names()
@@ -146,8 +147,7 @@ for dataset_name in data_names:
             print(e)
 # In[]:
 
-import pandas as pd
-import seaborn as sns
+
 sns.set()
 sns.set_context('talk')
 from matplotlib import pyplot as plt

@@ -5,7 +5,8 @@ import numpy as np
 from joblib import Parallel
 
 from convst.utils.checks_utils import check_n_jobs
-from convst.transformers import R_DST, Raw, Derivate, Periodigram
+from convst.transformers import R_DST
+from convst.transformers._input_transformers import Raw, Derivate, Periodigram
 
 from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -17,7 +18,6 @@ from sklearn.pipeline import make_pipeline
 
 
 class _internalRidgeCV(RidgeClassifierCV): 
-    
     def __init__(self, **kwargs):
         super().__init__(
             store_cv_values=True,
@@ -81,6 +81,14 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self.a_w = a_w
         self.proba_norm = proba_norm 
         self.phase_invariance = phase_invariance
+        
+    def _more_tags(self):
+        return {
+            "capability:variable_length": True,
+            "capability:univariate": True,
+            "capability:multivariate": True,
+            "capability:multithreading": True,
+        }
         
     def _manage_n_jobs(self):
         total_jobs = check_n_jobs(self.n_jobs)

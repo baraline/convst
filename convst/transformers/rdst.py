@@ -18,8 +18,6 @@ from convst.utils.checks_utils import (
 )
 from convst.transformers._commons import manhattan, euclidean, squared_euclidean
 
-
-
 from numba import set_num_threads
 
 STR_MUTLIVARIATE = 'multivariate'

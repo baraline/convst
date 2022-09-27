@@ -189,19 +189,19 @@ def _generate_strides_2D_phase(X, window_size, dilation):
 
 
 @njit(cache=True)
-def get_subsequence(X, index, l, d, normalize, use_phase):
+def get_subsequence(X, index, length, d, normalize, use_phase):
     if use_phase:
         return _get_subsequence_phase(
-            X, index, l, d, normalize
+            X, index, length, d, normalize
         )
     else:
         return _get_subsequence(
-            X, index, l, d, normalize
+            X, index, length, d, normalize
         )
 
 
 @njit(cache=True, fastmath=True)
-def _get_subsequence(X, i_start, l, d, normalize):
+def _get_subsequence(X, i_start, length, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
     time series given a starting index.
@@ -221,14 +221,14 @@ def _get_subsequence(X, i_start, l, d, normalize):
 
     Returns
     -------
-    v : array, shape=(l)
+    v : array, shape=(length)
         The resulting subsequence.
 
     """
-    v = zeros(l)
+    v = zeros(length)
     _idx = i_start
     
-    for j in prange(l):
+    for j in prange(length):
         v[j] = X[_idx]
         _idx += d
     
@@ -237,7 +237,7 @@ def _get_subsequence(X, i_start, l, d, normalize):
     return v
 
 @njit(cache=True, fastmath=True)
-def _get_subsequence_phase(X, i_start, l, d, normalize):
+def _get_subsequence_phase(X, i_start, length, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
     time series given a starting index. It uses phase invariance.
@@ -258,15 +258,15 @@ def _get_subsequence_phase(X, i_start, l, d, normalize):
 
     Returns
     -------
-    v : array, shape=(l)
+    v : array, shape=(length)
         The resulting subsequence.
 
     """
     n_ts = X.shape[0]
-    v = zeros(l)
+    v = zeros(length)
     _idx = i_start
     
-    for j in prange(l):
+    for j in prange(length):
         v[j] = X[_idx]
         _idx = (_idx+d)%n_ts
     

@@ -32,7 +32,7 @@ class Shapelet:
         self.threshold = threshold
         self.id = id
         
-    def plot(self, figsize=(10,5),  seaborn_context='talk'):
+    def plot(self, figsize=(10,5), seaborn_context='talk'):
         sns.set()
         sns.set_context(seaborn_context)
         fig = plt.figure(figsize=(figsize))
@@ -135,7 +135,10 @@ class RDST_interpreter():
         values, length, dilation, norm, threshold, phase = self.get_params(id_shapelet)
         return Shapelet(
             values, length, dilation, norm, threshold, phase
-        ).plot_distance_vector()
+        ).plot_distance_vector(
+            X, d_func=d_func, figsize=figsize, seaborn_context=seaborn_context,
+            c_threshold=c_threshold
+        )
     
     def plot(self, id_shapelet, figsize=(10,5), seaborn_context='talk'):
         values, length, dilation, norm, threshold, phase = self.get_params(id_shapelet)

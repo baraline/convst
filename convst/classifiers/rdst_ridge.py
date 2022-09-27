@@ -76,7 +76,6 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         fit_intercept=True,
         alphas_ridge=list(np.logspace(-3,3,10))
     ):
-
         self.alphas_ridge=alphas_ridge
         self.class_weight=class_weight
         self.fit_intercept=fit_intercept
@@ -93,6 +92,14 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.n_jobs=n_jobs
         self.random_state=random_state
         self.min_len=min_len
+
+    def _more_tags(self):
+        return {
+            "capability:variable_length": True,
+            "capability:univariate": True,
+            "capability:multivariate": True,
+            "capability:multithreading": True,
+        }
 
     def _init_components(self):
         self.classifier = make_pipeline(
