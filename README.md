@@ -36,9 +36,7 @@ We give here a minimal example to run the `RDST` algorithm on any dataset of the
 from convst.classifiers import R_DST_Ridge
 from convst.utils.dataset_utils import load_sktime_dataset_split
 
-X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
-    'GunPoint', normalize=True
-)
+X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
 
 # First run may be slow due to numba compilations on the first call. 
 # Run a small dataset like GunPoint if this is the first time you call RDST on your system.
@@ -79,7 +77,7 @@ If you use our algorithm or publication in any work, please cite the following p
 author="Guillaume, Antoine
 and Vrain, Christel
 and Elloumi, Wael",
-title="Random Dilated Shapelet Transform: A New Approach for Time Series Shapelets",
+title="Random Dilated Shapelet Transform: A New Approach for Time Series Shapelets",
 booktitle="Pattern Recognition and Artificial Intelligence",
 year="2022",
 publisher="Springer International Publishing",
@@ -97,8 +95,10 @@ isbn="978-3-031-09037-0"
 - [ ] Finish Numpy docs in all python files
 - [ ] Update documentation and examples
 - [ ] Enhance interface for interpretability tools
-- [ ] Add the Generalised version of RDST
+- [X] Add the Generalised version of RDST
 - [ ] Continue unit tests and code coverage/quality
+- [ ] Check the effect of nogil option for numba with nopython
+- [ ] Add function signatures to numba functions
 
 ## Citations
 

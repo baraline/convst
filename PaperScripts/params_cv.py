@@ -12,6 +12,8 @@ from sklearn.linear_model import RidgeClassifierCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
+#TODO : UPDATE TO THE NEW API
+
 csv_name = 'params_csv.csv'
 n_cv = 10
 base_UCR_resamples_path = r"/home/prof/guillaume/Shapelets/resamples/"

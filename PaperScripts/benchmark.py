@@ -18,6 +18,9 @@ from sktime.transformations.panel.rocket import Rocket
 
 from timeit import default_timer as timer
 
+#TODO : UPDATE TO THE NEW API
+
+
 # Define timining function
 def time_pipe(pipeline, X_train, y_train):
     t0 = timer()

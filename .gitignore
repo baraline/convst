@@ -167,3 +167,13 @@ Figures/media/videos/scene/1080p60/partial_movie_files/Slide1/partial_movie_file
 *.png
 
 Figures/media/videos/scene/1080p60/partial_movie_files/Slide2/partial_movie_file_list.txt
+
+*.Result
+
+untitled2.py
+
+
+
+results/old_cv/
+
+Figures/personnal/
