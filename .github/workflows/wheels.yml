@@ -120,11 +120,9 @@ jobs:
         run: conda list -n test
 
       - name: Run tests
-        run: |
-          mkdir -p testdir/
-          cp .coveragerc testdir/
-          cp setup.cfg testdir/
-          python -m pytest
+        run:
+          python -m pytest ./tests
+          
   upload_wheels:
     name: Upload wheels to PyPI
     runs-on: ubuntu-latest
