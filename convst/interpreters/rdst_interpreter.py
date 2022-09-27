@@ -23,71 +23,82 @@ from convst.transformers import R_DST
 from convst.classifiers import R_DST_Ridge, R_DST_Ensemble
 
 class Shapelet:
-    def __init__(self, values, length, dilation, norm, threshold, phase, id=None):
+    def __init__(self, values, length, dilation, norm, threshold, phase):
         self.values = np.asarray(values)
         self.length = length
         self.dilation = dilation
         self.norm = norm
         self.phase = phase
         self.threshold = threshold
-        self.id = id
         
-    def plot(self, figsize=(10,5), seaborn_context='talk'):
-        sns.set()
-        sns.set_context(seaborn_context)
-        fig = plt.figure(figsize=(figsize))
-        plt.plot(self.values)
-        plt.xticks(np.arange(self.length), np.arange(self.length)*self.dilation)
-        if self.id is not None:
+    def plot(self, figsize=(10,5), seaborn_context='talk', ax=None):
+        if ax is None:
+            sns.set()
+            sns.set_context(seaborn_context)
+            fig = plt.figure(figsize=(figsize))
+            plt.plot(self.values)
             plt.title(
-                'Shapelet n°{} (d={},normalize={},threshold={})'.format(
-                    self.id, self.dilation, self.norm, self.threshold
+                'd={},normalize={},threshold={}'.format(
+                    self.dilation, self.norm, np.round(self.threshold,decimals=2)
                 )
             )
+            return fig
         else:
-            plt.title(
-                'Shapelet (d={},normalize={},threshold={})'.format(
-                    self.dilation, self.norm, self.threshold
+            ax.plot(self.values)
+            ax.set_title(
+                'd={},normalize={},threshold={}'.format(
+                    self.dilation, self.norm, np.round(self.threshold,decimals=2)
                 )
             )
-        return fig
+            return ax
         
     def plot_on_X(
         self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
-        shp_dot_size=30, shp_c='Orange'
+        shp_dot_size=40, shp_c='purple', ax=None, label=None
     ):
         c = compute_shapelet_dist_vector(
             X, self.values, self.length, self.dilation,
             manhattan, self.norm, self.phase
         )
-        sns.set()
-        sns.set_context(seaborn_context)
-        fig = plt.figure(figsize=(figsize))
-        plt.plot(X)
         _values = self.values
         idx_match = np.asarray(
-            [c.argmin() + i*self.dilation for i in range(self.length)]
+            [(c.argmin() + i*self.dilation)%X.shape[0] for i in range(self.length)]
         ).astype(int)
         if self.norm:
             _values = (_values * X[idx_match].std()) + X[idx_match].mean()
-        plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c)
-        
-        return fig
+            
+        if ax is None:
+            sns.set()
+            sns.set_context(seaborn_context)
+            fig = plt.figure(figsize=(figsize))
+            plt.plot(X,label=label)
+            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c)
+            return fig
+        else:
+            ax.plot(X,label=label)
+            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c)
     
     def plot_distance_vector(   
         self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
-        c_threshold='Orange'
+        c_threshold='purple', ax=None, label=None
     ):
         c = compute_shapelet_dist_vector(
             X, self.values, self.length, self.dilation,
             manhattan, self.norm, self.phase
         )
-        sns.set()
-        sns.set_context(seaborn_context)
-        fig = plt.figure(figsize=(figsize))
-        plt.plot(c)
-        plt.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
-        return fig
+        if ax is None:
+            sns.set()
+            sns.set_context(seaborn_context)
+            fig = plt.figure(figsize=(figsize))
+            plt.plot(c,label=label)
+            plt.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
+            return fig
+        else:
+            print(c.min())
+            print(self.threshold)
+            ax.plot(c,label=label)
+            ax.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
+            return ax
 
     
 class RDST_interpreter():
@@ -107,44 +118,38 @@ class RDST_interpreter():
         if self.RDST.transform_type in ['multivariate','multivariate_variable']:
             raise NotImplementedError('Interpreter is not yet implemented for multivariate data')
         else:
-            l = lengths[id_shapelet]
-            v = values[id_shapelet, :l]
-            d = dilations[id_shapelet]
-            n = normalize[id_shapelet]
-            t = threshold[id_shapelet]
-        return v, l, d, n, t, phase 
+            length_ = lengths[id_shapelet]
+            values_ = values[id_shapelet, :length_]
+            dilation = dilations[id_shapelet]
+            norm = normalize[id_shapelet]
+            threshold_ = threshold[id_shapelet]
+        return values_, length_, dilation, norm, threshold_, phase 
         
         
     def plot_on_X(
         self, id_shapelet, X, d_func=manhattan, figsize=(10,5),
-        seaborn_context='talk', shp_dot_size=30, shp_c='Orange'
+        seaborn_context='talk', shp_dot_size=40, shp_c='purple', ax=None,
+        label=None,
     ):
-        values, length, dilation, norm, threshold, phase = self.get_params(id_shapelet)
-        return Shapelet(
-            values, length, dilation, norm, threshold, phase
-        ).plot_on_X(
+        return Shapelet(*self.get_params(id_shapelet)).plot_on_X(
             X, d_func=d_func, figsize=figsize,
             seaborn_context=seaborn_context, shp_dot_size=shp_dot_size,
-            shp_c=shp_c
+            shp_c=shp_c, ax=ax, label=label
         )
 
     def plot_distance_vector(
         self, id_shapelet, X, d_func=manhattan, figsize=(10,5), 
-        seaborn_context='talk', c_threshold='Orange'
+        seaborn_context='talk', c_threshold='purple', ax=None, label=None
     ):
-        values, length, dilation, norm, threshold, phase = self.get_params(id_shapelet)
-        return Shapelet(
-            values, length, dilation, norm, threshold, phase
-        ).plot_distance_vector(
+        return Shapelet(*self.get_params(id_shapelet)).plot_distance_vector(
             X, d_func=d_func, figsize=figsize, seaborn_context=seaborn_context,
-            c_threshold=c_threshold
+            c_threshold=c_threshold, ax=ax, label=label
         )
     
-    def plot(self, id_shapelet, figsize=(10,5), seaborn_context='talk'):
-        values, length, dilation, norm, threshold, phase = self.get_params(id_shapelet)
-        return Shapelet(
-            values, length, dilation, norm, threshold, phase
-        ).plot(figsize=figsize, seaborn_context=seaborn_context)
+    def plot(self, id_shapelet, figsize=(10,5), seaborn_context='talk', ax=None):
+        return Shapelet(*self.get_params(id_shapelet)).plot(
+            figsize=figsize, seaborn_context=seaborn_context, ax=ax
+        )
     
 
 class RDST_Ridge_interpreter():
@@ -157,21 +162,66 @@ class RDST_Ridge_interpreter():
             raise TypeError(
                 'Object passed to RDST_Ridge interpreter should be an R_DST_Ridge instance'
             )
-    
-    def get_shp_importance(self):
-        """
-        coefs = self.RDST_Ridge.classifier.coef_
-        if coefs.shape[0] == 1:
+        self.rdst_interp = RDST_interpreter(self.RDST_Ridge.transformer)
+        
+    def get_shp_importance(self, class_id):
+        coefs = self.RDST_Ridge.classifier['ridgeclassifiercv'].coef_
+        n_classes = coefs.shape[0]
+        
+        if n_classes == 1:
             coefs = np.append(-coefs, coefs, axis=0)
+        c_ = np.zeros(self.RDST_Ridge.transformer.shapelets_[1].shape[0]*3)
+        c_[self.RDST_Ridge.classifier['c_standardscaler'].usefull_atts] = coefs[class_id]
+        return c_
+    
+    def visualize_best_shapelets_one_class(
+        self, X, y, class_id, n_shp=1, figsize=(16,12), seaborn_context='talk',
+    ):
+        sns.set()
+        sns.set_context(seaborn_context)
         
-        for i_class in range(coefs.shape[0]):
-            c = coefs[i_class]
-            shp_coefs = c[0::3] + c[1::3] + c[2::3] 
-        """
-        raise NotImplementedError()
+        coefs = self.get_shp_importance(class_id)
         
+        idx = (coefs.argsort()//3)[::-1]
+        shp_ids = []
+        i=0
+        while len(shp_ids)<n_shp and i < idx.shape[0]:
+            if idx[i] not in shp_ids:
+                shp_ids = shp_ids + [idx[i]]
+            i+=1
+            
+        X_new = self.RDST_Ridge.transformer.transform(X)
+        i_example = np.random.choice(np.where(y==class_id)[0])
+        i_example2 = np.random.choice(np.where(y!=class_id)[0])
+        y_copy = (y == class_id).astype(int)
+        for i_shp in shp_ids:
+            fig, ax = plt.subplots(nrows=2, ncols=3, figsize=figsize)
+            
+            ax[0,0].set_title('Boxplot of min')
+            sns.boxplot(x=y_copy,y=X_new[:,(i_shp*3)],ax=ax[0,0])
+            ax[0,0].set_xticklabels(['Other classes', 'Class {}'.format(class_id)])
+            
+            ax[0,1].set_title('Boxplot of argmin')
+            sns.boxplot(x=y_copy,y=X_new[:,1+(i_shp*3)],ax=ax[0,1])
+            
+            ax[0,1].set_xticklabels(['Other classes', 'Class {}'.format(class_id)])
+            ax[0,2].set_title('Boxplot of Shapelet Occurence')
+            sns.boxplot(x=y_copy,y=X_new[:,2+(i_shp*3)],ax=ax[0,2])
+            
+            ax[0,2].set_xticklabels(['Other classes', 'Class {}'.format(class_id)])            
+            
+            ax[1,0].set_title('Best match')
+            ax[1,2].set_title('Distance vectors')
+            
+            self.rdst_interp.plot(i_shp, ax=ax[1,1])
+            self.rdst_interp.plot_on_X(i_shp, X[i_example,0], ax=ax[1,0], label='Class {}'.format(class_id))
+            self.rdst_interp.plot_on_X(i_shp, X[i_example2,0], ax=ax[1,0], label='Other class')
+            self.rdst_interp.plot_distance_vector(i_shp, X[i_example,0], ax=ax[1,2], label='Class {}'.format(class_id))
+            self.rdst_interp.plot_distance_vector(i_shp, X[i_example2,0], ax=ax[1,2], label='Other class')
         
-class RDST_Ensemble_interpreter():
+
+            
+class RDST_Ensemble_interpreter:
     def __init__(self, RDST_Ensemble):
         check_is_fitted(RDST_Ensemble, ['classifier'])
         if isinstance(RDST_Ensemble, R_DST_Ensemble):
@@ -180,7 +230,9 @@ class RDST_Ensemble_interpreter():
             raise TypeError(
                 'Object passed to RDST_Ridge interpreter should be an R_DST_Ridge instance'
             )
-
+    
+    def visualize_best_shapelets_one_class(self, class_id, n_shp=1):
+        raise NotImplementedError()
 
 
 def class_vis(rdg, i_class, c):
@@ -200,44 +252,5 @@ def class_vis(rdg, i_class, c):
     
     #sns.boxplot(x=c.length_, y=coef_sums,ax=ax[2])
     
-def report(shp, ridge, X, y, xt=None, k=1, only_global=True):
-    coefs = ridge.coef_
-    if np.bincount(y).shape[0] == 2:
-        coefs = np.append(-coefs, coefs, axis=0)
-    
-    for i_class in range(coefs.shape[0]):
-        c = coefs[i_class]
-        shp_coefs = c[1::3] + c[2::3] + c[0::3]
-        idx = c.argsort()
-        coefs_min = c[0::3]
-        coefs_argmin = c[1::3]
-        coefs_match = c[2::3]
-        fig, ax = plt.subplots(ncols=2,figsize=(15,5))
-        sns.distplot(coefs_min,label='min',ax=ax[0])
-        sns.distplot(coefs_argmin,label='argmin',ax=ax[0])
-        sns.distplot(coefs_match,label='match',ax=ax[0])
-        ax[0].legend()
-        ax[0].set_title('feature importance class {}'.format(i_class))
-        sns.distplot(shp_coefs,ax=ax[1])
-        plt.show()
-        if not only_global:
-            top_k = idx[-k:]//3
-            low_k = idx[:k]//3
-            for i_k in range(k):
-                shp.visualise_one_shapelet(top_k[i_k], X, y, title='Top {} shapelet of class {}'.format(k, i_class))
-                shp.visualise_one_shapelet(low_k[i_k], X, y, title='Worse {} shapelet of class {}'.format(k, i_class))
-                if xt is not None:
-                    fig, ax = plt.subplots(ncols=2, figsize=(15,5))
-                    for j_class in range(coefs.shape[0]):
-                        ax[0].scatter(xt[y==j_class, (top_k[i_k]*3)+0]*c[(top_k[i_k]*3)+0],
-                                      xt[y==j_class, (top_k[i_k]*3)+2]*c[(top_k[i_k]*3)+2],
-                                      c='C'+str(j_class),
-                                      s=45, alpha=0.85)
-                        ax[1].scatter(xt[y==j_class, (low_k[i_k]*3)+0]*c[(low_k[i_k]*3)+0],
-                                      xt[y==j_class, (low_k[i_k]*3)+2]*c[(low_k[i_k]*3)+2],
-                                      c='C'+str(j_class),
-                                      s=45, alpha=0.85, label=j_class)
-                        ax[1].legend()
-                plt.show()
 
 #report(c, rf['ridgeclassifiercv'], X_test, y_test, rf['standardscaler'].transform(xt))

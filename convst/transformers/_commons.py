@@ -482,7 +482,7 @@ def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
             _min = _dist
             _argmin = i
 
-        if _dist < threshold:
+        if _dist <= threshold:
             _n_match += 1
             
     return _min, float_(_argmin), float_(_n_match)

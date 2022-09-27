@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeClassifierCV
-from convst.transformers.input_transformers import c_StandardScaler
+from convst.transformers._input_transformers import c_StandardScaler
 from convst.transformers import R_DST
 
 from sklearn.metrics import accuracy_score
@@ -74,7 +74,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         min_len=None,
         class_weight=None, 
         fit_intercept=True,
-        alphas_ridge=list(np.logspace(-3,3,10))
+        alphas_ridge=list(np.logspace(-6,6,20))
     ):
         self.alphas_ridge=alphas_ridge
         self.class_weight=class_weight

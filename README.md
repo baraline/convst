@@ -36,9 +36,7 @@ We give here a minimal example to run the `RDST` algorithm on any dataset of the
 from convst.classifiers import R_DST_Ridge
 from convst.utils.dataset_utils import load_sktime_dataset_split
 
-X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
-    'GunPoint', normalize=True
-)
+X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
 
 # First run may be slow due to numba compilations on the first call. 
 # Run a small dataset like GunPoint if this is the first time you call RDST on your system.
