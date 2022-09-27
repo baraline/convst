@@ -19,12 +19,7 @@ To be fully able to run the convst packages and the examples, the following pack
     - seaborn >= 0.11,
     - sktime >= 0.10,
     - numpy < 1.22, >=1.18,
-    - networkx >= 2.6.3,
-    - pytest >= 7.0,
-    - sphinx >= 4.2.0,
-    - sphinx_gallery >= 0.10.1,
-    - numpydoc >= 1.1.0,
-    - alabaster >= 0.7.12,
+    - networkx >= 2.6.3
 
 
 User installation

@@ -7,7 +7,7 @@ API Documentation
 Full API documentation of the *convst* Python package.
 
 :mod:`convst.classifiers`: Classification algorithms
-=====================================================
+====================================================
 
 .. automodule:: convst.transformers
     :no-members:
@@ -21,6 +21,7 @@ Full API documentation of the *convst* Python package.
    :template: class.rst
 
    classifiers.R_DST_Ridge
+   classifiers.R_DST_Ensemble
 
 
 :mod:`convst.transformers`: Transformation algorithms
@@ -38,6 +39,23 @@ Full API documentation of the *convst* Python package.
    :template: class.rst
 
    transformers.R_DST
+   
+:mod:`convst.interpreters`: Interpretation tools
+================================================
+
+.. automodule:: convst.interpreters
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: convst
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+   :template: class.rst
+
+   interpreters.RDST_Ridge_interpreter
+   interpreters.RDST_interpreter
 
 :mod:`convst.utils`: Utilities
 ==============================
