@@ -19,7 +19,7 @@ install: ## Install for the current user using the default python command
 	python3 setup.py build_ext --inplace && python setup.py install --user
 
 test: ## Run unit tests
-	python -m pytest TEST_DIR
+	python -m pytest $(TEST_DIR)
 
 clean: ## Clean build dist and egg directories left after install
 	rm -rf ./dist
