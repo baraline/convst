@@ -27,14 +27,14 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     ----------
     n_shapelets : int, optional
         Number of shapelets to generate. The default is 10000.
-    shapelet_sizes : array
+    shapelet_sizes : array, optional
         An array of int which indicate the possible absolute shapelet sizes.
         Or an array of float which will give shapelet sizes relative to input length.
         The default is [11]
-    p_norm : float
+    p_norm : float, optional
         A float between 0 and 1 indicating the proportion of shapelets that
         will use a z-normalized distance. The default is 0.8.
-    percentiles : array, shape=(2)
+    percentiles : array, shape=(2), optional
         The two percentiles (between 0 and 100) between which the value of the
         threshold will be sampled during shapelet generation. 
         The default is [5,10].
@@ -43,7 +43,8 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         The default is None.
     n_jobs : int, optional
         Number of thread used by numba for the computational heavy part
-        of the algortihm. The default is -1 (i.e all available cores).
+        of the algortihm. The default is 1. Change to -1 to use all
+        available cores.
     class_weight : object, optional
         Class weight option of Ridge Classifier, either None, "balanced" or a
         custom dictionnary of weight for each class. The default is None.

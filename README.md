@@ -10,6 +10,13 @@ This work was supported by the following organisations:
   <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png" width="32%" />
 </p>
 
+## What's coming for the next release
+
+A new release will soon be available, which will include the works which will be presented for the thesis defense. New exciting developments are presented, such as a fast ensemble version of RDST reaching state-of-the-art results, more documentation, examples and unit tests. Expected release : mid-to-end September.
+
+<p float="center">
+  <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/cd_ensemble.png" width="100%" />
+</p>
 
 ## Installation
 
@@ -35,9 +42,10 @@ X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
 
 # First run may be slow due to numba compilations on the first call. 
 # Run a small dataset like GunPoint if this is the first time you call RDST on your system.
-# You can change n_shapelets to 1 to make this process faster.
+# You can change n_shapelets to 1 to make this process faster. The n_jobs parameter can
+# also be changed to increase speed once numba compilation are done.
 
-rdst = R_DST_Ridge(n_shapelets=10_000).fit(X_train, y_train)
+rdst = R_DST_Ridge(n_shapelets=10_000, n_jobs=1).fit(X_train, y_train)
 
 print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
 ```

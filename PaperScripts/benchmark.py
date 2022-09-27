@@ -35,7 +35,7 @@ n_jobs=90
 
 pipe_RDST = make_pipeline(
     R_DST(n_jobs=n_jobs),
-    StandardScaler(with_mean=False),
+    StandardScaler(with_mean=True),
     RidgeClassifierCV()
 )
 
