@@ -1,47 +1,56 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import convst
+__author__ = ["Antoine Guillaume"]
 
-from setuptools import setup, find_packages
-import os
+import codecs
 
-ROOT = os.path.abspath(os.path.dirname(__file__))
+import toml
+from setuptools import find_packages, setup
 
-with open(os.path.join(ROOT, 'README.md'), encoding="utf-8") as f:
-    README = f.read()
-	
-setup(
-    name="convst",
-    description="The Random Dilation Shapelet Transform algorithm",
-	long_description_content_type='text/markdown',
-	long_description=README,
-    author="Antoine Guillaume",
-    packages=find_packages(),
-	license='BSD 2',
-	download_url = 'https://github.com/baraline/convst/archive/v0.1.5.1.tar.gz',
-    version=convst.__version__,
-	keywords = ['shapelets', 'time-series-classification',
-             'shapelet-transform', 'time-series-transformations'],
-	url="https://github.com/baraline/convst",
-    author_email="antoine.guillaume45@gmail.com",
-	python_requires='>=3.8',
-    install_requires=[
-        "matplotlib >= 3.5",
-        "numba >= 0.55",
-        "pandas >= 1.4",
-        "scikit_learn >= 1.1",
-        "joblib >= 1.1.0",
-        "scipy >= 1.8",
-        "seaborn >= 0.11",
-        "sktime >= 0.12",
-        "numpy < 1.22, >=1.18",
-        "networkx >= 2.6.3",
-        #"pytest >= 7.0",
-        #"sphinx >= 4.2.0",
-        #"sphinx_gallery >= 0.10.1",
-        #"numpydoc >= 1.1.0",
-        #"alabaster >= 0.7.12"
-    ],
-    zip_safe=False
-)
-#TODO : remove docs and test packages, update versions and look for
-# python versions compatibility.
+pyproject = toml.load("pyproject.toml")
+
+def long_description():
+    with codecs.open("README.md", encoding="utf-8-sig") as f:
+        return f.read()
+    
+def setup_package():
+    """Set up package."""
+    setup(
+        author_email=pyproject["project"]["authors"][0]["email"],
+        author=pyproject["project"]["authors"][0]["name"],
+        classifiers=pyproject["project"]["classifiers"],
+        description=pyproject["project"]["description"],
+        download_url=pyproject["project"]["urls"]["download"],
+        include_package_data=True,
+        install_requires=pyproject["project"]["dependencies"],
+        keywords=pyproject["project"]["keywords"],
+        license=pyproject["project"]["license"],
+        long_description=long_description(),
+        name=pyproject["project"]["name"],
+        package_data={
+            "convst": [
+                "*.csv",
+                "*.csv.gz",
+                "*.arff",
+                "*.arff.gz",
+                "*.txt",
+                "*.ts",
+                "*.tsv",
+            ]
+        },
+        packages=find_packages(
+            where=".",
+            exclude=["tests", "tests.*"],
+        ),
+        project_urls=pyproject["project"]["urls"],
+        python_requires=pyproject["project"]["requires-python"],
+        setup_requires=pyproject["build-system"]["requires"],
+        url=pyproject["project"]["urls"]["repository"],
+        version=pyproject["project"]["version"],
+        zip_safe=False,
+    )
+
+
+if __name__ == "__main__":
+    setup_package()

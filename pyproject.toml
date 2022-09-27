@@ -1,0 +1,61 @@
+[project]
+name = "convst"
+version = "0.2.0"
+description = "The Random Dilation Shapelet Transform algorithm and associated works"
+readme = "README.md"
+authors = [
+    {name = "Antoine Guillaume", email = "antoine.guillaume45@gmail.com"}
+]
+keywords = [
+    "data-science",
+    "machine-learning",
+    "data-mining",
+    "time-series",    
+    "shapelets",
+    "time-series-classification",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+requires-python = ">=3.7,<3.11"
+dependencies = [
+    "sktime >= 0.13",
+    "numba>=0.53",
+    "numpy>=1.21.0,<1.23",
+    "pandas>=1.1.0,<1.6.0",
+    "scikit-learn>=0.24.0,<1.2.0",
+    "statsmodels>=0.12.1",
+    "scipy<1.9.0",
+    "matplotlib>=3.3.2,<3.6",
+    "seaborn>=0.11.0",
+    "pytest >= 7.0",
+    "sphinx >= 4.2.0",
+    "sphinx_gallery >= 0.10.1",
+    "numpydoc >= 1.1.0",
+    "alabaster >= 0.7.12"
+]
+
+[project.urls]
+repository = "https://github.com/baraline/convst"
+documentation = "https://convst.readthedocs.io/en/latest/www.sktime.org"
+download = "https://pypi.org/project/convst/#files"
+
+[project.license]
+file = "LICENSE"
+
+[build-system]
+requires = ["setuptools", "wheel", "toml", "build"]
+build-backend = "setuptools.build_meta"
