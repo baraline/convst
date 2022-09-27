@@ -1,5 +1,3 @@
-[![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) ![docs](https://img.shields.io/readthedocs/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main)
-
 
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 This work was supported by the following organisations:
@@ -10,17 +8,22 @@ This work was supported by the following organisations:
   <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/Logo_Worldline_-_2021(1).png" width="32%" />
 </p>
 
-## What's coming for the next release
+## Status
 
-A new release will soon be available, which will include the works which will be presented for the thesis defense. New exciting developments are presented, such as a fast ensemble version of RDST reaching state-of-the-art results, more documentation, examples and unit tests. Expected release : mid-to-end September.
+| Overview | |
+|---|---|
+| **Compatibility** | [![!python-versions](https://img.shields.io/pypi/pyversions/sktime)](https://www.python.org/)
+| **CI/CD** |  [![!pypi](https://img.shields.io/pypi/v/convst?color=orange)](https://pypi.org/project/convst/)  ![docs](https://img.shields.io/readthedocs/convst)|
+| **Code Quality** |  [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main) |
+| **Downloads**| [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) |
+
+
 
 <p float="center">
   <img src="https://raw.githubusercontent.com/baraline/convst/main/docs/_static/img/cd_ensemble.png" width="100%" />
 </p>
 
 ## Installation
-
-The package was built and is using Python 3.8+ as default. If inquiries are made for support of earlier version of Python, i will make the adjustments.
 
 The recommended way to install the latest stable version is to use pip with `pip install convst`. To install the package from sources, you can download the latest version on GitHub and run `python setup.py install`. This should install the package and automatically look for the dependencies using `pip`. 
 
@@ -54,16 +57,17 @@ You can also visualize a shapelet using the visualization tool to obtain such vi
 To know more about all the interpretability tools, check the documentation on readthedocs.
 
 ## Supported inputs
+RDST support the following type of time series:
+- Univariate and same length
+- Univariate and variable length
+- Multivariate and same length
+- Multivariate and variable length
 
-We use the standard scikit-learn interface and expect as input a 3D matrix of shape `(n_samples, n_features, n_timestamps)`. Note that as only univariate is supported in version 0.15.0, RDST will only process the first feature.
-
-A generalized version of the algorithm will be available in next release, allowing to classify multivariate and/or uneven length time series.
+We use the standard scikit-learn interface and expect as input a 3D numpy array of shape `(n_samples, n_features, n_timestamps)`. For variable length input, we expect a (python) list of numpy arrays, or a numpy array with object dtype.
 
 ## Reproducing the paper results
 
-Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results.
-
-To obtain the same resampling data as the UCR archive, you must use the [tsml](https://github.com/uea-machine-learning/tsml/blob/master/src/main/java/examples/DataHandling.java) java repository, then from the class `DataHandling` in the package examples, use the function `resamplingData` and change where to read and write the data from. The function assumes the input is in arff format, they can be obtained on the [time serie classification website](http://www.timeseriesclassification.com/)
+Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results, notably the `test_models.py` file, used to generate the csv results available in the `Results` folder of the archive (To be added).
 
 ## Contributing, Citing and Contact
 
@@ -94,10 +98,9 @@ isbn="978-3-031-09037-0"
 
 - [ ] Finish Numpy docs in all python files
 - [ ] Update documentation and examples
-- [ ] Enhance interface for interpretability tools
+- [X] Enhance interface for interpretability tools
 - [X] Add the Generalised version of RDST
 - [ ] Continue unit tests and code coverage/quality
-- [ ] Check the effect of nogil option for numba with nopython
 - [ ] Add function signatures to numba functions
 
 ## Citations
