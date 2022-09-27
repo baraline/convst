@@ -67,8 +67,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         backend="processes",
         random_state=None,
         shp_alpha=0.5,
-        a_w = 4,
-        proba_norm = [0.8, 0.8, 0.8],
+        a_w=4,
+        proba_norm=[0.8, 0.8, 0.8],
         phase_invariance=False
     ):
         self.n_shapelets_per_estimator=n_shapelets_per_estimator

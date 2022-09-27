@@ -1,4 +1,6 @@
-Those script containt the methods used for generating the results of the paper. If you wish to use some of them, modify the base path and any path variable that is present in the start of each script.
-You will also have to download some dataset files so the same split are used for experiments involving resampling.
+Those script containt the methods used for generating the results of the paper, you might have to modify some variables or path depending on the script you are using, read the comments in the scripts for more informations.
 
-TODO : Is sktime default train test split equivalent to arff files, can we reproduce the exact tsml splits using the sktime interface and the same random state ids ?
+- The `test_models.py` allows you to test any of the classifiers on the datasets available throught Sktime API
+- The `test_on_arff.py` allows you to test any of the classifiers on datasets in the arrf format stored on the machine
+- The `params_cv.py` allows you to test the best parameters for RDST on a set of datasets. TO UPDATE TO NEW API
+- The `benchmark.py` allows you to test the computation time for RDST against other algorithms. TO UPDATE TO NEW API

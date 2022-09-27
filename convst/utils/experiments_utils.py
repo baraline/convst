@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.metrics import f1_score, make_scorer
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_validate
-from sklearn.utils import resample, check_random_state
+from sklearn.utils import check_random_state
 
 from timeit import default_timer as timer
 

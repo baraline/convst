@@ -3,23 +3,29 @@
 import pandas as pd
 import numpy as np
 
-from convst.utils.dataset_utils import (return_all_dataset_names,
-    load_sktime_arff_file_resample_id, load_sktime_dataset_split)
+from convst.utils.dataset_utils import (
+    return_all_univariate_dataset_names, load_sktime_arff_file_resample_id
+)
 from convst.utils.experiments_utils import ARFF_stratified_resample, run_pipeline
-from sklearn.pipeline import make_pipeline
 from convst.classifiers import R_DST_Ensemble
+
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
 n_cv=30
+#Specify the path where the resamples are located
+base_UCR_resamples_path = r"/home/prof/guillaume/sktime_resamples/"
 
 csv_name = 'CV_{}_results_ensemble.csv'.format(
     n_cv)
 
-dataset_names = return_all_dataset_names()
+dataset_names = return_all_univariate_dataset_names()
 
 #Initialize result dataframe. This script will also launch RDST without any normalization for comparison, hence the *2
-df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*10), columns=['dataset','model','acc_mean','acc_std','f1_mean','f1_std','time_mean','time_std'])
+df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*10), 
+     columns=['dataset','model','acc_mean','acc_std',
+    'f1_mean','f1_std','time_mean','time_std']
+)
 df.to_csv(csv_name)
 #df = pd.read_csv(csv_name, index_col=0)
 print(df)
@@ -33,7 +39,7 @@ for model_name, model_class in dict_models.items():
     model_class(n_shapelets_per_estimator=1).fit(X,y).predict(X)
 
 i_df=0
-base_UCR_resamples_path = r"/home/prof/guillaume/sktime_resamples/"
+
 for name in dataset_names:
     print(name)
     ds_path = base_UCR_resamples_path+"{}/{}".format(name, name)

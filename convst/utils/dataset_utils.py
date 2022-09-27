@@ -310,6 +310,14 @@ def load_sktime_dataset(name, normalize=True):
 
     return X, y, le
 
+def return_all_dataset_names():
+    return np.concatenate((
+        return_all_univariate_dataset_names(),
+        return_all_multivariate_dataset_names(),
+        return_all_variable_univariate_dataset_names(),
+        return_all_variable_multivariate_dataset_names()
+    ))
+
 def return_all_multivariate_dataset_names():
     
     return np.asarray([

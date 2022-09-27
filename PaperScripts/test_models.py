@@ -3,31 +3,36 @@
 import pandas as pd
 import numpy as np
 
-from convst.utils.dataset_utils import (return_all_multivariate_dataset_names,
-    load_sktime_arff_file_resample_id, load_sktime_dataset_split)
+from convst.utils.dataset_utils import return_all_dataset_names
 from convst.utils.experiments_utils import cross_validate_UCR_UEA
-from sklearn.pipeline import make_pipeline
-from convst.classifiers import MR_DST_Ensemble
+
+from convst.classifiers import R_DST_Ensemble
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
 n_cv=30
 
-csv_name = 'CV_{}_results_multivariate_ensemble.csv'.format(
+csv_name = 'CV_{}_results_multivariate_ensemble2.csv'.format(
     n_cv)
 
-dataset_names = return_all_multivariate_dataset_names()
+# List of datasets to test, here, use all datasets ones, (univariate,
+# multivariate, variable length, etc...) see dataset_utils for other choices.
+dataset_names = return_all_dataset_names()
 
+# List of models to test
 dict_models = {
-    "R_DST_Ensemble": MR_DST_Ensemble,
+    "R_DST_Ensemble": R_DST_Ensemble,
 }
-resume=False
 
+resume=False
 #Initialize result dataframe
 if resume:
     df = pd.read_csv(csv_name, index_col=0)
 else:
-    df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*len(dict_models)), columns=['dataset','model','acc_mean','acc_std','f1_mean','f1_std','time_mean','time_std'])
+    df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*len(dict_models)),
+                      columns=['dataset','model','acc_mean','acc_std',
+                               'time_mean','time_std']
+    )
     df.to_csv(csv_name)
 
 for model_name, model_class in dict_models.items():
@@ -41,7 +46,10 @@ for name in dataset_names:
     print(name)
     for model_name, model_class in dict_models.items():
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == 0.0:
-            pipeline = model_class(n_jobs=3, n_jobs_rdst=95//3)
+            pipeline = model_class(n_jobs=-1, phase_invariance=True)
+            
+            #By default, we use accuracy as score, but other scorer can be passed
+            #as parameters (e.g. by default scorers={"accuracy":accuracy_score})
             _scores = cross_validate_UCR_UEA(n_cv, name).score(pipeline)
             df.loc[i_df, 'acc_mean'] = _scores['accuracy'].mean()
             df.loc[i_df, 'acc_std'] = _scores['accuracy'].std()
