@@ -71,13 +71,11 @@ Full API documentation of the *convst* Python package.
   :toctree: generated/
   :template: class.rst
   
-  utils.dataset_utils.UCR_stratified_resample
-  utils.dataset_utils.stratified_resample
+  utils.experiments_utils.cross_validate_UCR_UEA
+  utils.experiments_utils.ARFF_stratified_resample
   
   :template: function.rst
 
-  utils.shapelets_utils.generate_strides_2D
-  utils.shapelets_utils.generate_strides_1D
   utils.checks_utils.check_array_3D
   utils.checks_utils.check_array_2D
   utils.checks_utils.check_array_1D
