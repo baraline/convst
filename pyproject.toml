@@ -39,6 +39,7 @@ dependencies = [
     "scikit-learn>=0.24.0,<1.2.0",
     "statsmodels>=0.12.1",
     "scipy<1.9.0",
+    "pyts>=0.12",
     "matplotlib>=3.3.2,<3.6",
     "seaborn>=0.11.0",
     "pytest >= 7.0",

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 26 12:25:16 2022
-
-@author: antoi
 """
 
 # TODO: Define class taking as input a RDST transformer,
