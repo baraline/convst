@@ -4,7 +4,7 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int_, bool_,
+    unique, where, percentile, all as _all, int64, bool_,
     log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
 )
 
@@ -50,14 +50,14 @@ def _init_random_shapelet_params(
 
     """
     # Lengths of the shapelets
-    lengths = choice(shapelet_sizes, size=n_shapelets).astype(int_)
+    lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
 
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
     powers = zeros(n_shapelets)
     for i in prange(n_shapelets):
         powers[i] = uniform(0, upper_bounds[i])
-    dilations = floor(power(2, powers)).astype(int_)
+    dilations = floor(power(2, powers)).astype(int64)
 
     # Init threshold array
     threshold = zeros(n_shapelets)
@@ -144,7 +144,7 @@ def U_SL_generate_shapelet(
         for i in where(dilations==unique_dil[i_d])[0]:
             _dilation = dilations[i]
             _length = lengths[i]
-            norm = int_(normalize[i])
+            norm = int64(normalize[i])
             if use_phase:
                 d_shape = n_timestamps
             else:
@@ -160,7 +160,7 @@ def U_SL_generate_shapelet(
                 #Choose a timestamp
                 index = choice(i_mask[1][i_mask[0]==id_sample])
                 #Update the mask
-                for j in range(int_(floor(_length*alpha))):
+                for j in range(int64(floor(_length*alpha))):
                     #We can use modulo event without phase invariance, as we
                     #limit the sampling to d_shape
                     mask_sampling[
@@ -261,9 +261,9 @@ def U_SL_apply_all_shapelets(
     #(u_l * u_d , 2)
     params_shp = _combinations_1d(unique_lengths, unique_dilations)
     #(u_l * u_d) + 1
-    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int_)
+    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
     #(n_shapelets)
-    idx_shp = zeros(n_shapelets, dtype=int_)
+    idx_shp = zeros(n_shapelets, dtype=int64)
     
     a = 0
     

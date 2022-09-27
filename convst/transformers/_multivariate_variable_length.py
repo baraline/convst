@@ -4,7 +4,7 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, int_, bool_, float_, concatenate, any as _any,
+    unique, where, percentile, int64, bool_, float64, concatenate, any as _any,
     dot, log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std,
     arange
 )
@@ -54,14 +54,14 @@ def _init_random_shapelet_params(
         The features considered by each shapelet
     """
     # Lengths of the shapelets
-    lengths = choice(shapelet_sizes, size=n_shapelets).astype(int_)
+    lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
 
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
     powers = zeros(n_shapelets)
     for i in prange(n_shapelets):
         powers[i] = uniform(0, upper_bounds[i])
-    dilations = floor(power(2, powers)).astype(int_)
+    dilations = floor(power(2, powers)).astype(int64)
 
     # Init threshold array
     threshold = zeros(n_shapelets)
@@ -69,12 +69,12 @@ def _init_random_shapelet_params(
     # channels (i.e. features)
     n_channels = choice(max_channels, size=n_shapelets)+1
 
-    channel_ids = zeros(n_channels.sum(), dtype=int_)
+    channel_ids = zeros(n_channels.sum(), dtype=int64)
 
     # Init values array
     values = zeros(
-        int_(
-            dot(lengths.astype(float_), n_channels.astype(float_))
+        int64(
+            dot(lengths.astype(float64), n_channels.astype(float64))
         )
     )
 
@@ -168,7 +168,7 @@ def M_VL_generate_shapelet(
         for i in where(dilations==unique_dil[i_d])[0]:
             _dilation = dilations[i]
             _length = lengths[i]
-            norm = int_(normalize[i])
+            norm = int64(normalize[i])
             _n_channels = n_channels[i]
             
             _channel_ids = choice(
@@ -230,7 +230,7 @@ def M_VL_generate_shapelet(
                 
                 #Update the mask
                 for k in range(_n_channels):
-                    for j in range(int_(floor(_length*alpha))):
+                    for j in range(int64(floor(_length*alpha))):
                         #We can use modulo event without phase invariance, as we
                         #limit the sampling to d_shape
                         mask_sampling[
@@ -336,14 +336,14 @@ def M_VL_apply_all_shapelets(
     #(u_l * u_d , 2)
     params_shp = _combinations_1d(unique_lengths, unique_dilations)
     #(u_l * u_d) + 1
-    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int_)
+    n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
     #(n_shapelets)
-    idx_shp = zeros(n_shapelets, dtype=int_)
+    idx_shp = zeros(n_shapelets, dtype=int64)
     
     #Indexes per shapelets for values array
-    a1 = concatenate((zeros(1, dtype=int_),cumsum(n_channels*lengths)))
+    a1 = concatenate((zeros(1, dtype=int64),cumsum(n_channels*lengths)))
     #Indexes per shapelets for channel_ids array
-    a2 = concatenate((zeros(1, dtype=int_),cumsum(n_channels)))
+    a2 = concatenate((zeros(1, dtype=int64),cumsum(n_channels)))
     # Counter for shapelet params array
     a3 = 0
     
