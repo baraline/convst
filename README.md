@@ -12,7 +12,7 @@ This work was supported by the following organisations:
 | Overview | |
 |---|---|
 | **Compatibility** | [![!python-versions](https://img.shields.io/pypi/pyversions/convst)](https://www.python.org/)
-| **CI/CD** |  [![!pypi](https://img.shields.io/pypi/v/convst?color=orange)](https://pypi.org/project/convst/)  ![docs](https://img.shields.io/readthedocs/convst)|
+| **CI/CD** |  [![!pypi](https://img.shields.io/pypi/v/convst?color=orange)](https://pypi.org/project/convst/)  ![docs](https://img.shields.io/readthedocs/convst) ![build](https://github.com/baraline/convst/actions/workflows/test.yml/badge.svg)| 
 | **Code Quality** |  [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main) |
 | **Downloads**| [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) |
 
