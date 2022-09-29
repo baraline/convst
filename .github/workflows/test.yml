@@ -53,7 +53,7 @@ jobs:
       - name: Get wheel filename
         run: echo "WHEELNAME=$(ls ./wheelhouse/convst-*none-any.whl)" >> $GITHUB_ENV
 
-      - name: Install wheel and extras
+      - name: Install wheel
         run: python -m pip install "${{ env.WHEELNAME }}"
 
       - name: Run tests
