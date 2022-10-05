@@ -232,7 +232,7 @@ class RDST_Ensemble_interpreter:
     def visualize_best_shapelets_one_class(self, class_id, n_shp=1):
         raise NotImplementedError()
 
-
+"""
 def class_vis(rdg, i_class, c):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(23,5))
     ix = np.zeros(rdg.coef_[0].shape[0])
@@ -249,6 +249,4 @@ def class_vis(rdg, i_class, c):
     sns.boxplot(x=c.dilation_, y=coef_sums,ax=ax[1])
     
     #sns.boxplot(x=c.length_, y=coef_sums,ax=ax[2])
-    
-
-#report(c, rf['ridgeclassifiercv'], X_test, y_test, rf['standardscaler'].transform(xt))
+""" 

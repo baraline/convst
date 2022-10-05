@@ -158,11 +158,12 @@ def M_SL_generate_shapelet(
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
-        for i in where(dilations==unique_dil[i_d])[0]:
-            _dilation = dilations[i]
-            _length = lengths[i]
-            _n_channels = n_channels[i]
-            norm = int64(normalize[i])
+        id_shps = where(dilations==unique_dil[i_d])[0]
+        for i_shp in id_shps:
+            _dilation = dilations[i_shp]
+            _length = lengths[i_shp]
+            norm = int64(normalize[i_shp])
+            _n_channels = n_channels[i_shp]
             if use_phase:
                 d_shape = n_timestamps
             else:
@@ -201,7 +202,7 @@ def M_SL_generate_shapelet(
                 #Update the mask
                 for k in range(_n_channels):
                     for j in range(int64(floor(_length*alpha))):
-                        #We can use modulo event without phase invariance, as we
+                        #We can use modulo even without phase invariance, as we
                         #limit the sampling to d_shape
                         mask_sampling[
                             norm, i_d, id_sample, _channel_ids[k],
@@ -237,13 +238,13 @@ def M_SL_generate_shapelet(
                 
                 #Extract value between two percentile as threshold for SO
                 ps = percentile(x_dist, [p_min,p_max])
-                threshold[i] = uniform(
+                threshold[i_shp] = uniform(
                     ps[0], ps[1]
                 )
                 a1 = b1
                 a2 = b2
             else:
-                mask_return[i] = False
+                mask_return[i_shp] = False
             
     return (
         values[:a1],
@@ -298,6 +299,7 @@ def M_SL_apply_all_shapelets(
     n_shapelets = len(lengths)
     n_samples, n_ft, n_timestamps = X.shape
     n_features = 3
+    
     unique_lengths = unique(lengths)
     unique_dilations = unique(dilations)
     
@@ -327,6 +329,7 @@ def M_SL_apply_all_shapelets(
         
         a3 = b
     n_shp_params = cumsum(n_shp_params)
+    
     X_new = zeros((n_samples, n_features * n_shapelets))
     for i_sample in prange(n_samples):
         #n_shp_params is a cumsum starting at 0

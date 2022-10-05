@@ -165,11 +165,12 @@ def M_VL_generate_shapelet(
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
-        for i in where(dilations==unique_dil[i_d])[0]:
-            _dilation = dilations[i]
-            _length = lengths[i]
-            norm = int64(normalize[i])
-            _n_channels = n_channels[i]
+        id_shps = where(dilations==unique_dil[i_d])[0]
+        for i_shp in id_shps:
+            _dilation = dilations[i_shp]
+            _length = lengths[i_shp]
+            norm = int64(normalize[i_shp])
+            _n_channels = n_channels[i_shp]
             
             _channel_ids = choice(
                 arange(0, n_features), _n_channels, replace=False
@@ -267,13 +268,13 @@ def M_VL_generate_shapelet(
                 
                 #Extract value between two percentile as threshold for SO
                 ps = percentile(x_dist, [p_min,p_max])
-                threshold[i] = uniform(
+                threshold[i_shp] = uniform(
                     ps[0], ps[1]
                 )
                 a1 = b1
                 a2 = b2
             else:
-                mask_return[i] = False
+                mask_return[i_shp] = False
             
     return (
         values[:a1],

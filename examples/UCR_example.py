@@ -18,8 +18,7 @@ This example give the minimal setup to run RDST and visualize the result
 from convst.classifiers import R_DST_Ridge
 from convst.utils.dataset_utils import load_sktime_dataset_split
 
-X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split(
-    'GunPoint', normalize=True)
+X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
 
 rdst = R_DST_Ridge(n_shapelets=10000, n_jobs=-1)
 
@@ -49,5 +48,3 @@ interpreter.visualize_best_shapelets_one_class(
 interpreter.visualize_best_shapelets_one_class(
     X_test, y_test, target_class, n_shp=1
 )
-
-

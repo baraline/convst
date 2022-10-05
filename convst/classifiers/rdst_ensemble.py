@@ -22,7 +22,7 @@ class _internalRidgeCV(RidgeClassifierCV):
         super().__init__(
             store_cv_values=True,
             scoring=make_scorer(accuracy_score),
-            alphas=np.logspace(-3,3,20),
+            alphas=np.logspace(-4,4,20),
             **kwargs
         )
     
@@ -86,8 +86,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         return {
             "capability:variable_length": True,
             "capability:univariate": True,
-            "capability:multivariate": True,
-            "capability:multithreading": True,
+            "capability:multivariate": True
         }
         
     def _manage_n_jobs(self):

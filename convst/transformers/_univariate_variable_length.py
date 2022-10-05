@@ -155,10 +155,11 @@ def U_VL_generate_shapelet(
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
-        for i in where(dilations==unique_dil[i_d])[0]:
-            _dilation = dilations[i]
-            _length = lengths[i]
-            norm = int64(normalize[i])
+        id_shps = where(dilations==unique_dil[i_d])[0]
+        for i_shp in id_shps:
+            _dilation = dilations[i_shp]
+            _length = lengths[i_shp]
+            norm = int64(normalize[i_shp])
             
             mask_dil = mask_sampling[norm,i_d]
             
@@ -191,7 +192,7 @@ def U_VL_generate_shapelet(
                 index = choice(t_mask[0])    
                 #Update the mask
                 for j in range(int64(floor(_length*alpha))):
-                    #We can use modulo event without phase invariance, as we
+                    #We can use modulo even without phase invariance, as we
                     #limit the sampling to d_shape
                     mask_sampling[
                         norm, i_d, id_sample,
@@ -222,10 +223,10 @@ def U_VL_generate_shapelet(
                 
                 #Extract value between two percentile as threshold for SO
                 ps = percentile(x_dist, [p_min,p_max])
-                threshold[i] = uniform(
+                threshold[i_shp] = uniform(
                     ps[0], ps[1]
                 )
-                values[i, :_length] = v
+                values[i_shp, :_length] = v
                 
     mask_values = ones(n_shapelets, dtype=bool_)
     for i in prange(n_shapelets):

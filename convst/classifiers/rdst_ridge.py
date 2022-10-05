@@ -64,7 +64,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         distance='manhattan',
         alpha=0.5,
         normalize_output=False,
-        n_samples=1.0,
+        n_samples=None,
         n_shapelets=10_000,
         shapelet_lengths=[11],
         proba_norm=0.8,
@@ -74,7 +74,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         min_len=None,
         class_weight=None, 
         fit_intercept=True,
-        alphas_ridge=list(np.logspace(-6,6,20))
+        alphas_ridge=list(np.logspace(-4,4,20))
     ):
         self.alphas_ridge=alphas_ridge
         self.class_weight=class_weight
@@ -97,8 +97,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         return {
             "capability:variable_length": True,
             "capability:univariate": True,
-            "capability:multivariate": True,
-            "capability:multithreading": True,
+            "capability:multivariate": True
         }
 
     def _init_components(self):

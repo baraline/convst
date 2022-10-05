@@ -115,9 +115,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         self.distance = self._validate_distances(distance)
         self.alpha = check_is_numeric(alpha)
         self.normalize_output = check_is_boolean(normalize_output)
-        if n_samples is None:
-            n_samples = 1.0
-        self.n_samples = check_is_numeric(n_samples)
+        self.n_samples = check_is_numeric(n_samples) if n_samples is not None else n_samples
         self.n_shapelets = int(check_is_numeric(n_shapelets))
         self.shapelet_lengths = check_array_1D(shapelet_lengths)
         self.proba_norm = check_is_numeric(proba_norm)
@@ -147,7 +145,6 @@ class R_DST(BaseEstimator, TransformerMixin):
         self._set_fit_transform(X)
         if self.transform_type in [STR_MULTIVARIATE_VARIABLE, STR_UNIVARIATE_VARIABLE]:
             X, X_len = self._format_uneven_timestamps(X)
-            
             X = check_array_3D(X, is_univariate=False).astype(np.float64)
             if self.min_len is None:
                 self.min_len = X_len.min()
@@ -165,13 +162,15 @@ class R_DST(BaseEstimator, TransformerMixin):
             id_X = resample(np.arange(X.shape[0]), replace=True, n_samples=int(X.shape[0]*self.n_samples), stratify=y)
             X = X[id_X]
             y = y[id_X]
-        n_samples, n_features, n_timestamps = X.shape
+        
+        n_samples, n_features, _ = X.shape
         
         if self.max_channels is None:
             self.max_channels = n_features
         
         if self.shapelet_lengths.dtype == float:
             self.shapelet_lengths = np.floor(self.min_len*self.shapelet_lengths)
+        
         shapelet_lengths, seed = self._check_params(self.min_len)
         # Generate the shapelets
         if self.transform_type == STR_UNIVARIATE_VARIABLE:
@@ -199,7 +198,7 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
-                self._get_distance_function(), self.phase_invariance, 
+                self._get_distance_function(), self.phase_invariance
             )
         else:
             raise ValueError('Unknown value for transform type parameter')

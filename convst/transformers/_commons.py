@@ -84,15 +84,14 @@ def _generate_strides_1D(X, window_size, dilation):
     -------
     array, shape = (n_timestamps-(window_size-1)*dilation, window_size)
         All possible subsequences of length stride_len for each time series.
+
     """
-    n_timestamps = X.shape[0]
-    shape_new = (n_timestamps - (window_size-1)*dilation,
-                 window_size)
-
-    s0 = X.strides[0]
-    strides_new = (s0, dilation * s0)
-    return as_strided(X, shape=shape_new, strides=strides_new)
-
+    n_timestamps = X.shape[0] - (window_size - 1) * dilation
+    X_new = zeros((n_timestamps, window_size))
+    for i in prange(n_timestamps):
+        for j in prange(window_size):
+            X_new[i,j] = X[i+(j*dilation)]
+    return X_new
 
 @njit(
   cache=True
@@ -118,14 +117,14 @@ def _generate_strides_2D(X, window_size, dilation):
     array, shape = (n_samples, n_timestamps-(window_size-1)*dilation, window_size)
         All possible subsequences of length stride_len for each time series.
     """
-    n_samples, n_timestamps = X.shape
-    
-    shape_new = (n_samples,
-                 n_timestamps - (window_size-1)*dilation,
-                 window_size)
-    s0, s1 = X.strides
-    strides_new = (s0, s1, dilation *s1)
-    return as_strided(X, shape=shape_new, strides=strides_new) 
+    n_features, n_timestamps = X.shape
+    n_timestamps = n_timestamps - (window_size - 1) * dilation
+    X_new = zeros((n_features, n_timestamps, window_size))
+    for ft in prange(n_features):
+        for i in prange(n_timestamps):
+            for j in prange(window_size):
+                X_new[ft,i,j] = X[ft,i+(j*dilation)]
+    return X_new
 
 
 @njit(
@@ -230,7 +229,7 @@ def _get_subsequence(X, i_start, length, d, normalize):
     
     for j in prange(length):
         v[j] = X[_idx]
-        _idx += d
+        _idx = _idx + d
     
     if normalize:
         v = (v - v.mean())/(v.std()+1e-8)
