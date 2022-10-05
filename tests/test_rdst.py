@@ -14,8 +14,8 @@ from convst.utils.experiments_utils import cross_validate_UCR_UEA
 #TODO test for each type of data
 
 @pytest.mark.parametrize("name, expected", [
-    ('GunPoint','BasicMotions'),
-    ('univariate', 'multivariate')
+    ('GunPoint','univariate'),
+    ('BasicMotions','multivariate')
 ])
 def test_auto_type(name, expected):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
@@ -25,8 +25,9 @@ def test_auto_type(name, expected):
     assert rdst.transform_type == expected
 
 @pytest.mark.parametrize("name, expected", [
-    ('GunPoint','Wine','BasicMotions'),
-    (0.98, 0.94, 0.94)
+    ('GunPoint',0.98),
+    ('Wine',0.94),
+    ('BasicMotions',0.94),
 ])
 def test_performance(name, expected):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
