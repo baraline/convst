@@ -11,6 +11,9 @@ from convst.transformers import R_DST
 from convst.utils.dataset_utils import load_sktime_dataset_split
 from convst.utils.experiments_utils import cross_validate_UCR_UEA
 
+import logging
+
+LOGGER = logging.getLogger(__name__)
 #TODO test for each type of data
 
 @pytest.mark.parametrize("name, expected", [
@@ -35,7 +38,10 @@ def test_performance(name, expected):
     )
     rdst = R_DST_Ridge(n_shapelets=1).fit(X_train, y_train)
     rdst.score(X_test, y_test)
-    assert rdst.transformer.shapelets_[1].shape[0] == 2
+    assert rdst.transformer.shapelets_[1].shape[0] == 1
     acc = cross_validate_UCR_UEA(5,name).score(R_DST_Ridge(n_jobs=-1))
     acc = acc['accuracy'].mean()
+    LOGGER.info('{} Dataset -> Accuracy {}, Expected >= {}'.format(
+         name, acc, expected   
+    ))
     assert acc >= expected

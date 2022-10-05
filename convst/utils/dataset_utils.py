@@ -294,21 +294,10 @@ def load_sktime_dataset(name, normalize=True):
 
     """
     #Load datasets
-    X, y = load_UCR_UEA_dataset(name, return_X_y=True)
-
-    #Convert pandas DataFrames to numpy arrays
-    X = _custom_from_nested_to_3d_numpy(X)
-
-    #Convert class labels to make sure they are between 0,n_classes
-    le = LabelEncoder().fit(y)
-    y = le.transform(y)
-
-    #Z-Normalize the data
-    if normalize:
-        X = (X - X.mean(axis=-1, keepdims=True)) / (
-            X.std(axis=-1, keepdims=True) + 1e-8)
-
-    return X, y, le
+    X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
+        name, normalize=normalize
+    )
+    return np.concatenate((X_train, X_test),axis=0), np.concatenate((y_train, y_test),axis=0), le
 
 def return_all_dataset_names():
     return np.concatenate((
