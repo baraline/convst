@@ -1,4 +1,3 @@
-# Major issues were introduced by 0.2.0, we advise using the previous version before the next release (0.2.1) which will fix those bugs
 
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 This work was supported by the following organisations:
