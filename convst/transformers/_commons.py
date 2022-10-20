@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from numpy.lib.stride_tricks import as_strided
 from numba import njit, prange
 from numpy import float_, sqrt, zeros
 

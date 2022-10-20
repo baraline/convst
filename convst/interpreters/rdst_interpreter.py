@@ -92,8 +92,6 @@ class Shapelet:
             plt.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
             return fig
         else:
-            print(c.min())
-            print(self.threshold)
             ax.plot(c,label=label)
             ax.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
             return ax
