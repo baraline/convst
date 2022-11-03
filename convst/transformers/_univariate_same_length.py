@@ -141,6 +141,7 @@ def U_SL_generate_shapelet(
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
         id_shps = where(dilations==unique_dil[i_d])[0]
+        min_l = min(lengths[id_shps])
         for i_shp in id_shps:
             _dilation = dilations[i_shp]
             _length = lengths[i_shp]
@@ -160,7 +161,8 @@ def U_SL_generate_shapelet(
                 #Choose a timestamp
                 index = choice(i_mask[1][i_mask[0]==id_sample])
                 #Update the mask
-                for j in range(int64(floor(_length*alpha))):
+                alpha_size = _length - int64(max(1,(1-alpha)*min_l))
+                for j in range(alpha_size):
                     #We can use modulo even without phase invariance, as we
                     #limit the sampling to d_shape
                     mask_sampling[

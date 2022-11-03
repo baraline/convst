@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from numba import njit, prange
-from numpy import float_, sqrt, zeros
+from numpy import float_, sqrt, zeros, unique, bool_, where, int64
 
 ###############################################################################
 #                                                                             #
@@ -518,7 +518,7 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
     n_ft, n_candidates, length = x.shape
 
     _n_match = 0
-    _min = 1e+100
+    _min = 1e+10
     _argmin = 0
     
     #For each step of the moving window in the shapelet distance
@@ -539,11 +539,36 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
 
 @njit(cache=True)
 def _combinations_1d(x,y):
-    x_size = x.shape[0]
-    y_size = y.shape[0]
-    mesh = zeros((x_size * y_size, 2), dtype=x.dtype)
-    for i in prange(x.size):
-        for j in prange(y.size):
-            mesh[i*x_size + j, 0] = x[i]
-            mesh[i*x_size + j, 1] = y[j]
-    return mesh
+    """
+    Return the unique combination (in the 2nd dimension) of the 2D array made by
+    concatenating x and y.
+
+    Parameters
+    ----------
+    x : array, shape=(u)
+        A 1D array of values
+    y : array, shape=(v)
+        A 1D array of values
+
+    Returns
+    -------
+    array, shape=(w, 2)
+        The unique combination (in the 2nd dimension) of the 2D array made by
+        concatenating x and y.
+
+    """
+    # Fix issues with multiple length, but could be optimized
+    u_x = unique(x)
+    u_y = unique(y)
+    u_mask = zeros((u_x.shape[0], u_y.shape[0]),dtype=bool_)
+    for i in range(x.shape[0]):
+        u_mask[where(u_x==x[i])[0][0],where(u_y==y[i])[0][0]] = True
+    combinations = zeros((u_mask.sum(),2), dtype=int64)
+    i_comb = 0
+    for i in range(x.shape[0]):
+        if u_mask[where(u_x==x[i])[0][0],where(u_y==y[i])[0][0]]:
+            combinations[i_comb,0] = x[i]
+            combinations[i_comb,1] = y[i]
+            u_mask[where(u_x==x[i])[0][0],where(u_y==y[i])[0][0]] = False
+            i_comb += 1
+    return combinations

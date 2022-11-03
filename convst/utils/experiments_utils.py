@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score, make_scorer
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, GridSearchCV
 from sklearn.utils import check_random_state
 
 from timeit import default_timer as timer
@@ -116,6 +116,56 @@ class cross_validate_UCR_UEA:
             _score.loc[i, 'time'] = t1 - t0
         return _score
         
+    
+class _sklearn_sktime_cv:
+    def __init__(self, n_splits, dataset_name):
+        self.n_splits=n_splits
+        self.dataset_name=dataset_name
+    
+    def split(self, X, y=None, groups=None):
+        X_train_0, X_test_0, y_train_0, y_test_0, _ = load_sktime_dataset_split(
+            self.dataset_name
+        )
+        for i in range(self.n_splits):
+            if i == 0:
+                X_train = np.copy(X_train_0)
+                X_test = np.copy(X_test_0)
+                y_train = np.copy(y_train_0)
+                y_test = np.copy(y_test_0)
+            else:
+                X_train, y_train, X_test, y_test = _sktime_resample(
+                    X_train_0, y_train_0, X_test_0, y_test_0, i
+                )
+            idx_Train = [np.where((X == X_train[j]).all(axis=2))[0][0] for j in range(X_train.shape[0])]
+            idx_Test = [np.where((X == X_test[j]).all(axis=2))[0][0] for j in range(X_test.shape[0])]
+            yield idx_Train, idx_Test
+    
+    def get_n_splits(self, X=None, y=None, groups=None):
+        return self.n_splits
+    
+class grid_search_UCR_UEA:
+    def __init__(self, n_split, dataset_name, n_jobs, scorers=make_scorer(accuracy_score)):
+        self.n_split = n_split
+        self.dataset_name = dataset_name
+        self.scorers = scorers
+        self.n_jobs=n_jobs
+        
+    def score(self, pipeline, params):
+        cv = GridSearchCV(
+            pipeline(), params, scoring=self.scorers, n_jobs=self.n_jobs,
+            cv=_sklearn_sktime_cv(self.n_split, self.dataset_name), pre_dispatch='n_jobs',
+            verbose=3
+        )
+        X_train_0, X_test_0, y_train_0, y_test_0, _ = load_sktime_dataset_split(
+            self.dataset_name
+        )  
+        X = np.concatenate((X_train_0, X_test_0),axis=0)
+        y = np.concatenate((y_train_0, y_test_0),axis=0)
+        cv.fit(X, y)
+        return pd.DataFrame(cv.cv_results_)
+    
+        
+
 
 class ARFF_stratified_resample:
     """
