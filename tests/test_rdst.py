@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.parametrize("name, expected", [
     ('GunPoint','univariate'),
     ('BasicMotions','multivariate'),
-    ('PLAID','univariate_variable')
+    ('PLAID','univariate_variable'),
     ('AsphaltObstaclesCoordinates','multivariate_variable')
 ])
 def test_auto_type(name, expected):
@@ -36,15 +36,15 @@ def test_auto_type(name, expected):
     ('GunPoint',[0.05,0.08,0.1]),
     ('BasicMotions',[11]),
     ('BasicMotions',[0.05]),
-    ('BasicMotions',[11,15,19])
+    ('BasicMotions',[11,15,19]),
     ('BasicMotions',[0.05,0.08,0.1]),
     ('PLAID',[11]),
     ('PLAID',[0.05]),
-    ('PLAID',[11,15,19])
-    ('PLAID',[0.05,0.08,0.1])
+    ('PLAID',[11,15,19]),
+    ('PLAID',[0.05,0.08,0.1]),
     ('AsphaltObstaclesCoordinates',[11]),
     ('AsphaltObstaclesCoordinates',[0.05]),
-    ('AsphaltObstaclesCoordinates',[11,15,19])
+    ('AsphaltObstaclesCoordinates',[11,15,19]),
     ('AsphaltObstaclesCoordinates',[0.05,0.08,0.1])
 ])
 def test_mutliple_lengths(name, lengths):
@@ -65,7 +65,7 @@ def test_mutliple_lengths(name, lengths):
     ('GunPoint',0.98),
     ('Wine',0.94),
     ('BasicMotions',0.94),
-    ('PLAID',0.895)
+    ('PLAID',0.895),
     ('AsphaltObstaclesCoordinates',0.795)
 ])
 def test_performance(name, expected):
