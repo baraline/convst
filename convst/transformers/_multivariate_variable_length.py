@@ -166,6 +166,7 @@ def M_VL_generate_shapelet(
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
         id_shps = where(dilations==unique_dil[i_d])[0]
+        min_l = min(lengths[id_shps])
         for i_shp in id_shps:
             _dilation = dilations[i_shp]
             _length = lengths[i_shp]
@@ -230,8 +231,9 @@ def M_VL_generate_shapelet(
 
                 
                 #Update the mask
+                alpha_size = _length - int64(max(1,(1-alpha)*min_l))
                 for k in range(_n_channels):
-                    for j in range(int64(floor(_length*alpha))):
+                    for j in range(alpha_size):
                         #We can use modulo event without phase invariance, as we
                         #limit the sampling to d_shape
                         mask_sampling[
@@ -331,11 +333,9 @@ def M_VL_apply_all_shapelets(
     n_shapelets = len(lengths)
     n_samples, n_ft, _ = X.shape
     n_features = 3
-    unique_lengths = unique(lengths)
-    unique_dilations = unique(dilations)
     
     #(u_l * u_d , 2)
-    params_shp = _combinations_1d(unique_lengths, unique_dilations)
+    params_shp = _combinations_1d(lengths, dilations)
     #(u_l * u_d) + 1
     n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
     #(n_shapelets)

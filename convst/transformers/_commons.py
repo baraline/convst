@@ -561,6 +561,7 @@ def _combinations_1d(x,y):
     u_x = unique(x)
     u_y = unique(y)
     u_mask = zeros((u_x.shape[0], u_y.shape[0]),dtype=bool_)
+    
     for i in range(x.shape[0]):
         u_mask[where(u_x==x[i])[0][0],where(u_y==y[i])[0][0]] = True
     combinations = zeros((u_mask.sum(),2), dtype=int64)

@@ -142,7 +142,7 @@ def U_VL_generate_shapelet(
     _init_random_shapelet_params(
         n_shapelets, shapelet_sizes, min_len, p_norm
     )
-
+    
     #Initialize self similarity mask
     unique_dil = unique(dilations)
     mask_sampling = ones(
@@ -156,6 +156,7 @@ def U_VL_generate_shapelet(
     for i_d in prange(unique_dil.shape[0]):
         #For each shapelet id with this dilation
         id_shps = where(dilations==unique_dil[i_d])[0]
+        min_l = min(lengths[id_shps])
         for i_shp in id_shps:
             _dilation = dilations[i_shp]
             _length = lengths[i_shp]
@@ -191,7 +192,8 @@ def U_VL_generate_shapelet(
                 
                 index = choice(t_mask[0])    
                 #Update the mask
-                for j in range(int64(floor(_length*alpha))):
+                alpha_size = _length - int64(max(1,(1-alpha)*min_l))
+                for j in range(alpha_size):
                     #We can use modulo even without phase invariance, as we
                     #limit the sampling to d_shape
                     mask_sampling[
@@ -287,17 +289,13 @@ def U_VL_apply_all_shapelets(
     n_shapelets = len(lengths)
     n_samples = len(X)
     n_features = 3
-
-    unique_lengths = unique(lengths)
-    unique_dilations = unique(dilations)
     
     #(u_l * u_d , 2)
-    params_shp = _combinations_1d(unique_lengths, unique_dilations)
+    params_shp = _combinations_1d(lengths, dilations)
     #(u_l * u_d) + 1
     n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
     #(n_shapelets)
     idx_shp = zeros(n_shapelets, dtype=int64)
-    
     a = 0
     
     for i in range(params_shp.shape[0]):
@@ -319,7 +317,6 @@ def U_VL_apply_all_shapelets(
         for i_shp_param in prange(n_shp_params.shape[0]-1):
             _length = params_shp[i_shp_param, 0]
             _dilation = params_shp[i_shp_param, 1]
-            
             strides = generate_strides_1D(
                 X[i_sample, 0, :X_len[i_sample]], _length, _dilation, use_phase
             )

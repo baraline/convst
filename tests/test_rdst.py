@@ -17,7 +17,9 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.parametrize("name, expected", [
     ('GunPoint','univariate'),
-    ('BasicMotions','multivariate')
+    ('BasicMotions','multivariate'),
+    ('PLAID','univariate_variable')
+    ('AsphaltObstaclesCoordinates','multivariate_variable')
 ])
 def test_auto_type(name, expected):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
@@ -30,22 +32,41 @@ def test_auto_type(name, expected):
 @pytest.mark.parametrize("name, lengths", [
     ('GunPoint',[11]),
     ('GunPoint',[0.05]),
-    ('GunPoint',[11,15,19])
-    ('GunPoint',[0.05,0.08,0.1])
+    ('GunPoint',[11,15,19]),
+    ('GunPoint',[0.05,0.08,0.1]),
+    ('BasicMotions',[11]),
+    ('BasicMotions',[0.05]),
+    ('BasicMotions',[11,15,19])
+    ('BasicMotions',[0.05,0.08,0.1]),
+    ('PLAID',[11]),
+    ('PLAID',[0.05]),
+    ('PLAID',[11,15,19])
+    ('PLAID',[0.05,0.08,0.1])
+    ('AsphaltObstaclesCoordinates',[11]),
+    ('AsphaltObstaclesCoordinates',[0.05]),
+    ('AsphaltObstaclesCoordinates',[11,15,19])
+    ('AsphaltObstaclesCoordinates',[0.05,0.08,0.1])
 ])
 def test_mutliple_lengths(name, lengths):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
         name=name
     )
-    #TODO : What is the right way of detecting a exception if multiple length fails ?
-    rdst = R_DST(n_shapelets=100,shapelet_lengths=lengths).fit(X_train, y_train)
+    try:
+        R_DST(n_shapelets=100,shapelet_lengths=lengths).fit(X_train, y_train).score(X_test, y_test)
+    except Exception as e:
+        LOGGER.info('A data format test failed on {} due to the following exception : {}'.format(
+             name, e  
+        ))
+        assert False 
     assert True
 
-
+# Lower than actual best accuracy to account for possible deviation due to random sampling
 @pytest.mark.parametrize("name, expected", [
     ('GunPoint',0.98),
     ('Wine',0.94),
     ('BasicMotions',0.94),
+    ('PLAID',0.895)
+    ('AsphaltObstaclesCoordinates',0.795)
 ])
 def test_performance(name, expected):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(

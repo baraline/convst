@@ -106,7 +106,10 @@ def load_sktime_dataset_split(name, normalize=True):
     le = LabelEncoder().fit(y_train)
     y_train = le.transform(y_train)
     y_test = le.transform(y_test)
-
+    min_len = min(
+        min([len(X_train[i][0])for i in range(len(X_train))]),
+        min([len(X_test[i][0])for i in range(len(X_test))]),
+    )
     #Z-Normalize the data
     if normalize and not isinstance(X_train, list):
         X_train = z_norm_3D(X_train)
@@ -114,7 +117,7 @@ def load_sktime_dataset_split(name, normalize=True):
     if normalize and isinstance(X_train, list):
         X_train = z_norm_3D_list(X_train)
         X_test = z_norm_3D_list(X_test)
-    return X_train, X_test, y_train, y_test, le
+    return X_train, X_test, y_train, y_test, min_len
 
 
 def load_sktime_arff_file(path, normalize=True):
@@ -297,6 +300,7 @@ def load_sktime_dataset(name, normalize=True):
     X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
         name, normalize=normalize
     )
+    
     return np.concatenate((X_train, X_test),axis=0), np.concatenate((y_train, y_test),axis=0), le
 
 def return_all_dataset_names():

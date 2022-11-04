@@ -257,11 +257,8 @@ def U_SL_apply_all_shapelets(
     n_samples, n_ft, n_timestamps = X.shape
     n_features = 3
 
-    unique_lengths = unique(lengths)
-    unique_dilations = unique(dilations)
-    
     #(u_l * u_d , 2)
-    params_shp = _combinations_1d(unique_lengths, unique_dilations)
+    params_shp = _combinations_1d(lengths, dilations)
     #(u_l * u_d) + 1
     n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
     #(n_shapelets)
