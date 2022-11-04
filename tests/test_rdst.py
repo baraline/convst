@@ -52,7 +52,7 @@ def test_mutliple_lengths(name, lengths):
         name=name
     )
     try:
-        R_DST(n_shapelets=1000, shapelet_lengths=lengths, min_len=min_len).fit(X_train, y_train).score(X_test, y_test)
+        R_DST(n_shapelets=1000, shapelet_lengths=lengths, min_len=min_len).fit(X_train, y_train)
     except Exception as e:
         LOGGER.info('A data format test failed on {} due to the following exception : {}'.format(
              name, e  
