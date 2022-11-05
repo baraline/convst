@@ -11,14 +11,14 @@ from numpy import (
 from convst.transformers._commons import (
     get_subsequence, compute_shapelet_dist_vector,
     apply_one_shapelet_one_sample_univariate, _combinations_1d,
-    generate_strides_1D
+    generate_strides_1D, prime_up_to
 )
 
 from numba import njit, prange
 
 @njit(cache=True)
 def _init_random_shapelet_params(
-    n_shapelets, shapelet_sizes, n_timestamps, p_norm
+    n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
 ):
     """
     Initialize the parameters of the shapelets.    
@@ -51,20 +51,27 @@ def _init_random_shapelet_params(
     """
     # Lengths of the shapelets
     lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
-
+    
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
-    powers = zeros(n_shapelets)
-    for i in prange(n_shapelets):
-        powers[i] = uniform(0, upper_bounds[i])
-    dilations = floor(power(2, powers)).astype(int64)
-
+    if prime_scheme:
+        primes = prime_up_to(int64(2**upper_bounds.max()))
+        dilations = zeros(n_shapelets, dtype=int64)
+        for i in prange(n_shapelets):
+            dilations[i] = choice(primes[primes<=int64(2**upper_bounds[i])])
+    else:
+        powers = zeros(n_shapelets)
+        for i in prange(n_shapelets):
+            powers[i] = uniform(0, upper_bounds[i])
+        dilations = floor(power(2, powers)).astype(int64)
+    
+    #PRIME DILATION    
     # Init threshold array
     threshold = zeros(n_shapelets)
-
+    
     # Init values array
     values = zeros((n_shapelets, max(shapelet_sizes)))
-
+    
     # Is shapelet using z-normalization ?
     normalize = random(size=n_shapelets)
     normalize = (normalize < p_norm)
@@ -74,7 +81,7 @@ def _init_random_shapelet_params(
 @njit(cache=True, parallel=True)
 def U_SL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
-    dist_func, use_phase
+    dist_func, use_phase, prime_scheme
 ):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -129,7 +136,7 @@ def U_SL_generate_shapelet(
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize = \
     _init_random_shapelet_params(
-        n_shapelets, shapelet_sizes, n_timestamps, p_norm
+        n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
     )
     #Initialize self similarity mask
     unique_dil = unique(dilations)

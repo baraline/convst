@@ -103,6 +103,9 @@ class R_DST(BaseEstimator, TransformerMixin):
         n_samples=None,
         n_shapelets=10_000,
         shapelet_lengths=[11],
+        shapelet_lengths_bounds=None,
+        lengths_bounds_reduction=0.5,
+        prime_dilations=False,
         proba_norm=0.8,
         percentiles=[5,10],
         n_jobs=1,
@@ -118,13 +121,42 @@ class R_DST(BaseEstimator, TransformerMixin):
         self.n_samples = check_is_numeric(n_samples) if n_samples is not None else n_samples
         self.n_shapelets = int(check_is_numeric(n_shapelets))
         self.shapelet_lengths = check_array_1D(shapelet_lengths)
+        if shapelet_lengths_bounds is None:
+            self.shapelet_lengths_bounds = None
+        elif len(shapelet_lengths_bounds)==2:
+            self.shapelet_lengths_bounds = check_array_1D(shapelet_lengths_bounds)
+        else:
+            raise ValueError('Shapelets lengths bounds should be a 1D array with 2 values')
+        self.lengths_bounds_reduction=check_is_numeric(lengths_bounds_reduction)
+        self.prime_dilations = check_is_boolean(prime_dilations)
         self.proba_norm = check_is_numeric(proba_norm)
         self.percentiles = self._validate_percentiles(percentiles)
-        self.n_jobs = check_n_jobs(n_jobs)
+        if n_jobs != -1:
+            self.n_jobs = check_n_jobs(n_jobs)
+        else:
+            self.n_jobs = n_jobs
         self.random_state = check_random_state(random_state)
         self.max_channels=max_channels
         self.min_len=min_len
     
+    def _set_lengths(self):
+        if self.shapelet_lengths_bounds is None:
+            if self.shapelet_lengths.dtype == float:
+                return np.floor(self.min_len*self.shapelet_lengths)
+            else:
+                return self.shapelet_lengths
+        else:
+            b0 = self.shapelet_lengths_bounds[0]
+            b1 = self.shapelet_lengths_bounds[1]
+            min_l = max(5,int(b0*self.min_len))
+            max_l = max(6,int(b1*self.min_len))
+            #6 to ensure range 5,6 -> 5
+            lengths = np.asarray(list(range(min_l, max_l)))
+            if lengths.shape[0]>3:
+                n_remove = int(lengths.shape[0]*self.lengths_bounds_reduction)
+                step = lengths.shape[0]//n_remove
+                lengths = lengths[::step]
+            return lengths
         
     def fit(self, X, y):
         """
@@ -141,7 +173,8 @@ class R_DST(BaseEstimator, TransformerMixin):
             Class of the input time series.
 
         """
-        set_num_threads(self.n_jobs)
+        if self.n_jobs != -1:
+            set_num_threads(self.n_jobs)
         self._set_fit_transform(X)
         if self.transform_type in [STR_MULTIVARIATE_VARIABLE, STR_UNIVARIATE_VARIABLE]:
             X, X_len = self._format_uneven_timestamps(X)
@@ -168,37 +201,38 @@ class R_DST(BaseEstimator, TransformerMixin):
         if self.max_channels is None:
             self.max_channels = n_features
         
-        if self.shapelet_lengths.dtype == float:
-            self.shapelet_lengths = np.floor(self.min_len*self.shapelet_lengths)
+        
+        self.shapelet_lengths = self._set_lengths()
         
         shapelet_lengths, seed = self._check_params(self.min_len)
+        print(shapelet_lengths)
         # Generate the shapelets
         if self.transform_type == STR_UNIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
                 self._get_distance_function(), self.phase_invariance,
-                self.min_len, X_len
+                self.min_len, X_len, self.prime_dilations
             )
         elif self.transform_type == STR_MULTIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
                 self._get_distance_function(), self.phase_invariance,
-                self.max_channels, self.min_len, X_len
+                self.max_channels, self.min_len, X_len, self.prime_dilations
             )
         elif self.transform_type == STR_MUTLIVARIATE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
                 self._get_distance_function(), self.phase_invariance, 
-                self.max_channels
+                self.max_channels, self.prime_dilations
             )
         elif self.transform_type == STR_UNIVARIATE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
-                self._get_distance_function(), self.phase_invariance
+                self._get_distance_function(), self.phase_invariance, self.prime_dilations
             )
         else:
             raise ValueError('Unknown value for transform type parameter')

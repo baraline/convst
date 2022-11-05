@@ -62,6 +62,9 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self,
         n_shapelets_per_estimator=10000,
         shapelet_lengths=[11],
+        shapelet_lengths_bounds=None,
+        lengths_bounds_reduction=0.5,
+        prime_dilations=False,
         n_samples=None,
         n_jobs=1,
         backend="processes",
@@ -74,6 +77,9 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         self.n_shapelets_per_estimator=n_shapelets_per_estimator
         self.shapelet_lengths=shapelet_lengths
         self.n_jobs = n_jobs
+        self.shapelet_lengths_bounds=shapelet_lengths_bounds
+        self.lengths_bounds_reduction=lengths_bounds_reduction
+        self.prime_dilations=prime_dilations
         self.backend=backend
         self.random_state = random_state
         self.n_samples=n_samples
@@ -101,7 +107,6 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
             Derivate(),
             Periodigram()
         ]
-        
         models = Parallel(
             n_jobs=self.n_jobs,
             prefer=self.backend,
@@ -113,9 +118,12 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                     R_DST(
                         n_shapelets=self.n_shapelets_per_estimator,
                         alpha=self.shp_alpha, n_samples=self.n_samples, 
-                        proba_norm=self.proba_norm[i], n_jobs=self.n_jobs_rdst,
+                        proba_norm=self.proba_norm[i], n_jobs=-1,
                         shapelet_lengths=self.shapelet_lengths,
-                        phase_invariance=self.phase_invariance
+                        phase_invariance=self.phase_invariance,
+                        prime_dilations=self.prime_dilations,
+                        shapelet_lengths_bounds=self.shapelet_lengths_bounds,
+                        lengths_bounds_reduction=self.lengths_bounds_reduction
                     ),
                     _internalRidgeCV()
                 )
