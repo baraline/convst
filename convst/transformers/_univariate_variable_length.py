@@ -146,7 +146,7 @@ def U_VL_generate_shapelet(
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize = \
     _init_random_shapelet_params(
-        n_shapelets, shapelet_sizes, min_len, p_norm
+        n_shapelets, shapelet_sizes, min_len, p_norm, prime_scheme
     )
     
     #Initialize self similarity mask

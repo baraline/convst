@@ -153,7 +153,7 @@ def M_VL_generate_shapelet(
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize, n_channels, channel_ids = \
     _init_random_shapelet_params(
-        n_shapelets, shapelet_sizes, min_len, p_norm, max_channels, 
+        n_shapelets, shapelet_sizes, min_len, p_norm, max_channels, prime_scheme
     )
     #Initialize self similarity mask
     unique_dil = unique(dilations)

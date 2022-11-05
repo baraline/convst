@@ -3,25 +3,26 @@
 import pandas as pd
 import numpy as np
 
-from convst.utils.dataset_utils import return_all_dataset_names
+from convst.utils.dataset_utils import return_all_dataset_names, return_all_univariate_dataset_names
 from convst.utils.experiments_utils import cross_validate_UCR_UEA
 
-from convst.classifiers import R_DST_Ensemble
+from convst.classifiers import R_DST_Ensemble, R_DST_Ridge
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
 n_cv=30
 
-csv_name = 'CV_{}_results_multivariate_ensemble2.csv'.format(
+csv_name = 'CV_{}_results_prime_bounds_phase.csv'.format(
     n_cv)
 
 # List of datasets to test, here, use all datasets ones, (univariate,
 # multivariate, variable length, etc...) see dataset_utils for other choices.
-dataset_names = return_all_dataset_names()
+dataset_names = return_all_univariate_dataset_names()
 
 # List of models to test
 dict_models = {
-    "R_DST_Ensemble": R_DST_Ensemble,
+    "R_DST": R_DST_Ridge,
+    "R_DST_Ensemble": R_DST_Ensemble
 }
 
 resume=False
@@ -39,14 +40,21 @@ for model_name, model_class in dict_models.items():
     print("Compiling {}".format(model_name))
     X = np.random.rand(5,3,50)
     y = np.array([0,0,1,1,1])
-    model_class(n_shapelets_per_estimator=1).fit(X,y).predict(X)
+    if model_name == 'R_DST_Ensemble':
+        model_class(n_shapelets_per_estimator=1).fit(X,y).predict(X)
+    if model_name == 'R_DST_Ridge':
+        model_class(n_shapelets=1).fit(X,y).predict(X)
 
 i_df=0
 for name in dataset_names:
     print(name)
     for model_name, model_class in dict_models.items():
+        print(model_name)
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == 0.0:
-            pipeline = model_class(n_jobs=-1, phase_invariance=True)
+            pipeline = model_class(
+                n_jobs=-1, phase_invariance=True,
+                prime_dilations=True, shapelet_lengths_bounds=[0.001, 0.25]
+            )
             
             #By default, we use accuracy as score, but other scorer can be passed
             #as parameters (e.g. by default scorers={"accuracy":accuracy_score})
