@@ -67,6 +67,9 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         n_samples=None,
         n_shapelets=10_000,
         shapelet_lengths=[11],
+        shapelet_lengths_bounds=None,
+        lengths_bounds_reduction=0.5,
+        prime_dilations=False,
         proba_norm=0.8,
         percentiles=[5,10],
         n_jobs=1,
@@ -81,10 +84,13 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.fit_intercept=fit_intercept
         self.transform_type=transform_type
         self.phase_invariance=phase_invariance
+        self.prime_dilations=prime_dilations
         self.distance=distance
         self.alpha=alpha
         self.normalize_output=normalize_output
         self.n_samples=n_samples
+        self.shapelet_lengths_bounds=shapelet_lengths_bounds
+        self.lengths_bounds_reduction=lengths_bounds_reduction
         self.n_shapelets=n_shapelets
         self.shapelet_lengths=shapelet_lengths
         self.proba_norm=proba_norm
@@ -114,6 +120,9 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
             phase_invariance=self.phase_invariance,
             distance=self.distance,
             alpha=self.alpha,
+            prime_dilations=self.prime_dilations,
+            shapelet_lengths_bounds=self.shapelet_lengths_bounds,
+            lengths_bounds_reduction=self.lengths_bounds_reduction,
             normalize_output=self.normalize_output,
             n_samples=self.n_samples,
             n_shapelets=self.n_shapelets,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from numba import njit, prange
-from numpy import float_, sqrt, zeros, unique, bool_, where, int64
+from numpy import float_, sqrt, zeros, unique, bool_, where, int64, all as _all
 
 ###############################################################################
 #                                                                             #
@@ -573,3 +573,19 @@ def _combinations_1d(x,y):
             u_mask[where(u_x==x[i])[0][0],where(u_y==y[i])[0][0]] = False
             i_comb += 1
     return combinations
+
+@njit(cache=True)
+def prime_up_to(n):
+    is_p = zeros(n, dtype=bool_)
+    for i in range(n):
+        is_p[i] = is_prime(i)
+    return where(is_p)[0]
+
+@njit(cache=True)
+def is_prime(n):
+    if (n % 2 == 0 and n > 2) or n == 0: 
+        return False
+    for i in range(3, int64(sqrt(n)) + 1, 2):
+        if not n % i:
+            return False 
+    return True
