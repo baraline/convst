@@ -82,7 +82,7 @@ def test_prime_dilations(name):
 
 # TODO : this may fail due to unlucky generation of shapelets, if a length 
 # is not selected randomly, the expected array will be bigger than actual
-@pytest.mark.parametrize("name, bounds, reduction, expected" [
+@pytest.mark.parametrize("name, bounds, reduction, expected", [
     ('GunPoint', [6, 12], 0., [6, 7, 8, 9, 10, 11, 12]),
     ('GunPoint', [6, 12], 0.5, [6, 8, 10, 12]),
     ('GunPoint', [0.1, 0.15], 0., [15, 16, 17, 18, 19, 20, 21, 22]),
