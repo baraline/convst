@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from numba import njit, prange
-from numpy import float_, sqrt, zeros, unique, bool_, where, int64, all as _all
+from numpy import float_, sqrt, zeros, unique, bool_, where, int64
 
 ###############################################################################
 #                                                                             #
@@ -576,8 +576,8 @@ def _combinations_1d(x,y):
 
 @njit(cache=True)
 def prime_up_to(n):
-    is_p = zeros(n, dtype=bool_)
-    for i in range(n):
+    is_p = zeros(n+1, dtype=bool_)
+    for i in range(n+1):
         is_p[i] = is_prime(i)
     return where(is_p)[0]
 

@@ -20,7 +20,7 @@ from numba import njit, prange
 # TODO : check if numba could support Tuple of variable length numpy arrays as input
 
 @njit(cache=True)
-def _init_random_shapelet_params(
+def U_VL_init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
 ):
     """
@@ -145,7 +145,7 @@ def U_VL_generate_shapelet(
     
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize = \
-    _init_random_shapelet_params(
+    U_VL_init_random_shapelet_params(
         n_shapelets, shapelet_sizes, min_len, p_norm, prime_scheme
     )
     

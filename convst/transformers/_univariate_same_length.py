@@ -17,7 +17,7 @@ from convst.transformers._commons import (
 from numba import njit, prange
 
 @njit(cache=True)
-def _init_random_shapelet_params(
+def U_SL_init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
 ):
     """
@@ -64,8 +64,6 @@ def _init_random_shapelet_params(
         for i in prange(n_shapelets):
             powers[i] = uniform(0, upper_bounds[i])
         dilations = floor(power(2, powers)).astype(int64)
-    
-    #PRIME DILATION    
     # Init threshold array
     threshold = zeros(n_shapelets)
     
@@ -135,7 +133,7 @@ def U_SL_generate_shapelet(
 
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize = \
-    _init_random_shapelet_params(
+    U_SL_init_random_shapelet_params(
         n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
     )
     #Initialize self similarity mask

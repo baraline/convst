@@ -18,7 +18,7 @@ from convst.transformers._commons import (
 from numba import njit, prange
 
 @njit(cache=True)
-def _init_random_shapelet_params(
+def M_SL_init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm, max_channels, prime_scheme
 ):
     """
@@ -147,7 +147,7 @@ def M_SL_generate_shapelet(
 
     #Initialize shapelets
     values, lengths, dilations, threshold, normalize, n_channels, channel_ids = \
-    _init_random_shapelet_params(
+    M_SL_init_random_shapelet_params(
         n_shapelets, shapelet_sizes, n_timestamps, p_norm, max_channels, prime_scheme
     )
     #Initialize self similarity mask

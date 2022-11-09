@@ -16,6 +16,7 @@ from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
+from numba import set_num_threads
 
 class _internalRidgeCV(RidgeClassifierCV): 
     def __init__(self, **kwargs):
@@ -107,6 +108,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
             Derivate(),
             Periodigram()
         ]
+        set_num_threads(self.n_jobs_rdst)
         models = Parallel(
             n_jobs=self.n_jobs,
             prefer=self.backend,
@@ -118,7 +120,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                     R_DST(
                         n_shapelets=self.n_shapelets_per_estimator,
                         alpha=self.shp_alpha, n_samples=self.n_samples, 
-                        proba_norm=self.proba_norm[i], n_jobs=-1,
+                        proba_norm=self.proba_norm[i], n_jobs=False,
                         shapelet_lengths=self.shapelet_lengths,
                         phase_invariance=self.phase_invariance,
                         prime_dilations=self.prime_dilations,
