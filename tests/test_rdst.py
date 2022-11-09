@@ -6,6 +6,8 @@ Created on Tue Sep 27 20:26:34 2022
 """
 import pytest
 
+import numpy as np
+
 from convst.classifiers import R_DST_Ridge
 from convst.transformers import R_DST
 from convst.utils.dataset_utils import load_sktime_dataset_split
@@ -62,8 +64,8 @@ def test_mutliple_lengths(name, lengths):
     assert True
 
 @pytest.mark.parametrize("name", [
-    ('ForbA'),
-    ('ForbB')
+    ('FordA'),
+    ('FordB')
 ])
 def test_prime_dilations(name):
     X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
@@ -103,7 +105,7 @@ def test_length_bounds(name, bounds, reduction, expected):
             e  
         ))
         assert False 
-    assert all(rdst.transformer.shapelets_[1] == expected)
+    assert list(np.unique(rdst.transformer.shapelets_[1])) == expected
 
 # Lower than actual best accuracy to account for possible deviation due to random sampling
 @pytest.mark.parametrize("name, expected", [
