@@ -18,7 +18,6 @@ def _custom_from_nested_to_3d_numpy(X):
         return np.array([X[i].values.T for i in range(len(X))])
     else:
         return [X[i].values.T for i in range(len(X))]
-    
 
 @njit(cache=True)
 def z_norm_3D(X):
@@ -66,7 +65,7 @@ def z_norm_3D_list(X):
     return X
     
 
-def load_sktime_dataset_split(name, normalize=True):
+def load_sktime_dataset_split(name, normalize=False):
     """
     Load the original train and test splits of a dataset 
     from the UCR/UEA archive by name using sktime API.
@@ -120,7 +119,7 @@ def load_sktime_dataset_split(name, normalize=True):
     return X_train, X_test, y_train, y_test, min_len
 
 
-def load_sktime_arff_file(path, normalize=True):
+def load_sktime_arff_file(path, normalize=False):
     """
     Load a dataset from .arff files.
 
@@ -171,7 +170,7 @@ def load_sktime_arff_file(path, normalize=True):
     return X_train, X_test, y_train, y_test, le
 
 
-def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
+def load_sktime_arff_file_resample_id(path, rs_id, normalize=False):
     """
     Load a dataset resample from .arff files and the identifier of the 
     resample.
@@ -224,7 +223,7 @@ def load_sktime_arff_file_resample_id(path, rs_id, normalize=True):
 
     return X_train, X_test, y_train, y_test, le
 
-def load_sktime_ts_file(path, normalize=True):
+def load_sktime_ts_file(path, normalize=False):
     """
     Load a dataset from .ts files
 
@@ -274,7 +273,7 @@ def load_sktime_ts_file(path, normalize=True):
 
     return X_train, X_test, y_train, y_test, le
 
-def load_sktime_dataset(name, normalize=True):
+def load_sktime_dataset(name, normalize=False):
     """
     Load a dataset from the UCR/UEA archive by name using sktime API
 

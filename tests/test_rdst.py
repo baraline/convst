@@ -6,10 +6,13 @@ Created on Tue Sep 27 20:26:34 2022
 """
 import pytest
 
+import numpy as np
+
 from convst.classifiers import R_DST_Ridge
 from convst.transformers import R_DST
 from convst.utils.dataset_utils import load_sktime_dataset_split
 from convst.utils.experiments_utils import cross_validate_UCR_UEA
+from convst.transformers._commons import is_prime
 
 import logging
 
@@ -59,6 +62,50 @@ def test_mutliple_lengths(name, lengths):
         ))
         assert False 
     assert True
+
+@pytest.mark.parametrize("name", [
+    ('FordA'),
+    ('FordB')
+])
+def test_prime_dilations(name):
+    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+        name=name
+    )
+    try:
+        rdst = R_DST_Ridge(min_len=min_len, prime_dilations=True).fit(X_train, y_train)
+        rdst.score(X_test, y_test)
+    except Exception as e:
+        LOGGER.info('An exception as occured during prime dilation tests: {}'.format(
+            e  
+        ))
+        assert False 
+    assert all([is_prime(i) for i in rdst.transformer.shapelets_[2]])
+
+
+# TODO : this may fail due to unlucky generation of shapelets, if a length 
+# is not selected randomly, the expected array will be bigger than actual
+@pytest.mark.parametrize("name, bounds, reduction, expected", [
+    ('GunPoint', [6, 12], 0., [6, 7, 8, 9, 10, 11, 12]),
+    ('GunPoint', [6, 12], 0.5, [6, 8, 10, 12]),
+    ('GunPoint', [0.1, 0.15], 0., [15, 16, 17, 18, 19, 20, 21, 22]),
+    ('GunPoint', [0.1, 0.15], 0.5, [15, 17, 19, 21])
+])
+def test_length_bounds(name, bounds, reduction, expected):
+    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+        name=name
+    )
+    try:
+        rdst = R_DST_Ridge(
+            min_len=min_len, shapelet_lengths_bounds=bounds, 
+            lengths_bounds_reduction=reduction
+        ).fit(X_train, y_train)
+        rdst.score(X_test, y_test)
+    except Exception as e:
+        LOGGER.info('An exception as occured during length bounds tests: {}'.format(
+            e  
+        ))
+        assert False 
+    assert list(np.unique(rdst.transformer.shapelets_[1])) == expected
 
 # Lower than actual best accuracy to account for possible deviation due to random sampling
 @pytest.mark.parametrize("name, expected", [

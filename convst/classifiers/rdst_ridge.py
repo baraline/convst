@@ -9,7 +9,10 @@ from sklearn.linear_model import RidgeClassifierCV
 from convst.transformers._input_transformers import c_StandardScaler
 from convst.transformers import R_DST
 
+from convst.utils.checks_utils import check_n_jobs
 from sklearn.metrics import accuracy_score
+
+from numba import set_num_threads
 
 class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     """
@@ -95,10 +98,14 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.shapelet_lengths=shapelet_lengths
         self.proba_norm=proba_norm
         self.percentiles=percentiles
-        self.n_jobs=n_jobs
+        if isinstance(n_jobs, bool):
+            self.n_jobs=n_jobs
+        else:
+            self.n_jobs=check_n_jobs(n_jobs)
+            set_num_threads(self.n_jobs)
         self.random_state=random_state
         self.min_len=min_len
-
+    
     def _more_tags(self):
         return {
             "capability:variable_length": True,
@@ -126,10 +133,10 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
             normalize_output=self.normalize_output,
             n_samples=self.n_samples,
             n_shapelets=self.n_shapelets,
+            n_jobs=False,
             shapelet_lengths=self.shapelet_lengths,
             proba_norm=self.proba_norm,
             percentiles=self.percentiles,
-            n_jobs=self.n_jobs,
             random_state=self.random_state,
             min_len=self.min_len 
         )
