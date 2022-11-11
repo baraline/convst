@@ -488,7 +488,7 @@ class R_DST(BaseEstimator, TransformerMixin):
                 raise ValueError('Input data goint {} timestamps, at least 4 are requiered. Input format should be (n_samples, n_features, n_timestamps)'.format(n_timestamps))
             else:
                 warnings.warn("All the values in 'shapelet_lengths' must be lower than or equal to 'n_timestamps' (got {} > {}). Changed shapelet size to {}".format(shapelet_lengths.max(), n_timestamps, n_timestamps//2))
-                shapelet_lengths = shapelet_lengths[shapelet_lengths > n_timestamps] = n_timestamps//2
+                shapelet_lengths[shapelet_lengths > n_timestamps] = n_timestamps//2
 
 
         rng = check_random_state(self.random_state)

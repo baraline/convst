@@ -18,6 +18,7 @@ from timeit import default_timer as timer
 from convst.utils.dataset_utils import load_sktime_arff_file_resample_id, load_sktime_dataset_split
 
 #Reuse of the sktime function, modified for numpy array inputs rather than dataframes
+# and to handle variable length series
 def _sktime_resample(X_train, y_train, X_test, y_test, random_state):
     """Stratified resample data without replacement using a random state.
 
@@ -205,9 +206,10 @@ class ARFF_stratified_resample:
         Path to the arff files.
     
     """
-    def __init__(self, n_splits, path):
+    def __init__(self, n_splits, path, normalize=False):
         self.n_splits=n_splits
         self.path=path
+        self.normalize=normalize
     
     def split(self, X, y=None, groups=None):
         """
@@ -231,7 +233,7 @@ class ARFF_stratified_resample:
 
         """
         for i in range(self.n_splits):
-            X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(self.path, i)
+            X_train, X_test, y_train, y_test, _ = load_sktime_arff_file_resample_id(self.path, i, normalize=self.normalize)
             idx_Train = [np.where((X == X_train[j]).all(axis=2))[0][0] for j in range(X_train.shape[0])]
             idx_Test = [np.where((X == X_test[j]).all(axis=2))[0][0] for j in range(X_test.shape[0])]
             yield idx_Train, idx_Test
