@@ -5,14 +5,20 @@ Created on Tue Sep  6 16:35:58 2022
 
 @author: lifo
 """
-
-from sklearn.base import BaseEstimator, TransformerMixin
-from convst.utils.checks_utils import check_array_3D
-from numba import njit, prange
-from pyts.approximation import DiscreteFourierTransform, SymbolicAggregateApproximation
 import numpy as np
+
+
+from convst.utils.checks_utils import check_array_3D
+
+from numba import njit, prange
+
+from pyts.approximation import DiscreteFourierTransform, SymbolicAggregateApproximation
+
 from scipy.signal import periodogram
+from scipy.fft import fht, fhtoffset
+
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.base import BaseEstimator, TransformerMixin
 
 class c_StandardScaler(StandardScaler):
     def fit(self, X, y=None):
@@ -112,9 +118,9 @@ class Periodigram(BaseEstimator, TransformerMixin):
              "cosine","exponential","tukey","taylor"]
         )
 
+#TODO : adapt to multivariate/uneven length context
 class Sax(BaseEstimator, TransformerMixin):
     def __init__(self, n_bins=10, strategy="uniform", random=False):
-        # To fix __repr__ ...
         self.random = random
         self.n_bins = n_bins
         self.strategy = strategy
@@ -136,10 +142,12 @@ class Sax(BaseEstimator, TransformerMixin):
     def _random_init(self, n_timestamps):
         self.set_params(**{"n_bins":np.random.choice(np.arange(2,min(n_timestamps,26)))})
 
+#TODO : adapt to multivariate/uneven length context
 class FourrierCoefs(BaseEstimator, TransformerMixin):
-    def __init__(self, n_coefs=None, drop_sum=False, anova=False,
-                 norm_mean=False, norm_std=False):
-        # To fix __repr__ ...
+    def __init__(
+        self, n_coefs=None, drop_sum=False, anova=False, norm_mean=False,
+        norm_std=False
+    ):
         self.n_coefs = n_coefs
         self.drop_sum = drop_sum
         self.anova = anova
@@ -157,3 +165,33 @@ class FourrierCoefs(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = self.transformer.transform(X[:,0,:])
         return X[:, np.newaxis, :]
+
+
+class FastHankelTransform(BaseEstimator, TransformerMixin):
+    def __init__(
+        self, dln=0.01, mu=1, offset=0.0, bias=0.0, use_optimal_offset=True
+    ):
+        self.dln = dln
+        self.mu = mu
+        self.offset = offset
+        self.bias = bias
+        self.use_optimal_offset = use_optimal_offset
+    
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, X):
+        X_new = np.zeros(X.shape)
+        for i in range(X.shape[0]):
+            if self.use_optimal_offset:
+                X_new[i] = fht(
+                    X[i], self.dln, self.mu,
+                    offset=fhtoffset(self.dln, self.dln, self.bias),
+                    bias=self.bias
+                )
+            else:
+                X_new[i] = fht(
+                    X[i], self.dln, self.mu, offset=self.offset,
+                    bias=self.bias
+                )
+        return X_new

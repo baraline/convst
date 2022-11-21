@@ -4,14 +4,14 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int64, bool_,
-    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
+    unique, where, percentile, all as _all, int64, bool_, abs as _abs,
+    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std, arange
 )
 
 from convst.transformers._commons import (
     get_subsequence, compute_shapelet_dist_vector,
     apply_one_shapelet_one_sample_univariate, _combinations_1d,
-    generate_strides_1D, prime_up_to
+    generate_strides_1D, prime_up_to, choice_log
 )
 
 from numba import njit, prange
@@ -51,19 +51,32 @@ def U_SL_init_random_shapelet_params(
     """
     # Lengths of the shapelets
     lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
-    
+    _tmp_bool = True
+    coef=2
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
     if prime_scheme:
         primes = prime_up_to(int64(2**upper_bounds.max()))
         dilations = zeros(n_shapelets, dtype=int64)
+        #TODO : optimize to avoid recomputing choice log for all upper bounds
+        #Loop on each unique upper bounds ?
         for i in prange(n_shapelets):
-            dilations[i] = choice(primes[primes<=int64(2**upper_bounds[i])])
+            shp_primes = primes[primes<=int64(2**upper_bounds[i])]
+            dilations[i] = shp_primes[choice_log(shp_primes.shape[0], 1)[0]]
     else:
-        powers = zeros(n_shapelets)
-        for i in prange(n_shapelets):
-            powers[i] = uniform(0, upper_bounds[i])
-        dilations = floor(power(2, powers)).astype(int64)
+        if _tmp_bool:
+            dilations = zeros(n_shapelets, dtype=int64)
+            possible = arange(1, 2**(upper_bounds.max())+1)
+            admissible = arange(1, 2**(upper_bounds.max())+1)[::coef]
+            for i in prange(n_shapelets):
+                _d = possible[choice_log(possible.shape[0], 1)[0]]
+                dilations[i] = admissible[(_abs(admissible - _d + 1)).argmin()]
+        else:
+            powers = zeros(n_shapelets)
+            for i in prange(n_shapelets):
+                powers[i] = uniform(0, upper_bounds[i])
+            dilations = floor(power(2, powers)).astype(int64)
+            
     # Init threshold array
     threshold = zeros(n_shapelets)
     
