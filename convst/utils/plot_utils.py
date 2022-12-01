@@ -6,14 +6,21 @@ Created on Thu Dec  1 09:22:29 2022
 @author: lifo
 """
 import pandas as pd
+
 import numpy as np
+
 import seaborn as sns
-from matplotlib import pyplot as plt
+
 import operator
+
 import math
+
 import networkx
+
 from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare
+
+from matplotlib import pyplot as plt
 
 # TODO: refactor methods
 
