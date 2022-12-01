@@ -495,7 +495,7 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
 
     Parameters
     ----------
-    x : array, shape=(n_timestamps - (length-1)*dilation, length)
+    x : array, shape=(n_timestamps - (length-1)*dilation, n_features, length)
         Strides of an input time series
     values : array, shape=(max(shapelet_sizes))
         Values of the shapelet

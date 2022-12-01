@@ -52,7 +52,7 @@ class Shapelet:
         
     def plot_on_X(
         self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
-        shp_dot_size=40, shp_c='purple', ax=None, label=None
+        shp_dot_size=40, shp_c='purple', ax=None, label=None, x_linewidth=2
     ):
         c = compute_shapelet_dist_vector(
             X, self.values, self.length, self.dilation,
@@ -69,12 +69,12 @@ class Shapelet:
             sns.set()
             sns.set_context(seaborn_context)
             fig = plt.figure(figsize=(figsize))
-            plt.plot(X,label=label)
-            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c)
+            plt.plot(X,label=label, linewidth=x_linewidth)
+            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3)
             return fig
         else:
-            ax.plot(X,label=label)
-            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c)
+            ax.plot(X,label=label, linewidth=x_linewidth)
+            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3)
     
     def plot_distance_vector(   
         self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
