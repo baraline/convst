@@ -15,6 +15,8 @@ import networkx
 from scipy.stats import wilcoxon
 from scipy.stats import friedmanchisquare
 
+# TODO: refactor methods
+
 def pairwise_plot(
     df, baseline, margin=0.015, y_min=0, y_max=1, show_names_above=0.7,
     max_ncols=2, sns_context='talk', figsize=None
@@ -205,7 +207,7 @@ def draw_cd_diagram(df_perf=None, alpha=0.05, title=None, width=10, labels=False
                     highlight=highlight)
 
         font = {'family': 'sans-serif',
-                'color':  'black',
+                'color': 'black',
                 'weight': 'normal',
                 'size': 18,
                 }
@@ -329,7 +331,7 @@ def _graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hi
         width (int, optional): default width in inches (default: 6)
         textspace (int, optional): space on figure sides (in inches) for the
             method names (default: 1)
-        reverse (bool, optional):  if set to `True`, the lowest rank is on the
+        reverse (bool, optional): if set to `True`, the lowest rank is on the
             right (default: `False`)
         filename (str, optional): output file name (with extension). If not
             given, the function does not write a file.
@@ -338,23 +340,23 @@ def _graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hi
     """
     width = float(width)
     textspace = float(textspace)
-
-    def nth(l, n):
+    
+    def lloc(_list, n):
+         """
+         List location in list of list structure.
+         Enable the use of negative locations:
+         -1 is the last element, -2 second last...
+         """
+         if n < 0:
+             return len(_list[0]) + n
+         return n
+     
+    def nth(_list, n):
         """
         Returns only nth elemnt in a list.
         """
-        n = lloc(l, n)
-        return [a[n] for a in l]
-
-    def lloc(l, n):
-        """
-        List location in list of list structure.
-        Enable the use of negative locations:
-        -1 is the last element, -2 second last...
-        """
-        if n < 0:
-            return len(l[0]) + n
-        return n
+        n = lloc(_list, n)
+        return [a[n] for a in _list]
 
     def mxrange(lr):
         """
@@ -417,11 +419,11 @@ def _graph_ranks(avranks, names, p_values, cd=None, cdmethod=None, lowv=None, hi
     hf = 1. / height  # height factor
     wf = 1. / width
 
-    def hfl(l):
-        return [a * hf for a in l]
+    def hfl(_list):
+        return [a * hf for a in _list]
 
-    def wfl(l):
-        return [a * wf for a in l]
+    def wfl(_list):
+        return [a * wf for a in _list]
 
     # Upper left corner is (0,0).
     ax.plot([0, 1], [0, 1], c="w")
