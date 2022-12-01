@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from numba import njit, prange
-from numpy import float_, sqrt, zeros, unique, bool_, where, int64
-
+from numpy import float_, sqrt, zeros, unique, bool_, where, int64, log, array
+from numpy.random import rand
 ###############################################################################
 #                                                                             #
 #                         DISTANCE FUNCTIONS                                  #
@@ -495,7 +495,7 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
 
     Parameters
     ----------
-    x : array, shape=(n_timestamps - (length-1)*dilation, length)
+    x : array, shape=(n_timestamps - (length-1)*dilation, n_features, length)
         Strides of an input time series
     values : array, shape=(max(shapelet_sizes))
         Values of the shapelet
@@ -589,3 +589,16 @@ def is_prime(n):
         if not n % i:
             return False 
     return True
+
+@njit(cache=True, fastmath=True)
+def choice_log(n_choice, n_sample):
+    if n_choice > 1:
+        P = array([1/2**log(i) for i in range(1,n_choice+1)])
+        P = P.cumsum()/P.sum()
+        loc = zeros(n_sample, dtype=int64)
+        for i in prange(n_sample):
+            loc[i] = where(P>=rand())[0][0]
+        return loc
+    else:
+        return zeros(n_sample, dtype=int64)
+

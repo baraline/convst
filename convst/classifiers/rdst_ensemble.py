@@ -4,10 +4,12 @@ import numpy as np
 
 from joblib import Parallel
 
-from convst.utils.checks_utils import check_n_jobs
+from convst.utils.checks_utils import (check_n_jobs, check_array_1D,
+                                       check_is_boolean, check_is_numeric)
 from convst.transformers import R_DST
-from convst.transformers._input_transformers import Raw, Derivate, Periodigram
-
+from convst.transformers._input_transformers import (
+    Raw, Derivate, Periodigram, FastHankelTransform
+)
 from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import RidgeClassifierCV
@@ -65,7 +67,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         shapelet_lengths=[11],
         shapelet_lengths_bounds=None,
         lengths_bounds_reduction=0.5,
-        prime_dilations=False,
+        prime_dilations=True,
         n_samples=None,
         n_jobs=1,
         backend="processes",
@@ -73,21 +75,45 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         shp_alpha=0.5,
         a_w=4,
         proba_norm=[0.8, 0.8, 0.8],
-        phase_invariance=False
+        phase_invariance=False,
+        input_transformers=None
     ):
-        self.n_shapelets_per_estimator=n_shapelets_per_estimator
-        self.shapelet_lengths=shapelet_lengths
+        self.n_shapelets_per_estimator = check_is_numeric(n_shapelets_per_estimator)
+        self.shapelet_lengths = check_array_1D(shapelet_lengths)
         self.n_jobs = n_jobs
-        self.shapelet_lengths_bounds=shapelet_lengths_bounds
-        self.lengths_bounds_reduction=lengths_bounds_reduction
-        self.prime_dilations=prime_dilations
-        self.backend=backend
+        if shapelet_lengths_bounds is not None:
+            self.shapelet_lengths_bounds = check_array_1D(shapelet_lengths_bounds)
+        else:
+            self.shapelet_lengths_bounds = shapelet_lengths_bounds
+        self.lengths_bounds_reduction = check_is_numeric(lengths_bounds_reduction)
+        self.prime_dilations = check_is_boolean(prime_dilations)
+        self.backend = backend
         self.random_state = random_state
-        self.n_samples=n_samples
-        self.shp_alpha = shp_alpha
-        self.a_w = a_w
-        self.proba_norm = proba_norm 
-        self.phase_invariance = phase_invariance
+        if shapelet_lengths_bounds is not None:
+            self.n_samples = check_is_numeric(n_samples)
+        else:
+            self.n_samples = n_samples
+        self.shp_alpha = check_is_numeric(shp_alpha)
+        self.a_w = check_is_numeric(a_w)
+        self.proba_norm = check_array_1D(proba_norm)
+        self.phase_invariance = check_is_boolean(phase_invariance)
+        
+        if input_transformers is None:
+            self.input_transformers = [
+                Raw(),
+                Derivate(),
+                Periodigram()
+            ]
+        else:
+            self.input_transformers = input_transformers
+        
+        if len(self.input_transformers) != len(self.proba_norm):
+            raise ValueError(
+                'The length of proba norm array should be equal to the'
+                ' length of the input transformers array, but found '
+                '{} for proba_norm and {} for input transformers'.format(
+                 len(self.proba_norm), len(self.input_transformers))
+            )
         
     def _more_tags(self):
         return {
@@ -98,16 +124,11 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         
     def _manage_n_jobs(self):
         total_jobs = check_n_jobs(self.n_jobs)
-        self.n_jobs = min(3,total_jobs)
-        self.n_jobs_rdst = max(1,(total_jobs)//self.n_jobs)
+        self.n_jobs = min(len(self.input_transformers),total_jobs)
+        self.n_jobs_rdst = max(1,total_jobs//self.n_jobs)
         
     def fit(self, X, y):
         self._manage_n_jobs()
-        input_transformer = [
-            Raw(),
-            Derivate(),
-            Periodigram()
-        ]
         set_num_threads(self.n_jobs_rdst)
         models = Parallel(
             n_jobs=self.n_jobs,
@@ -116,7 +137,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
             delayed(_parallel_fit)(
                 X, y, 
                 make_pipeline(
-                    input_transformer[i],
+                    self.input_transformers[i],
                     R_DST(
                         n_shapelets=self.n_shapelets_per_estimator,
                         alpha=self.shp_alpha, n_samples=self.n_samples, 
@@ -130,7 +151,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
                     _internalRidgeCV()
                 )
             )
-            for i in range(len(input_transformer))
+            for i in range(len(self.input_transformers))
         )
             
         self.models = models

@@ -11,7 +11,7 @@ from numpy import (
 from convst.transformers._commons import (
     get_subsequence, compute_shapelet_dist_vector,
     apply_one_shapelet_one_sample_univariate, _combinations_1d,
-    generate_strides_1D, prime_up_to
+    generate_strides_1D, prime_up_to, choice_log
 )
 
 from numba import njit, prange
@@ -51,19 +51,22 @@ def U_SL_init_random_shapelet_params(
     """
     # Lengths of the shapelets
     lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
-    
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
     if prime_scheme:
         primes = prime_up_to(int64(2**upper_bounds.max()))
         dilations = zeros(n_shapelets, dtype=int64)
+        #TODO : optimize to avoid recomputing choice log for all upper bounds
+        #Loop on each unique upper bounds ?
         for i in prange(n_shapelets):
-            dilations[i] = choice(primes[primes<=int64(2**upper_bounds[i])])
+            shp_primes = primes[primes<=int64(2**upper_bounds[i])]
+            dilations[i] = shp_primes[choice_log(shp_primes.shape[0], 1)[0]]
     else:
         powers = zeros(n_shapelets)
         for i in prange(n_shapelets):
             powers[i] = uniform(0, upper_bounds[i])
         dilations = floor(power(2, powers)).astype(int64)
+        
     # Init threshold array
     threshold = zeros(n_shapelets)
     
