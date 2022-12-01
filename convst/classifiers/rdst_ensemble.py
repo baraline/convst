@@ -67,7 +67,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         shapelet_lengths=[11],
         shapelet_lengths_bounds=None,
         lengths_bounds_reduction=0.5,
-        prime_dilations=False,
+        prime_dilations=True,
         n_samples=None,
         n_jobs=1,
         backend="processes",

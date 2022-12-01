@@ -12,7 +12,7 @@ from numpy import (
 from convst.transformers._commons import (
     get_subsequence, compute_shapelet_dist_vector,
     apply_one_shapelet_one_sample_multivariate, _combinations_1d,
-    generate_strides_2D, prime_up_to
+    generate_strides_2D, prime_up_to, choice_log
 )
 
 from numba import njit, prange
@@ -61,8 +61,11 @@ def M_SL_init_random_shapelet_params(
     if prime_scheme:
         primes = prime_up_to(int64(2**upper_bounds.max()))
         dilations = zeros(n_shapelets, dtype=int64)
+        #TODO : optimize to avoid recomputing choice log for all upper bounds
+        #Loop on each unique upper bounds ?
         for i in prange(n_shapelets):
-            dilations[i] = choice(primes[primes<=int64(2**upper_bounds[i])])
+            shp_primes = primes[primes<=int64(2**upper_bounds[i])]
+            dilations[i] = shp_primes[choice_log(shp_primes.shape[0], 1)[0]]
     else:
         powers = zeros(n_shapelets)
         for i in prange(n_shapelets):

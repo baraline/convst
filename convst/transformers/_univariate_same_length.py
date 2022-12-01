@@ -4,8 +4,8 @@
 """
 from numpy.random import choice, uniform, random, seed
 from numpy import (
-    unique, where, percentile, all as _all, int64, bool_, abs as _abs,
-    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std, arange
+    unique, where, percentile, all as _all, int64, bool_,
+    log2, floor_divide, zeros, floor, power, ones, cumsum, mean, std
 )
 
 from convst.transformers._commons import (
@@ -51,8 +51,6 @@ def U_SL_init_random_shapelet_params(
     """
     # Lengths of the shapelets
     lengths = choice(shapelet_sizes, size=n_shapelets).astype(int64)
-    _tmp_bool = True
-    coef=2
     # Dilations
     upper_bounds = log2(floor_divide(n_timestamps - 1, lengths - 1))
     if prime_scheme:
@@ -64,19 +62,11 @@ def U_SL_init_random_shapelet_params(
             shp_primes = primes[primes<=int64(2**upper_bounds[i])]
             dilations[i] = shp_primes[choice_log(shp_primes.shape[0], 1)[0]]
     else:
-        if _tmp_bool:
-            dilations = zeros(n_shapelets, dtype=int64)
-            possible = arange(1, 2**(upper_bounds.max())+1)
-            admissible = arange(1, 2**(upper_bounds.max())+1)[::coef]
-            for i in prange(n_shapelets):
-                _d = possible[choice_log(possible.shape[0], 1)[0]]
-                dilations[i] = admissible[(_abs(admissible - _d + 1)).argmin()]
-        else:
-            powers = zeros(n_shapelets)
-            for i in prange(n_shapelets):
-                powers[i] = uniform(0, upper_bounds[i])
-            dilations = floor(power(2, powers)).astype(int64)
-            
+        powers = zeros(n_shapelets)
+        for i in prange(n_shapelets):
+            powers[i] = uniform(0, upper_bounds[i])
+        dilations = floor(power(2, powers)).astype(int64)
+        
     # Init threshold array
     threshold = zeros(n_shapelets)
     

@@ -105,7 +105,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         shapelet_lengths=[11],
         shapelet_lengths_bounds=None,
         lengths_bounds_reduction=0.5,
-        prime_dilations=False,
+        prime_dilations=True,
         proba_norm=0.8,
         percentiles=[5,10],
         random_state=None,
