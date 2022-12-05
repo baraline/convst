@@ -67,7 +67,7 @@ We use the standard scikit-learn interface and expect as input a 3D numpy array 
 
 ## Reproducing the paper results
 
-Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results, notably the `test_models.py` file, used to generate the csv results available in the `Results` folder of the archive (To be added).
+Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results, notably the `test_models.py` file, used to generate the csv results available in the `Results` folder of the archive (To be updated).
 
 ## Contributing, Citing and Contact
 
