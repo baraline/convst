@@ -8,7 +8,7 @@ from convst.utils.checks_utils import (check_n_jobs, check_array_1D,
                                        check_is_boolean, check_is_numeric)
 from convst.transformers import R_DST
 from convst.transformers._input_transformers import (
-    Raw, Derivate, Periodigram, FastHankelTransform
+    Raw, Derivate, Periodigram
 )
 from sklearn.utils.fixes import delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -67,7 +67,7 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         shapelet_lengths=[11],
         shapelet_lengths_bounds=None,
         lengths_bounds_reduction=0.5,
-        prime_dilations=True,
+        prime_dilations=False,
         n_samples=None,
         n_jobs=1,
         backend="processes",

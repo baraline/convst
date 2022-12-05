@@ -112,8 +112,8 @@ def test_length_bounds(name, bounds, reduction, expected):
     ('GunPoint',0.98),
     ('Wine',0.94),
     ('BasicMotions',0.94),
-    ('PLAID',0.895),
-    ('AsphaltObstaclesCoordinates',0.795)
+    ('PLAID',0.89),
+    ('AsphaltObstaclesCoordinates',0.78)
 ])
 def test_performance(name, expected):
     X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
