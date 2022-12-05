@@ -4,14 +4,11 @@ import pandas as pd
 import numpy as np
 
 from sklearn.base import clone
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import RidgeClassifierCV
 
 from convst.utils.dataset_utils import load_sktime_dataset_split
 from convst.classifiers import R_DST_Ridge, R_DST_Ensemble
 
-from sktime.classification.hybrid import HIVECOTEV1, HIVECOTEV2
+from sktime.classification.hybrid import HIVECOTEV2
 from sktime.classification.dictionary_based import TemporalDictionaryEnsemble
 from sktime.classification.interval_based import DrCIF
 from sktime.classification.shapelet_based import ShapeletTransformClassifier
