@@ -51,7 +51,7 @@ class Shapelet:
             return ax
         
     def plot_on_X(
-        self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
+        self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk', alpha=0.9,
         shp_dot_size=40, shp_c='purple', ax=None, label=None, x_linewidth=2
     ):
         c = compute_shapelet_dist_vector(
@@ -69,12 +69,12 @@ class Shapelet:
             sns.set()
             sns.set_context(seaborn_context)
             fig = plt.figure(figsize=(figsize))
-            plt.plot(X,label=label, linewidth=x_linewidth)
-            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3)
+            plt.plot(X,label=label, linewidth=x_linewidth, alpha=alpha)
+            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha)
             return fig
         else:
-            ax.plot(X,label=label, linewidth=x_linewidth)
-            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3)
+            ax.plot(X,label=label, linewidth=x_linewidth, alpha=alpha)
+            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha)
     
     def plot_distance_vector(   
         self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
@@ -229,22 +229,3 @@ class RDST_Ensemble_interpreter:
     
     def visualize_best_shapelets_one_class(self, class_id, n_shp=1):
         raise NotImplementedError()
-
-"""
-def class_vis(rdg, i_class, c):
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(23,5))
-    ix = np.zeros(rdg.coef_[0].shape[0])
-    ix[1::3] = 1
-    ix[2::3] = 2
-    
-    sns.boxplot(x=ix, y=rdg.coef_[i_class],ax=ax[0])
-    ax[0].set_xticks([0,1,2])
-    ax[0].set_xticklabels(['min','argmin','#match'])
-    ax[0].set_ylabel('Ridge coef for class '+str(i_class))
-    ax[1].set_ylabel('Ridge coef for class '+str(i_class))
-    ax[1].set_xlabel('dilation')
-    coef_sums = (rdg.coef_[i_class][0::3] + rdg.coef_[i_class][1::3] + rdg.coef_[i_class][2::3])/3
-    sns.boxplot(x=c.dilation_, y=coef_sums,ax=ax[1])
-    
-    #sns.boxplot(x=c.length_, y=coef_sums,ax=ax[2])
-""" 
