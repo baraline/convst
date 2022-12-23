@@ -26,7 +26,7 @@ from matplotlib import pyplot as plt
 
 def pairwise_plot(
     df, baseline, margin=0.015, y_min=0, y_max=1, show_names_above=0.7,
-    max_ncols=2, sns_context='talk', figsize=None
+    max_ncols=2, sns_context='talk', figsize=None, dpi=None, show_win_areas=False
 ):
     """
     Make pairwise plots using a dataframe with columns as a model performance
@@ -79,11 +79,11 @@ def pairwise_plot(
     else:
         ncols = max_ncols
         nrows = int(np.ceil(len(competitors)/ncols))
-    print(ncols)
-    print(nrows)
     if figsize is None:
         figsize = (7.5*ncols, 7.5*nrows)
-    fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=figsize, sharey=True)
+    fig, ax = plt.subplots(
+        ncols=ncols, nrows=nrows, figsize=figsize, sharey=True, dpi=dpi
+    )
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.75)
     for i, comp in enumerate(competitors):
         if nrows > 1:
