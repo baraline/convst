@@ -209,12 +209,16 @@ class RDST_Ridge_interpreter():
             ax[1,0].set_title('Best match')
             ax[1,2].set_title('Distance vectors')
             
+            
             self.rdst_interp.plot(i_shp, ax=ax[1,1])
-            self.rdst_interp.plot_on_X(i_shp, X[i_example,0], ax=ax[1,0], label='Class {}'.format(class_id))
+            
             self.rdst_interp.plot_on_X(i_shp, X[i_example2,0], ax=ax[1,0], label='Other class')
-            self.rdst_interp.plot_distance_vector(i_shp, X[i_example,0], ax=ax[1,2], label='Class {}'.format(class_id))
+            self.rdst_interp.plot_on_X(i_shp, X[i_example,0], ax=ax[1,0], label='Class {}'.format(class_id))
+            
             self.rdst_interp.plot_distance_vector(i_shp, X[i_example2,0], ax=ax[1,2], label='Other class')
+            self.rdst_interp.plot_distance_vector(i_shp, X[i_example,0], ax=ax[1,2], label='Class {}'.format(class_id))
         
+            ax[1,0].legend()
 
             
 class RDST_Ensemble_interpreter:

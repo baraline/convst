@@ -10,7 +10,7 @@ from numpy.random import rand
 ###############################################################################
 
 @njit(
-  fastmath=True, cache=True
+  fastmath=True, cache=True, nogil=True
 )
 def euclidean(x, y):
     s = 0
@@ -19,7 +19,7 @@ def euclidean(x, y):
     return sqrt(s)
 
 @njit(
-  fastmath=True, cache=True
+  fastmath=True, cache=True, nogil=True
 )
 def squared_euclidean(x, y):
     s = 0
@@ -28,7 +28,7 @@ def squared_euclidean(x, y):
     return s
 
 @njit(
-  fastmath=True, cache=True
+  fastmath=True, cache=True, nogil=True
 )
 def manhattan(x, y):
     s = 0
@@ -43,7 +43,7 @@ def manhattan(x, y):
 ###############################################################################
 
 @njit(
-  cache=True
+  cache=True, nogil=True
 )
 def generate_strides_1D(X, window_size, dilation, use_phase):
     if use_phase:
@@ -52,7 +52,7 @@ def generate_strides_1D(X, window_size, dilation, use_phase):
         return _generate_strides_1D(X, window_size, dilation)
 
 @njit(
-  cache=True
+  cache=True, nogil=True
 )
 
 def generate_strides_2D(X, window_size, dilation, use_phase):
@@ -63,7 +63,7 @@ def generate_strides_2D(X, window_size, dilation, use_phase):
 
 
 @njit(
-  cache=True
+  cache=True, nogil=True
 )
 def _generate_strides_1D(X, window_size, dilation):
     """
@@ -93,7 +93,7 @@ def _generate_strides_1D(X, window_size, dilation):
     return X_new
 
 @njit(
-  cache=True
+  cache=True, nogil=True
 )
 
 def _generate_strides_2D(X, window_size, dilation):
@@ -127,7 +127,7 @@ def _generate_strides_2D(X, window_size, dilation):
 
 
 @njit(
-  cache=True
+  cache=True, nogil=True
 )
 def _generate_strides_1D_phase(X, window_size, dilation):
     """
@@ -156,7 +156,9 @@ def _generate_strides_1D_phase(X, window_size, dilation):
     return X_new
 
 
-@njit(cache=True)
+@njit(
+  cache=True, nogil=True
+)
 def _generate_strides_2D_phase(X, window_size, dilation):
     """
     Generate strides from an ensemble of univariate time series with specified 
@@ -186,7 +188,9 @@ def _generate_strides_2D_phase(X, window_size, dilation):
     return X_new
 
 
-@njit(cache=True)
+@njit(
+  cache=True, nogil=True
+)
 def get_subsequence(X, index, length, d, normalize, use_phase):
     if use_phase:
         return _get_subsequence_phase(
@@ -198,7 +202,9 @@ def get_subsequence(X, index, length, d, normalize, use_phase):
         )
 
 
-@njit(cache=True, fastmath=True)
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _get_subsequence(X, i_start, length, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
@@ -234,7 +240,10 @@ def _get_subsequence(X, i_start, length, d, normalize):
         v = (v - v.mean())/(v.std()+1e-8)
     return v
 
-@njit(cache=True, fastmath=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _get_subsequence_phase(X, i_start, length, d, normalize):
     """
     Given a set of length and dilation, fetch a subsequence from an input 
@@ -278,7 +287,10 @@ def _get_subsequence_phase(X, i_start, length, d, normalize):
 #                                                                             #
 ###############################################################################
 
-@njit(cache=True)
+
+@njit(
+  cache=True, nogil=True
+)
 def compute_shapelet_dist_vector(
     x, values, length, dilation, dist_func, normalize, use_phase
 ):
@@ -301,7 +313,10 @@ def compute_shapelet_dist_vector(
     else:
         raise ValueError('Wrong parameter for normalize or phase')
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _compute_shapelet_dist_vector(x, values, length, dilation, dist_func):
     """
     Compute a shapelet distance vector from an univariate time series 
@@ -334,7 +349,10 @@ def _compute_shapelet_dist_vector(x, values, length, dilation, dist_func):
         x_conv[i] = dist_func(c[i], values)
     return x_conv
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _compute_shapelet_dist_vector_norm(x, values, length, dilation, dist_func):
     """
     Compute a shapelet distance vector from an univariate time series 
@@ -368,7 +386,10 @@ def _compute_shapelet_dist_vector_norm(x, values, length, dilation, dist_func):
         x_conv[i] = dist_func(x0, values)
     return x_conv
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _compute_shapelet_dist_vector_phase(x, values, length, dilation, dist_func):
     """
     Compute a shapelet distance vector from an univariate time series 
@@ -401,7 +422,10 @@ def _compute_shapelet_dist_vector_phase(x, values, length, dilation, dist_func):
         x_conv[i] = dist_func(c[i], values)
     return x_conv
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def _compute_shapelet_dist_vector_norm_phase(x, values, length, dilation, dist_func):
     """
     Compute a shapelet distance vector from an univariate time series 
@@ -436,7 +460,10 @@ def _compute_shapelet_dist_vector_norm_phase(x, values, length, dilation, dist_f
     return x_conv
 
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
     """
     Extract the three features from the distance between a shapelet and the 
@@ -469,14 +496,14 @@ def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
     n_candidates, length = x.shape
 
     _n_match = 0
-    _min = 1e+100
+    _min = -1. 
     _argmin = 0
 
     #For each step of the moving window in the shapelet distance
-    for i in range(n_candidates):
+    for i in prange(n_candidates):
         _dist = dist_func(x[i], values)
 
-        if _dist < _min:
+        if _dist < _min or _min==-1.:
             _min = _dist
             _argmin = i
 
@@ -485,7 +512,10 @@ def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
             
     return _min, float_(_argmin), float_(_n_match)
 
-@njit(fastmath=True, cache=True)
+
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
     """
     Extract the three features from the distance between a shapelet and the 
@@ -518,16 +548,16 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
     n_ft, n_candidates, length = x.shape
 
     _n_match = 0
-    _min = 1e+10
+    _min = -1.
     _argmin = 0
     
     #For each step of the moving window in the shapelet distance
-    for i in range(n_candidates):
+    for i in prange(n_candidates):
         _dist = 0
         for ft in prange(n_ft):
             _dist += dist_func(x[ft, i], values[ft])
     
-        if _dist < _min:
+        if _dist < _min or _min == -1.:
             _min = _dist
             _argmin = i
             
@@ -537,7 +567,10 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
     return _min, float_(_argmin), float_(_n_match)
 
 
-@njit(cache=True)
+
+@njit(
+  cache=True, nogil=True
+)
 def _combinations_1d(x,y):
     """
     Return the unique combination (in the 2nd dimension) of the 2D array made by
@@ -574,14 +607,19 @@ def _combinations_1d(x,y):
             i_comb += 1
     return combinations
 
-@njit(cache=True)
+@njit(
+  cache=True, nogil=True
+)
 def prime_up_to(n):
     is_p = zeros(n+1, dtype=bool_)
     for i in range(n+1):
         is_p[i] = is_prime(i)
     return where(is_p)[0]
 
-@njit(cache=True)
+
+@njit(
+  cache=True, nogil=True
+)
 def is_prime(n):
     if (n % 2 == 0 and n > 2) or n == 0: 
         return False
@@ -590,7 +628,9 @@ def is_prime(n):
             return False 
     return True
 
-@njit(cache=True, fastmath=True)
+@njit(
+  cache=True, fastmath=True, nogil=True
+)
 def choice_log(n_choice, n_sample):
     if n_choice > 1:
         P = array([1/2**log(i) for i in range(1,n_choice+1)])
@@ -601,4 +641,3 @@ def choice_log(n_choice, n_sample):
         return loc
     else:
         return zeros(n_sample, dtype=int64)
-

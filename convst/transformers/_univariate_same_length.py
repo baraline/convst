@@ -16,7 +16,7 @@ from convst.transformers._commons import (
 
 from numba import njit, prange
 
-@njit(cache=True)
+@njit(cache=True, nogil=True)
 def U_SL_init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
 ):
@@ -79,7 +79,7 @@ def U_SL_init_random_shapelet_params(
 
     return values, lengths, dilations, threshold, normalize
 
-@njit(cache=True, parallel=True)
+@njit(cache=True, parallel=True, nogil=True)
 def U_SL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
     dist_func, use_phase, prime_scheme
@@ -222,7 +222,7 @@ def U_SL_generate_shapelet(
     )
 
 
-@njit(cache=True, parallel=True, fastmath=True)
+@njit(cache=True, parallel=True, fastmath=True, nogil=True)
 def U_SL_apply_all_shapelets(
     X, shapelets, dist_func, use_phase
 ):
@@ -265,11 +265,10 @@ def U_SL_apply_all_shapelets(
     n_samples, n_ft, n_timestamps = X.shape
     n_features = 3
 
-    #(u_l * u_d , 2)
+    # Existing combination of length and dilations
     params_shp = _combinations_1d(lengths, dilations)
-    #(u_l * u_d) + 1
     n_shp_params = zeros(params_shp.shape[0]+1, dtype=int64)
-    #(n_shapelets)
+    
     idx_shp = zeros(n_shapelets, dtype=int64)
     
     a = 0
