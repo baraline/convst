@@ -70,7 +70,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         prime_dilations=False,
         n_samples=None,
         n_jobs=1,
-        backend="processes",
+        prefer=None,
+        require='sharedmem',
         random_state=None,
         shp_alpha=0.5,
         a_w=4,
@@ -87,7 +88,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
             self.shapelet_lengths_bounds = shapelet_lengths_bounds
         self.lengths_bounds_reduction = check_is_numeric(lengths_bounds_reduction)
         self.prime_dilations = check_is_boolean(prime_dilations)
-        self.backend = backend
+        self.prefer = prefer
+        self.require = require
         self.random_state = random_state
         if shapelet_lengths_bounds is not None:
             self.n_samples = check_is_numeric(n_samples)
@@ -132,7 +134,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         set_num_threads(self.n_jobs_rdst)
         models = Parallel(
             n_jobs=self.n_jobs,
-            prefer=self.backend,
+            prefer=self.prefer,
+            require=self.require
         )(
             delayed(_parallel_fit)(
                 X, y, 
@@ -164,7 +167,8 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         preds_proba = Parallel(
             n_jobs=self.n_jobs,
-            prefer=self.backend,
+            prefer=self.prefer,
+            require=self.require
         )(
             delayed(_parallel_predict)(
                 X,
