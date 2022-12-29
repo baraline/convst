@@ -49,7 +49,8 @@ class R_DST(BaseEstimator, TransformerMixin):
         computation. The default is False.
     distance : str, optional
         The distance function to use whe computing distances between shapelets
-        and time series. The default is 'euclidean'.
+        and time series. Choose between 'euclidean','manhattan' and 'squared_euclidean'.
+        The default is 'manhattan'.
     alpha : float, optional
         The alpha similarity parameter, the higher the value, the lower the 
         allowed number of common indexes with previously sampled shapelets 
@@ -62,13 +63,27 @@ class R_DST(BaseEstimator, TransformerMixin):
         for variable length time series. The default is False.
     n_samples : float, optional
         Proportion (in ]0,1]) of samples to consider for the shapelet
-        extraction. The default is 1.0.
+        extraction. The default is None, meaning that all samples are used.
     n_shapelets : int, optional
         The maximum number of shapelet to be sampled. The default is 10_000.
     shapelet_lengths : array, optional
         The set of possible length for shapelets. The values can be integers
         to specify an absolute length, or a float, to specify a length relative 
         to the input time series length. The default is [11].
+    shapelet_lengths_bounds : array, optional
+        An 1D array with two elements containing the min and max possible 
+        length for shapelet candidate, can be int or float. The default is
+        None, meaning that shapelet_lengths parameter is used.
+    lengths_bounds_reduction : float, optional
+        A float in ]0,1], quantifying the proportion of lengths to explore 
+        between the min and max bounds of shapelet_lengths_bounds. The default
+        is 0.5. For example, with bounds as [4,10], and a reduction of 0.5,
+        only [4,6,8,10] will be considered as possible lengths.
+    prime_dilations : bool, optional
+        If True, only dilation with prime values will be considered for 
+        shapelet candidates. This will greatly speed-up the algorithm
+        for long time series and/or short shapelet length, possibly at the cost
+        of some accuracy.
     proba_norm : float, optional
         The proportion of shapelets that will use a normalized distance 
         function, which induce scale invariance. The default is 0.8.
@@ -80,6 +95,13 @@ class R_DST(BaseEstimator, TransformerMixin):
         The default is 1, -1 means all available cores.
     random_state : object, optional
         The seed for the random state. The default is None.
+    max_channels : int, optional
+        The maximum number of feature possibly considered by a multivariate 
+        shapelet. The default is None, meaning max_chanels=n_features.
+    min_len : int, optional
+        The minimum length of an input time series for variable length input.
+        The default is None, meaning min_len=min(n_timestamps) on the training data.
+        This can cause error if a shorter serie sis present in the test set.
 
     Attributes
     -------
@@ -154,11 +176,11 @@ class R_DST(BaseEstimator, TransformerMixin):
             
             if isinstance(b0, float):
                 b0 = int(b0*self.min_len)
-            min_l = max(5,b0)
+            min_l = max(3,b0)
             if isinstance(b1, float):
                 b1 = int(b1*self.min_len)
-            max_l = max(6,max(b0+1,b1+1))
-            #6 to ensure range 5,6 -> 5
+            max_l = max(4,max(b0+1,b1+1))
+            #4 to ensure range 3,4 -> 3
             lengths = np.asarray(list(range(min_l, max_l)))
             if lengths.shape[0]>3:
                 n_remove = int(lengths.shape[0]*self.lengths_bounds_reduction)
