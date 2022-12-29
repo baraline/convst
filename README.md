@@ -67,7 +67,7 @@ We use the standard scikit-learn interface and expect as input a 3D numpy array 
 
 ## Reproducing the paper results
 
-Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results, notably the `test_models.py` file, used to generate the csv results available in the `Results` folder of the archive (To be updated).
+Multiple scripts are available under the `PaperScripts` folder. It contains the exact same scripts used to generate our results, notably the `test_models.py` file, used to generate the csv results available in the `Results` folder of the archive.
 
 ## Contributing, Citing and Contact
 
@@ -101,7 +101,6 @@ isbn="978-3-031-09037-0"
 - [X] Enhance interface for interpretability tools
 - [X] Add the Generalised version of RDST
 - [ ] Continue unit tests and code coverage/quality
-- [ ] Add function signatures to numba functions
 
 ## Citations
 
