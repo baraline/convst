@@ -37,6 +37,8 @@ def U_VL_init_random_shapelet_params(
     p_norm : float
         A value in the range [0,1] indicating the chance for each
         shapelet to use z-normalized distance
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
 
     Returns
     -------
@@ -50,6 +52,7 @@ def U_VL_init_random_shapelet_params(
         An initialized (empty) value array for each shapelet
     normalize : array, shape=(n_shapelet)
         The randomly initialized normalization indicator of each shapelet
+    
 
     """
     # Lengths of the shapelets
@@ -123,6 +126,9 @@ def U_VL_generate_shapelet(
         Minimum length for input time series
     X_len : array, shape=(n_samples)
         The length of each input time series
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
     
     Returns
     -------

@@ -34,6 +34,8 @@ def U_SL_init_random_shapelet_params(
     p_norm : float
         A value in the range [0,1] indicating the chance for each
         shapelet to use z-normalized distance
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
 
     Returns
     -------
@@ -98,7 +100,7 @@ def U_SL_generate_shapelet(
         Number of shapelet to generate
     shapelet_sizes : array, shape=()
         An array of possible shapelet length.
-    seed : int
+    r_seed : int
         Random seed generator for numpy
     p_norm : float
         Probability of each shapelet to use z-normalized distance
@@ -107,13 +109,16 @@ def U_SL_generate_shapelet(
     p_max : float
         Upper bound for the percentile during the choice of threshold
     alpha : float
-        Alpha similarity parameter
+        Alpha similarity parameter, higher values (close to 1) means higher
+        similarity prunning.
     dist_func: function
         A distance function implemented with Numba taking two 1D vectors as
         input.
     use_phase: bool
         Wheter to use phase invariance
-    
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
     Returns
     -------
     set of array, shape=(5)

@@ -37,6 +37,9 @@ def M_SL_init_random_shapelet_params(
         shapelet to use z-normalized distance
     max_channels : int
         The maximum number of features considered for one shapelet
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
         
     Returns
     -------
@@ -127,6 +130,9 @@ def M_SL_generate_shapelet(
         input.
     use_phase: bool
         Wheter to use phase invariance
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
     
     Returns
     -------
@@ -142,7 +148,7 @@ def M_SL_generate_shapelet(
         threshold : array, shape=(n_shapelets)
             Threshold parameter of the shapelets
         normalize : array, shape=(n_shapelets)
-            Normalization indicatorr of the shapelets
+            Normalization indicator of the shapelets
     """
     n_samples, n_features, n_timestamps = X.shape
     # Fix the random seed
@@ -291,7 +297,7 @@ def M_SL_apply_all_shapelets(
         threshold : array, shape=(n_shapelets)
             Threshold parameter of the shapelets
         normalize : array, shape=(n_shapelets)
-            Normalization indicatorr of the shapelets
+            Normalization indicator of the shapelets
     dist_func: function
         A distance function implemented with Numba taking two 1D vectors as
         input.
