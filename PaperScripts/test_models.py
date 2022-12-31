@@ -10,9 +10,9 @@ from convst.classifiers import R_DST_Ensemble, R_DST_Ridge
 
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
-n_cv=30
-
-csv_name = 'CV_{}_results_prime_bounds_phase.csv'.format(
+n_cv = 30
+n_jobs = -1
+csv_name = 'CV_{}_results_default.csv'.format(
     n_cv)
 
 # List of datasets to test, here, use all datasets ones, (univariate,
@@ -52,8 +52,7 @@ for name in dataset_names:
         print(model_name)
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == 0.0:
             pipeline = model_class(
-                n_jobs=-1, phase_invariance=True,
-                prime_dilations=True, shapelet_lengths_bounds=[0.001, 0.25]
+                n_jobs=n_jobs
             )
             
             #By default, we use accuracy as score, but other scorer can be passed

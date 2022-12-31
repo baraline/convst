@@ -37,6 +37,9 @@ def M_VL_init_random_shapelet_params(
         shapelet to use z-normalized distance
     max_channels : int
         The maximum number of features considered for one shapelet
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
         
     Returns
     -------
@@ -131,7 +134,9 @@ def M_VL_generate_shapelet(
         Minimum length for input time series
     X_len : array, shape=(n_samples)
         The length of each input time series
-    
+    prime_scheme : bool
+        Wheter to only consider prime numbers as possible dilation 
+
     Returns
     -------
     set of array, shape=(5)
