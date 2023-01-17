@@ -46,6 +46,10 @@ dependencies = [
     "matplotlib>=3.3.2",
     "seaborn>=0.11.0",
     "pytest>=7.0",
+    "sphinx >= 4.2.0",
+    "sphinx_gallery >= 0.10.1",
+    "numpydoc >= 1.1.0",
+    "alabaster >= 0.7.12"
 ]
 
 [project.urls]
