@@ -90,8 +90,17 @@ pages="653--664",
 abstract="Shapelet-based algorithms are widely used for time series classification because of their ease of interpretation, but they are currently outperformed by recent state-of-the-art approaches. We present a new formulation of time series shapelets including the notion of dilation, and we introduce a new shapelet feature to enhance their discriminative power for classification. Experiments performed on 112 datasets show that our method improves on the state-of-the-art shapelet algorithm, and achieves comparable accuracy to recent state-of-the-art approaches, without sacrificing neither scalability, nor interpretability.",
 isbn="978-3-031-09037-0"
 }
+```
 
-
+To cite the RDST Ensemble method, you can cite the PhD thesis where it is presented as (soon to be available):
+```bibtex
+@phdthesis{Guillaume2023,
+  author="Guillaume, Antoine", 
+  title="Time series classification with Shapelets: Application to predictive maintenance on event logs",
+  school="University of Orléans",
+  year="2023",
+  url="https://www.theses.fr/s265104"
+}
 ```
 
 ## TODO for relase 1.0:
