@@ -92,7 +92,7 @@ isbn="978-3-031-09037-0"
 }
 ```
 
-To cite the RDST Ensemble method, you can cite the PhD thesis where it is presented as (soon to be available):
+To cite the RDST Ensemble method, you can cite the PhD thesis where it is presented as (soon to be available, citation format may change):
 ```bibtex
 @phdthesis{Guillaume2023,
   author="Guillaume, Antoine", 
