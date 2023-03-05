@@ -54,7 +54,7 @@ dependencies = [
 
 [project.urls]
 repository = "https://github.com/baraline/convst"
-documentation = "https://convst.readthedocs.io/en/latest/www.sktime.org"
+documentation = "https://convst.readthedocs.io/"
 download = "https://pypi.org/project/convst/#files"
 
 [project.license]
