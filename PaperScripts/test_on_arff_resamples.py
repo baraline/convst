@@ -13,6 +13,10 @@ from convst.classifiers import R_DST_Ensemble
 print("Imports OK")
 #n_cv = 1 to test only on original train test split.
 n_cv=30
+# -1 to use all available cores.
+n_jobs = -1
+# Use true if the script crashed and you want to resume experiment to last saved results.
+resume = False
 #Specify the path where the resamples are located
 base_UCR_resamples_path = r"/home/prof/guillaume/sktime_resamples/"
 
@@ -21,23 +25,30 @@ csv_name = 'CV_{}_results_ensemble.csv'.format(
 
 dataset_names = return_all_univariate_dataset_names()
 
-#Initialize result dataframe. This script will also launch RDST without any normalization for comparison, hence the *2
-df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*10), 
-     columns=['dataset','model','acc_mean','acc_std',
-    'f1_mean','f1_std','time_mean','time_std']
-)
-df.to_csv(csv_name)
-#df = pd.read_csv(csv_name, index_col=0)
-print(df)
+
+#You can add other models here to compare them on the same resamples.
 dict_models = {
     "R_DST_Ensemble": R_DST_Ensemble,
 }
+
+#Initialize result dataframe.
+if not resume:
+    df = pd.DataFrame(0, index=np.arange(dataset_names.shape[0]*len(dict_models)), 
+         columns=['dataset','model','acc_mean','acc_std',
+        'f1_mean','f1_std','time_mean','time_std']
+    )
+    df.to_csv(csv_name)
+else:
+    df = pd.read_csv(csv_name, index_col=0)
+
+print(df)
+
+#Numba compilations.
 for model_name, model_class in dict_models.items():
     print("Compiling {}".format(model_name))
     X = np.random.rand(5,1,50)
     y = np.array([0,0,1,1,1])
     model_class(n_shapelets_per_estimator=1).fit(X,y).predict(X)
-
 i_df=0
 
 for name in dataset_names:
@@ -49,11 +60,12 @@ for name in dataset_names:
     )
     
     for model_name, model_class in dict_models.items():
+        #Condition bellow is used when you want to resume the script and load an existing result dataframe
         if pd.isna(df.loc[i_df, 'acc_mean']) or df.loc[i_df, 'acc_mean'] == None or df.loc[i_df, 'acc_mean'] == 0.0:
             print(model_name)
-            pipeline_RDST_rdg = model_class(n_jobs=3, n_jobs_rdst=95//3)
+            pipeline = model_class(n_jobs=n_jobs)
             acc_mean, acc_std, f1_mean, f1_std, time_mean, time_std = run_pipeline(
-                pipeline_RDST_rdg, X_train, X_test, y_train, y_test, splitter, n_jobs=1)
+                pipeline, X_train, X_test, y_train, y_test, splitter, n_jobs=1)
             df.loc[i_df, 'acc_mean'] = acc_mean
             df.loc[i_df, 'acc_std'] = acc_std
             df.loc[i_df, 'f1_mean'] = f1_mean

@@ -17,6 +17,8 @@ csv_name = 'CV_{}_results_default.csv'.format(
 
 # List of datasets to test, here, use all datasets ones, (univariate,
 # multivariate, variable length, etc...) see dataset_utils for other choices.
+# e.g. to test on all datasets, change to :
+# dataset_names = return_all_dataset_names()
 dataset_names = return_all_univariate_dataset_names()
 
 # List of models to test
