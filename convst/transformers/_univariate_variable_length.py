@@ -17,9 +17,12 @@ from convst.transformers._commons import (
 
 from numba import njit, prange
 
-# TODO : check if numba could support Tuple of variable length numpy arrays as input
+from convst import (
+    __USE_NUMBA_CACHE__, __USE_NUMBA_FASTMATH__,
+    __USE_NUMBA_NOGIL__, __USE_NUMBA_PARALLEL__
+)
 
-@njit(cache=True, nogil=True)
+@njit(cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__)
 def U_VL_init_random_shapelet_params(
     n_shapelets, shapelet_sizes, n_timestamps, p_norm, prime_scheme
 ):
@@ -87,7 +90,7 @@ def U_VL_init_random_shapelet_params(
     return values, lengths, dilations, threshold, normalize
 
 
-@njit(cache=True, parallel=True, nogil=True)
+@njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, nogil=__USE_NUMBA_NOGIL__)
 def U_VL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
     dist_func, use_phase, min_len, X_len, prime_scheme
@@ -259,7 +262,7 @@ def U_VL_generate_shapelet(
     )
 
 
-@njit(cache=True, parallel=True, fastmath=True, nogil=True)
+@njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__)
 def U_VL_apply_all_shapelets(
     X, shapelets, dist_func, use_phase, X_len
 ):

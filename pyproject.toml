@@ -1,7 +1,7 @@
 [project]
 name = "convst"
 
-version = "0.2.5"
+version = "0.2.6"
 
 description = "The Random Dilation Shapelet Transform algorithm and associated works"
 readme = "README.md"
