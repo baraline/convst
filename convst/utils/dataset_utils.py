@@ -11,6 +11,7 @@ from sktime.datatypes._panel._convert import (from_multiindex_to_dflist,
 from sklearn.preprocessing import LabelEncoder
 from numba import njit, prange
 
+from convst import __USE_NUMBA_CACHE__
 
 def _custom_from_nested_to_3d_numpy(X):
     X = from_multiindex_to_dflist(from_nested_to_multi_index(X))
@@ -19,7 +20,7 @@ def _custom_from_nested_to_3d_numpy(X):
     else:
         return [X[i].values.T for i in range(len(X))]
 
-@njit(cache=True)
+@njit(cache=__USE_NUMBA_CACHE__)
 def z_norm_3D(X):
     """
     Z normalise a time series dataset assumed to be of even length. A small value

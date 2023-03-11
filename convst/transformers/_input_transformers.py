@@ -20,6 +20,12 @@ from scipy.fft import fht, fhtoffset
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 
+
+from convst import (
+    __USE_NUMBA_CACHE__, __USE_NUMBA_PARALLEL__
+)
+
+
 class c_StandardScaler(StandardScaler):
     def fit(self, X, y=None):
         self.usefull_atts = np.where(np.std(X, axis=0) != 0)[0]
@@ -36,7 +42,7 @@ class c_MinMaxScaler(MinMaxScaler):
     def transform(self, X):
         return super().transform(X[:, self.usefull_atts])
 
-@njit(cache=True)
+@njit(cache=__USE_NUMBA_CACHE__)
 def z_norm_one_sample(x):
     n_features, n_timestamps = x.shape
     x_new = np.empty((n_features, n_timestamps))
@@ -44,7 +50,7 @@ def z_norm_one_sample(x):
         x_new[i] = (x[i] - x[i].mean()) / (x[i].std() + 1e-8)
     return x_new
 
-@njit(cache=True, parallel=True)
+@njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__)
 def z_norm_all_samples(X):
     n_samples, n_features, n_timestamps = X.shape
     X_new = np.empty((n_samples, n_features, n_timestamps))

@@ -10,6 +10,7 @@ from numba import types, njit
 from numba.extending import overload, register_jitable
 from numba.core.errors import TypingError
 
+from convst import __USE_NUMBA_CACHE__
 
 @overload(np.all)
 def np_all(x, axis=None):
@@ -79,7 +80,7 @@ def np_all(x, axis=None):
 
         return _np_all_impl
 
-@njit(cache=True)
+@njit(cache=__USE_NUMBA_CACHE__)
 def nb_unique(input_data, axis=0):
     """2D np.unique(a, return_index=True, return_counts=True)
     

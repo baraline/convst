@@ -9,8 +9,15 @@ from numpy.random import rand
 #                                                                             #
 ###############################################################################
 
+from convst import (
+    __USE_NUMBA_CACHE__, __USE_NUMBA_FASTMATH__,
+    __USE_NUMBA_NOGIL__
+)
+
+
+
 @njit(
-  fastmath=True, cache=True, nogil=True
+  fastmath=__USE_NUMBA_FASTMATH__, cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def euclidean(x, y):
     s = 0
@@ -19,7 +26,7 @@ def euclidean(x, y):
     return sqrt(s)
 
 @njit(
-  fastmath=True, cache=True, nogil=True
+  fastmath=__USE_NUMBA_FASTMATH__, cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def squared_euclidean(x, y):
     s = 0
@@ -28,7 +35,7 @@ def squared_euclidean(x, y):
     return s
 
 @njit(
-  fastmath=True, cache=True, nogil=True
+  fastmath=__USE_NUMBA_FASTMATH__, cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def manhattan(x, y):
     s = 0
@@ -43,7 +50,7 @@ def manhattan(x, y):
 ###############################################################################
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def generate_strides_1D(X, window_size, dilation, use_phase):
     if use_phase:
@@ -52,7 +59,7 @@ def generate_strides_1D(X, window_size, dilation, use_phase):
         return _generate_strides_1D(X, window_size, dilation)
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 
 def generate_strides_2D(X, window_size, dilation, use_phase):
@@ -63,7 +70,7 @@ def generate_strides_2D(X, window_size, dilation, use_phase):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def _generate_strides_1D(X, window_size, dilation):
     """
@@ -93,7 +100,7 @@ def _generate_strides_1D(X, window_size, dilation):
     return X_new
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 
 def _generate_strides_2D(X, window_size, dilation):
@@ -127,7 +134,7 @@ def _generate_strides_2D(X, window_size, dilation):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def _generate_strides_1D_phase(X, window_size, dilation):
     """
@@ -157,7 +164,7 @@ def _generate_strides_1D_phase(X, window_size, dilation):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def _generate_strides_2D_phase(X, window_size, dilation):
     """
@@ -189,7 +196,7 @@ def _generate_strides_2D_phase(X, window_size, dilation):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def get_subsequence(X, index, length, d, normalize, use_phase):
     if use_phase:
@@ -203,7 +210,7 @@ def get_subsequence(X, index, length, d, normalize, use_phase):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _get_subsequence(X, i_start, length, d, normalize):
     """
@@ -242,7 +249,7 @@ def _get_subsequence(X, i_start, length, d, normalize):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _get_subsequence_phase(X, i_start, length, d, normalize):
     """
@@ -289,7 +296,7 @@ def _get_subsequence_phase(X, i_start, length, d, normalize):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def compute_shapelet_dist_vector(
     x, values, length, dilation, dist_func, normalize, use_phase
@@ -315,7 +322,7 @@ def compute_shapelet_dist_vector(
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _compute_shapelet_dist_vector(x, values, length, dilation, dist_func):
     """
@@ -351,7 +358,7 @@ def _compute_shapelet_dist_vector(x, values, length, dilation, dist_func):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _compute_shapelet_dist_vector_norm(x, values, length, dilation, dist_func):
     """
@@ -388,7 +395,7 @@ def _compute_shapelet_dist_vector_norm(x, values, length, dilation, dist_func):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _compute_shapelet_dist_vector_phase(x, values, length, dilation, dist_func):
     """
@@ -424,7 +431,7 @@ def _compute_shapelet_dist_vector_phase(x, values, length, dilation, dist_func):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def _compute_shapelet_dist_vector_norm_phase(x, values, length, dilation, dist_func):
     """
@@ -462,7 +469,7 @@ def _compute_shapelet_dist_vector_norm_phase(x, values, length, dilation, dist_f
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
     """
@@ -514,7 +521,7 @@ def apply_one_shapelet_one_sample_univariate(x, values, threshold, dist_func):
 
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
     """
@@ -569,7 +576,7 @@ def apply_one_shapelet_one_sample_multivariate(x, values, threshold, dist_func):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def _combinations_1d(x,y):
     """
@@ -608,7 +615,7 @@ def _combinations_1d(x,y):
     return combinations
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def prime_up_to(n):
     is_p = zeros(n+1, dtype=bool_)
@@ -618,7 +625,7 @@ def prime_up_to(n):
 
 
 @njit(
-  cache=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, nogil=__USE_NUMBA_NOGIL__
 )
 def is_prime(n):
     if (n % 2 == 0 and n > 2) or n == 0: 
@@ -629,7 +636,7 @@ def is_prime(n):
     return True
 
 @njit(
-  cache=True, fastmath=True, nogil=True
+  cache=__USE_NUMBA_CACHE__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__
 )
 def choice_log(n_choice, n_sample):
     if n_choice > 1:
