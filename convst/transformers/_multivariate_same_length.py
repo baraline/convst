@@ -171,10 +171,10 @@ def M_SL_generate_shapelet(
         (2,unique_dil.shape[0],n_samples,n_features,n_timestamps), dtype=bool_
     )
     mask_return = ones(n_shapelets, dtype=bool_)
-    #Counter for values array indexes
-    a1 = 0
-    #Counter for channels_ids array indexes
-    a2 = 0     
+    #values[idx_val[i]:idx_val[i+1]]=_val
+    a1 = concatenate((zeros(1, dtype=int64),cumsum(n_channels*lengths)))
+    #same for channels
+    a2 = concatenate((zeros(1, dtype=int64),cumsum(n_channels)))   
 
     #For each dilation, we can do in parallel
     for i_d in prange(unique_dil.shape[0]):
@@ -251,32 +251,47 @@ def M_SL_generate_shapelet(
                     
                     _values[a3:b3] = _v
                     a3 = b3
-                #Counter for values array indexes
-                b1 = a1 + _n_channels*_length
-                #Counter for channels_ids array indexes
-                b2 = a2 + _n_channels
                 
-                values[a1:b1] = _values
-                channel_ids[a2:b2] = _channel_ids
+                values[a1[i_shp]:a1[i_shp+1]] = _values
+                channel_ids[a2[i_shp]:a2[i_shp+1]] = _channel_ids
                 
                 #Extract value between two percentile as threshold for SO
                 ps = percentile(x_dist, [p_min,p_max])
                 threshold[i_shp] = uniform(
                     ps[0], ps[1]
                 )
-                a1 = b1
-                a2 = b2
             else:
                 mask_return[i_shp] = False
             
+    lengths = lengths[mask_return]
+    n_channels = n_channels[mask_return]
+    mask_channel_ids = zeros(n_channels.sum(), dtype=int64)
+    mask_values = zeros(
+        int64(
+            dot(lengths.astype(float64), n_channels.astype(float64))
+        )
+    )
+    
+    c1 = 0
+    c2 = 0
+    for idx, i_shp in enumerate(where(mask_return)[0]):        
+        d1 = c1 + (n_channels[idx] * lengths[idx])
+        d2 = c2 + n_channels[idx]
+        
+        mask_values[c1:d1] = values[a1[i_shp]:a1[i_shp+1]]
+        mask_channel_ids[c2:d2] = channel_ids[a2[i_shp]:a2[i_shp+1]]
+        
+        c1 = d1
+        c2 = d2
+    
     return (
-        values[:a1],
-        lengths[mask_return],
+        mask_values,
+        lengths,
         dilations[mask_return],
         threshold[mask_return],
         normalize[mask_return],
-        n_channels[mask_return],
-        channel_ids[:a2]
+        n_channels,
+        mask_channel_ids
     )
 
 @njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__)
