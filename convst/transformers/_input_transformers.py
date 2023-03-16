@@ -12,8 +12,6 @@ from convst.utils.checks_utils import check_array_3D
 
 from numba import njit, prange
 
-from pyts.approximation import DiscreteFourierTransform, SymbolicAggregateApproximation
-
 from scipy.signal import periodogram
 from scipy.fft import fht, fhtoffset
 
@@ -123,55 +121,6 @@ class Periodigram(BaseEstimator, TransformerMixin):
              "blackmanharris","nuttall","barthann",
              "cosine","exponential","tukey","taylor"]
         )
-
-#TODO : adapt to multivariate/uneven length context
-class Sax(BaseEstimator, TransformerMixin):
-    def __init__(self, n_bins=10, strategy="uniform", random=False):
-        self.random = random
-        self.n_bins = n_bins
-        self.strategy = strategy
-        
-    
-    def fit(self, X, y=None):
-        if self.random:
-            self._random_init(X.shape[1])
-        self.transformer = SymbolicAggregateApproximation(
-            n_bins=self.n_bins, strategy=self.strategy, alphabet='ordinal'
-        )
-        self.transformer.fit(X[:,0,:])
-        return self
-    
-    def transform(self, X):
-        X = self.transformer.transform(X[:,0,:])
-        return X[:, np.newaxis, :]
-    
-    def _random_init(self, n_timestamps):
-        self.set_params(**{"n_bins":np.random.choice(np.arange(2,min(n_timestamps,26)))})
-
-#TODO : adapt to multivariate/uneven length context
-class FourrierCoefs(BaseEstimator, TransformerMixin):
-    def __init__(
-        self, n_coefs=None, drop_sum=False, anova=False, norm_mean=False,
-        norm_std=False
-    ):
-        self.n_coefs = n_coefs
-        self.drop_sum = drop_sum
-        self.anova = anova
-        self.norm_mean = norm_mean
-        self.norm_std = norm_std
-    
-    def fit(self, X, y=None):
-        self.transformer = DiscreteFourierTransform(
-            n_coefs=self.n_coefs, drop_sum=self.drop_sum, anova=self.anova,
-            norm_std=self.norm_std, norm_mean=self.norm_mean,
-        )
-        self.transformer.fit(X[:,0,:], y=y)
-        return self
-    
-    def transform(self, X):
-        X = self.transformer.transform(X[:,0,:])
-        return X[:, np.newaxis, :]
-
 
 class FastHankelTransform(BaseEstimator, TransformerMixin):
     def __init__(
