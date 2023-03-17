@@ -34,7 +34,7 @@ An optional dependency that can help speed up numba, which is used in our implem
 If you are using RDST in some specific settings such as an HPC cluster and are getting errors, take a loot at [issue #24](https://github.com/baraline/convst/issues/24), you may need to change the numba compilation settings to not using function caching (see [this example](https://github.com/baraline/convst/blob/main/examples/Changing_numba_options.py)).
 
 ## Tutorial
-We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the sktime API to fect dataset:
+We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the sktime API to get datasets:
 
 ```python
 
