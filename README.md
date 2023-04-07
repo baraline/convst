@@ -14,7 +14,7 @@ This work was supported by the following organisations:
 |---|---|
 | **Compatibility** | [![!python-versions](https://img.shields.io/pypi/pyversions/convst)](https://www.python.org/)
 | **CI/CD** |  [![!pypi](https://img.shields.io/pypi/v/convst?color=orange)](https://pypi.org/project/convst/)  ![docs](https://img.shields.io/readthedocs/convst) ![build](https://github.com/baraline/convst/actions/workflows/test.yml/badge.svg)| 
-| **Code Quality** |  [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/baraline/convst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/baraline/convst/alerts/) ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main) |
+| **Code Quality** |  ![lines](https://img.shields.io/tokei/lines/github/baraline/convst) [![CodeFactor](https://www.codefactor.io/repository/github/baraline/convst/badge/main)](https://www.codefactor.io/repository/github/baraline/convst/overview/main) |
 | **Downloads**| [![Downloads](https://pepy.tech/badge/convst)](https://pepy.tech/project/convst) |
 
 
@@ -49,6 +49,28 @@ X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
 # also be changed to increase speed once numba compilation are done.
 
 rdst = R_DST_Ridge(n_shapelets=10_000, n_jobs=1).fit(X_train, y_train)
+print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
+
+# If you want a more powerful model, you can use R_DST_Ensemble as follows
+# Note that additional Numba compilation might be needed here
+
+from convst.classifiers import R_DST_Ensemble
+
+rdst_e = R_DST_Ensemble(
+  n_shapelets_per_estimator=10_000,
+  n_jobs=1
+).fit(X_train, y_train)
+print("Accuracy Score for RDST : {}".format(rdst_e.score(X_test, y_test)))
+
+
+# You can obtain faster result by using more jobs 
+# and even faster, at the expense of some accuracy, with the prime_dilation option:
+
+rdst_e = R_DST_Ensemble(
+  n_shapelets_per_estimator=10_000,
+  prime_dilations=True,
+  n_jobs=-1
+).fit(X_train, y_train)
 
 print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
 ```
