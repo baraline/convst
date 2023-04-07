@@ -50,9 +50,9 @@ X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
 
 rdst = R_DST_Ridge(n_shapelets=10_000, n_jobs=1).fit(X_train, y_train)
 print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
-
-# If you want a more powerful model, you can use R_DST_Ensemble as follows
-# Note that additional Numba compilation might be needed here
+```
+If you want a more powerful model, you can use R_DST_Ensemble as follows (note that additional Numba compilation might be needed here):
+```python
 
 from convst.classifiers import R_DST_Ensemble
 
@@ -62,17 +62,17 @@ rdst_e = R_DST_Ensemble(
 ).fit(X_train, y_train)
 print("Accuracy Score for RDST : {}".format(rdst_e.score(X_test, y_test)))
 
+```
+You can obtain faster result by using more jobs and even faster, at the expense of some accuracy, with the prime_dilation option:
 
-# You can obtain faster result by using more jobs 
-# and even faster, at the expense of some accuracy, with the prime_dilation option:
-
+```python
 rdst_e = R_DST_Ensemble(
   n_shapelets_per_estimator=10_000,
   prime_dilations=True,
   n_jobs=-1
 ).fit(X_train, y_train)
 
-print("Accuracy Score for RDST : {}".format(rdst.score(X_test, y_test)))
+print("Accuracy Score for RDST : {}".format(rdst_e.score(X_test, y_test)))
 ```
 You can also visualize a shapelet using the visualization tool to obtain such visualization :
 
