@@ -1,4 +1,7 @@
+# Porting into aeon-toolkit.
+Starting from v0.2.7, this package will not be updated. You can already find an updated version of RDST in the Aeon package at https://github.com/aeon-toolkit/aeon/blob/main/aeon/transformations/panel/dilated_shapelet_transform.py . This version should allow for faster transformation times due to using online normalization and better normalized distance computation, it use the euclidean distance by default instead of the manhattan distance in convst. All the functionnalities of this package will be ported into Aeon when I got some time, for now, only the transformer for univariate and multivariate series of even length have been implemented.
 
+# Readme
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
 This work was supported by the following organisations:
 
