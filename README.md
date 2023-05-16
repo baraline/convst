@@ -1,4 +1,4 @@
-# Porting into aeon-toolkit.
+# This package is moving to the aeon-toolkit.
 Starting from v0.2.7, this package will not be updated. You can already find an updated version of RDST in the Aeon package at https://github.com/aeon-toolkit/aeon/blob/main/aeon/transformations/panel/dilated_shapelet_transform.py . This version should allow for faster transformation times due to using online normalization and better normalized distance computation, it uses the euclidean distance by default instead of the manhattan distance in convst. All the functionnalities of this package will be ported into Aeon when I got some time, for now, only the transformer for univariate and multivariate series of even length have been implemented.
 
 # Readme
