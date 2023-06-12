@@ -27,7 +27,7 @@ def test_z_norm_3D():
 @pytest.mark.parametrize("name", [
     ('GunPoint'), ('SmoothSubspace'),
 ])
-def test_load_sktime_dataset_split(name):
+def test_load_UCR_UEA_dataset_split(name):
     X_train, X_test, y_train, y_test, le = load_UCR_UEA_dataset_split(
         name=name, normalize=False
     )
@@ -44,7 +44,7 @@ def test_load_sktime_dataset_split(name):
 @pytest.mark.parametrize("name", [
     ('GunPoint'), ('SmoothSubspace'),
 ])
-def test_load_sktime_dataset(name):
+def test_load_UCR_UEA_dataset(name):
     X, y = load_UCR_UEA_dataset(
         name=name, normalize=False
     )

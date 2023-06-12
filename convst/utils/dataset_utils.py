@@ -125,7 +125,7 @@ def load_UCR_UEA_dataset(name, normalize=False):
     """
     #Load datasets
     X_train, X_test, y_train, y_test, _ = load_UCR_UEA_dataset_split(
-        name, split='train', normalize=normalize
+        name, normalize=normalize
     )
     return np.concatenate((X_train, X_test),axis=0), np.concatenate((y_train, y_test),axis=0)
 
