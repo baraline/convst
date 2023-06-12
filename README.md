@@ -1,5 +1,7 @@
 # This package is moving to the aeon-toolkit.
-Starting from v0.2.7, this package will not be updated. You can already find an updated version of RDST in the Aeon package at https://github.com/aeon-toolkit/aeon/blob/main/aeon/transformations/panel/dilated_shapelet_transform.py . This version should allow for faster transformation times due to using online normalization and better normalized distance computation, it uses the euclidean distance by default instead of the manhattan distance in convst. All the functionnalities of this package will be ported into Aeon when I got some time, for now, only the transformer for univariate and multivariate series of even length have been implemented.
+Starting from v0.3.0, this package will not be updated, bugfixes will still be included if issues are raised.
+You can already find an updated version of RDST in the Aeon package at https://github.com/aeon-toolkit/ . Further improvements are planned for further speeding up RDST, these improvement will only be implemented in aeon.
+All the functionnalities of this package will be ported into Aeon when I got some time, for now, only the transformer for univariate and multivariate series of even length have been implemented.
 
 # Readme
 Welcome to the convst repository. It contains the implementation of the `Random Dilated Shapelet Transform (RDST)` along with other works in the same area.
@@ -34,17 +36,18 @@ We recommend doing this in a new virtual environment using anaconda to avoid any
 
 An optional dependency that can help speed up numba, which is used in our implementation, is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`. I didn't test the behavior with AMD processors, but I suspect it won't work.
 
-If you are using RDST in some specific settings such as an HPC cluster and are getting errors, take a loot at [issue #24](https://github.com/baraline/convst/issues/24), you may need to change the numba compilation settings to not using function caching (see [this example](https://github.com/baraline/convst/blob/main/examples/Changing_numba_options.py)).
+If you are using RDST in some specific settings such as an HPC cluster and are getting errors, take a loot at [issue #24](https://github.com/baraline/convst/issues/24), you may need to change the numba compilation settings to not using function caching (see [this example](https://github.com/baraline/convst/blob/main/examples/Changing_numba_options.py)). THIS SHOULD BE FIXED WITH v0.3.0
+
 
 ## Tutorial
-We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the sktime API to get datasets:
+We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the aeon API to get datasets:
 
 ```python
 
 from convst.classifiers import R_DST_Ridge
-from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.utils.dataset_utils import load_UCR_UEA_dataset_split
 
-X_train, X_test, y_train, y_test, _ = load_sktime_dataset_split('GunPoint')
+X_train, X_test, y_train, y_test, _ = load_UCR_UEA_dataset_split('GunPoint')
 
 # First run may be slow due to numba compilations on the first call. 
 # Run a small dataset like GunPoint if this is the first time you call RDST on your system.

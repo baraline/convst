@@ -13,10 +13,10 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, check_random_state
 
 from convst.utils.checks_utils import (
-    check_array_3D, check_array_1D, check_is_numeric, 
+    check_array_3D, check_array_1D, check_is_numeric,
     check_is_boolean, check_n_jobs
 )
-from convst.transformers._commons import manhattan, euclidean, squared_euclidean
+
 
 from numba import set_num_threads
 
@@ -24,6 +24,7 @@ STR_MUTLIVARIATE = 'multivariate'
 STR_UNIVARIATE = 'univariate'
 STR_UNIVARIATE_VARIABLE = 'univariate_variable'
 STR_MULTIVARIATE_VARIABLE = 'multivariate_variable'
+
 
 class R_DST(BaseEstimator, TransformerMixin):
     """
@@ -47,10 +48,6 @@ class R_DST(BaseEstimator, TransformerMixin):
     phase_invariance : bool, optional
         Wheter to use phase invariance for shapelet sampling and distance 
         computation. The default is False.
-    distance : str, optional
-        The distance function to use whe computing distances between shapelets
-        and time series. Choose between 'euclidean','manhattan' and 'squared_euclidean'.
-        The default is 'manhattan'.
     alpha : float, optional
         The alpha similarity parameter, the higher the value, the lower the 
         allowed number of common indexes with previously sampled shapelets 
@@ -119,7 +116,6 @@ class R_DST(BaseEstimator, TransformerMixin):
         self,
         transform_type='auto',
         phase_invariance=False,
-        distance='manhattan',
         alpha=0.5,
         normalize_output=False,
         n_samples=None,
@@ -137,7 +133,6 @@ class R_DST(BaseEstimator, TransformerMixin):
     ):
         self.transform_type = self._validate_transform_type(transform_type)
         self.phase_invariance = check_is_boolean(phase_invariance)
-        self.distance = self._validate_distances(distance)
         self.alpha = check_is_numeric(alpha)
         self.normalize_output = check_is_boolean(normalize_output)
         self.n_samples = check_is_numeric(n_samples) if n_samples is not None else n_samples
@@ -230,7 +225,7 @@ class R_DST(BaseEstimator, TransformerMixin):
         if self.max_channels is None:
             self.max_channels = n_features
         
-        
+
         self.shapelet_lengths = self._set_lengths()
         
         shapelet_lengths, seed = self._check_params(self.min_len)
@@ -239,28 +234,26 @@ class R_DST(BaseEstimator, TransformerMixin):
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self._get_distance_function(), self.phase_invariance,
-                self.min_len, X_len, self.prime_dilations
+                self.phase_invariance, self.min_len, X_len, self.prime_dilations
             )
         elif self.transform_type == STR_MULTIVARIATE_VARIABLE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha,
-                self._get_distance_function(), self.phase_invariance,
-                self.max_channels, self.min_len, X_len, self.prime_dilations
+                self.phase_invariance, self.max_channels, self.min_len, X_len,
+                self.prime_dilations
             )
         elif self.transform_type == STR_MUTLIVARIATE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
-                self._get_distance_function(), self.phase_invariance, 
-                self.max_channels, self.prime_dilations
+                self.phase_invariance, self.max_channels, self.prime_dilations
             )
         elif self.transform_type == STR_UNIVARIATE:
             self.shapelets_ = self.fitter(
                 X, y, self.n_shapelets, shapelet_lengths, seed, self.proba_norm,
                 self.percentiles[0], self.percentiles[1], self.alpha, 
-                self._get_distance_function(), self.phase_invariance, self.prime_dilations
+                self.phase_invariance, self.prime_dilations
             )
         else:
             raise ValueError('Unknown value for transform type parameter')
@@ -292,14 +285,12 @@ class R_DST(BaseEstimator, TransformerMixin):
             X, X_len = self._format_uneven_timestamps(X)
             X = check_array_3D(X).astype(np.float64)
             X_new = self.transformer(
-                X, self.shapelets_ , self._get_distance_function(),
-                self.phase_invariance, X_len
+                X, self.shapelets_, self.phase_invariance, X_len
             )
         else:
             X = check_array_3D(X).astype(np.float64)
             X_new = self.transformer(
-                X, self.shapelets_, self._get_distance_function(),
-                self.phase_invariance
+                X, self.shapelets_, self.phase_invariance
             )
         return X_new
     
@@ -391,32 +382,6 @@ class R_DST(BaseEstimator, TransformerMixin):
         
         else:
             raise ValueError('Unknwon transform type parameter')
-        
-    
-    def _get_distance_function(self):
-        """
-        Based on the distance parameter, return the distance function to be 
-        used during the shapelet generation and transform.
-
-        Raises
-        ------
-        ValueError
-            If the value of the distance parameter is not in ['euclidean', 
-            'squared','manhattan'], raise a ValueError.
-
-        Returns
-        -------
-        function
-            Return the numba function based on the distance parameter.
-            
-        """
-        if self.distance == 'euclidean':
-            return euclidean
-        if self.distance == 'squared':
-            return squared_euclidean
-        if self.distance == 'manhattan':
-            return manhattan
-        raise ValueError('Wrong distance parameter value, got {}'.format(self.distance))
     
     def _format_uneven_timestamps(self, X):
         """
@@ -532,9 +497,3 @@ class R_DST(BaseEstimator, TransformerMixin):
                 return percentiles
         raise ValueError('Wrong percetniles parameter value, got {}, expected a numerical array of size 2'.format(percentiles))
     
-    def _validate_distances(self, distance_str):
-        distance_str = distance_str.lower()
-        valid = ['euclidean','squared','manhattan']
-        if distance_str not in valid:
-            raise ValueError('Wrong distance parameter value, got {}, valid ones are {}'.format(distance_str, valid))
-        return distance_str

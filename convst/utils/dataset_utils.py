@@ -1,24 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sktime.datasets import (load_UCR_UEA_dataset, 
-    load_from_tsfile_to_dataframe, load_from_arff_to_dataframe,
-    
-)
-from sktime.datatypes._panel._convert import (from_multiindex_to_dflist,
-    from_nested_to_multi_index
-)
+
+from aeon.datasets._data_loaders import _load_dataset
+
 from sklearn.preprocessing import LabelEncoder
 from numba import njit, prange
 
 from convst import __USE_NUMBA_CACHE__
-
-def _custom_from_nested_to_3d_numpy(X):
-    X = from_multiindex_to_dflist(from_nested_to_multi_index(X))
-    if all([X[i].shape[0] == X[0].shape[0] for i in range(len(X))]):
-        return np.array([X[i].values.T for i in range(len(X))])
-    else:
-        return [X[i].values.T for i in range(len(X))]
 
 @njit(cache=__USE_NUMBA_CACHE__)
 def z_norm_3D(X):
@@ -66,10 +55,10 @@ def z_norm_3D_list(X):
     return X
     
 
-def load_sktime_dataset_split(name, normalize=False):
+def load_UCR_UEA_dataset_split(name, normalize=False):
     """
     Load the original train and test splits of a dataset 
-    from the UCR/UEA archive by name using sktime API.
+    from the UCR/UEA archive by name using aeon API.
 
     Parameters
     ----------
@@ -95,12 +84,8 @@ def load_sktime_dataset_split(name, normalize=False):
 
     """
     #Load datasets
-    X_train, y_train = load_UCR_UEA_dataset(name, return_X_y=True, split='train')
-    X_test, y_test = load_UCR_UEA_dataset(name, return_X_y=True, split='test')
-
-    #Convert pandas DataFrames to numpy arrays
-    X_train = _custom_from_nested_to_3d_numpy(X_train)
-    X_test = _custom_from_nested_to_3d_numpy(X_test)
+    X_train, y_train = _load_dataset(name, return_X_y=True, split='train')
+    X_test, y_test = _load_dataset(name, return_X_y=True, split='test')
 
     #Convert class labels to make sure they are between 0,n_classes
     le = LabelEncoder().fit(y_train)
@@ -120,163 +105,9 @@ def load_sktime_dataset_split(name, normalize=False):
     return X_train, X_test, y_train, y_test, min_len
 
 
-def load_sktime_arff_file(path, normalize=False):
+def load_UCR_UEA_dataset(name, normalize=False):
     """
-    Load a dataset from .arff files.
-
-    Parameters
-    ----------
-    path : string
-        Path to the folder containing the .ts file. Dataset name
-        should be specified at the end of path to find files as
-        "dataset_TRAIN.arff" and "dataset_TEST.arff"
-    normalize : boolean, optional
-        If True, time series will be z-normalized. The default is True.
-
-
-    Returns
-    -------
-    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
-        Training data from the dataset specified by path.
-    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
-        Testing data from the dataset specified by path.
-    y_train : array, shape=(n_samples_train)
-        Class of the training data.
-    y_test : array, shape=(n_samples_test)
-        Class of the testing data.
-    le : LabelEncoder
-        LabelEncoder object used to uniformize the class labels
-
-    """
-    #Load datasets
-    X_train, y_train = load_from_arff_to_dataframe(path+'_TRAIN.arff')
-    X_test, y_test = load_from_arff_to_dataframe(path+'_TEST.arff')
-
-    #Convert pandas DataFrames to numpy arrays
-    X_train = _custom_from_nested_to_3d_numpy(X_train)
-    X_test = _custom_from_nested_to_3d_numpy(X_test)
-
-    #Convert class labels to make sure they are between 0,n_classes
-    le = LabelEncoder().fit(y_train)
-    y_train = le.transform(y_train)
-    y_test = le.transform(y_test)
-
-    #Z-Normalize the data
-    if normalize:
-        X_train = (X_train - X_train.mean(axis=-1, keepdims=True)) / (
-            X_train.std(axis=-1, keepdims=True) + 1e-8)
-        X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
-            X_test.std(axis=-1, keepdims=True) + 1e-8)
-
-    return X_train, X_test, y_train, y_test, le
-
-
-def load_sktime_arff_file_resample_id(path, rs_id, normalize=False):
-    """
-    Load a dataset resample from .arff files and the identifier of the 
-    resample.
-
-    Parameters
-    ----------
-    path : string
-        Path to the folder containing the .ts file. Dataset name
-        should be specified at the end of path to find files as
-        "dataset_{rs_id}_TRAIN.arff" and "dataset_{rs_id}_TEST.arff"
-    rs_id : int or str
-        Identifier of the resample.
-    normalize : boolean, optional
-        If True, time series will be z-normalized. The default is True.
-
-
-    Returns
-    -------
-    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
-        Training data from the dataset specified by path.
-    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
-        Testing data from the dataset specified by path.
-    y_train : array, shape=(n_samples_train)
-        Class of the training data.
-    y_test : array, shape=(n_samples_test)
-        Class of the testing data.
-    le : LabelEncoder
-        LabelEncoder object used to uniformize the class labels
-
-    """
-    #Load datasets
-    X_train, y_train = load_from_arff_to_dataframe(path+'_{}_TRAIN.arff'.format(rs_id))
-    X_test, y_test = load_from_arff_to_dataframe(path+'_{}_TEST.arff'.format(rs_id))
-
-    #Convert pandas DataFrames to numpy arrays
-    X_train = _custom_from_nested_to_3d_numpy(X_train)
-    X_test = _custom_from_nested_to_3d_numpy(X_test)
-
-    #Convert class labels to make sure they are between 0,n_classes
-    le = LabelEncoder().fit(y_train)
-    y_train = le.transform(y_train)
-    y_test = le.transform(y_test)
-
-    #Z-Normalize the data
-    if normalize:
-        X_train = (X_train - X_train.mean(axis=-1, keepdims=True)) / (
-            X_train.std(axis=-1, keepdims=True) + 1e-8)
-        X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
-            X_test.std(axis=-1, keepdims=True) + 1e-8)
-
-    return X_train, X_test, y_train, y_test, le
-
-def load_sktime_ts_file(path, normalize=False):
-    """
-    Load a dataset from .ts files
-
-    Parameters
-    ----------
-    path : string
-        Path to the folder containing the .ts file. Dataset name
-        should be specified at the end of path to find files as
-        "dataset_TRAIN.ts" and "dataset_TEST.ts"
-    normalize : boolean, optional
-        If True, time series will be z-normalized. The default is True.
-
-    Returns
-    -------
-    X_train : array, shape=(n_samples_train, n_features, n_timestamps)
-        Training data from the dataset specified by path.
-    X_test : array, shape=(n_samples_test, n_features, n_timestamps)
-        Testing data from the dataset specified by path.
-    y_train : array, shape=(n_samples_train)
-        Class of the training data.
-    y_test : array, shape=(n_samples_test)
-        Class of the testing data.
-    le : LabelEncoder
-        LabelEncoder object used to uniformize the class labels
-
-    """
-    
-    #Load datasets
-    X_train, y_train = load_from_tsfile_to_dataframe(path+'_TRAIN.ts')
-    X_test, y_test = load_from_tsfile_to_dataframe(path+'_TEST.ts')
-
-    #Convert pandas DataFrames to numpy arrays
-    X_train = _custom_from_nested_to_3d_numpy(X_train)
-    X_test = _custom_from_nested_to_3d_numpy(X_test)
-
-    #Convert class labels to make sure they are between 0,n_classes
-    le = LabelEncoder().fit(y_train)
-    y_train = le.transform(y_train)
-    y_test = le.transform(y_test)
-
-    #Z-Normalize the data
-    if normalize:
-        X_train = (X_train - X_train.mean(axis=-1, keepdims=True)) / (
-            X_train.std(axis=-1, keepdims=True) + 1e-8)
-        X_test = (X_test - X_test.mean(axis=-1, keepdims=True)) / (
-            X_test.std(axis=-1, keepdims=True) + 1e-8)
-
-    return X_train, X_test, y_train, y_test, le
-
-def load_sktime_dataset(name, normalize=False):
-    """
-    Load a dataset from the UCR/UEA archive by name using sktime API
+    Load a dataset from the UCR/UEA archive by name using aeon API
 
     Parameters
     ----------
@@ -291,17 +122,12 @@ def load_sktime_dataset(name, normalize=False):
         Time series data from the dataset specified by name.
     y : array, shape=(n_samples)
         Class of the time series
-    le : LabelEncoder
-        LabelEncoder object used to uniformize the class labels
-        
-
     """
     #Load datasets
-    X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
-        name, normalize=normalize
+    X_train, X_test, y_train, y_test, _ = load_UCR_UEA_dataset_split(
+        name, split='train', normalize=normalize
     )
-    
-    return np.concatenate((X_train, X_test),axis=0), np.concatenate((y_train, y_test),axis=0), le
+    return np.concatenate((X_train, X_test),axis=0), np.concatenate((y_train, y_test),axis=0)
 
 def return_all_dataset_names():
     return np.concatenate((

@@ -3,8 +3,6 @@
 import numpy as np
 import pandas as pd
 from os import cpu_count
-from sktime.datatypes._panel._convert import from_nested_to_3d_numpy
-from sktime.datatypes._panel._check import is_nested_dataframe
 
 def is_int(x):
     """Check if x is of integer type, but not boolean."""
@@ -65,7 +63,6 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=
     Raises
     ------
     ValueError
-        
 
     Returns
     -------
@@ -90,13 +87,7 @@ def check_array_3D(X, coerce_to_numpy=True, is_univariate=False, min_timestamps=
             ", found only: {}".format(min_timestamps,X.shape[2])
         )
     if isinstance(X, pd.DataFrame):
-        if not is_nested_dataframe(X):
-            raise ValueError(
-                "If passed as a pd.DataFrame, X must be a nested "
-                "pd.DataFrame, with pd.Series or np.arrays inside cells."
-            )
-        if coerce_to_numpy:
-            X = from_nested_to_3d_numpy(X)
+        raise ValueError('Only accepting numpy array as inputs for 3D')
     if is_univariate:
         if X.shape[1] != 1:
             raise ValueError(
