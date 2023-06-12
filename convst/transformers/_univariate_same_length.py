@@ -89,7 +89,7 @@ def U_SL_init_random_shapelet_params(
 @njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, nogil=__USE_NUMBA_NOGIL__)
 def U_SL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
-    dist_func, use_phase, prime_scheme
+    use_phase, prime_scheme
 ):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -116,9 +116,6 @@ def U_SL_generate_shapelet(
     alpha : float
         Alpha similarity parameter, higher values (close to 1) means higher
         similarity prunning.
-    dist_func: function
-        A distance function implemented with Numba taking two 1D vectors as
-        input.
     use_phase: bool
         Wheter to use phase invariance
     prime_scheme : bool
@@ -207,7 +204,7 @@ def U_SL_generate_shapelet(
                 
                 #Compute distance vector
                 x_dist = compute_shapelet_dist_vector(
-                    X[id_test, 0], v, _length, _dilation, dist_func, norm,
+                    X[id_test, 0], v, _length, _dilation, norm,
                     use_phase
                 )
                 
@@ -234,7 +231,7 @@ def U_SL_generate_shapelet(
 
 @njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__)
 def U_SL_apply_all_shapelets(
-    X, shapelets, dist_func, use_phase
+    X, shapelets, use_phase
 ):
     """
     Apply a set of generated shapelet using the parameter arrays previously 
@@ -257,9 +254,6 @@ def U_SL_apply_all_shapelets(
             Threshold parameter of the shapelets
         normalize : array, shape=(n_shapelets)
             Normalization indicatorr of the shapelets
-    dist_func: function
-        A distance function implemented with Numba taking two 1D vectors as
-        input.
     use_phase: bool
         Wheter to use phase invariance
     
@@ -316,7 +310,7 @@ def U_SL_apply_all_shapelets(
                 
                 X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
                 apply_one_shapelet_one_sample_univariate(
-                    strides, _values, threshold[i_shp], dist_func
+                    strides, _values, threshold[i_shp]
                 )
             
             _idx_norm = _idx_shp[where(normalize[_idx_shp] == True)[0]]
@@ -331,7 +325,7 @@ def U_SL_apply_all_shapelets(
                     
                     X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
                     apply_one_shapelet_one_sample_univariate(
-                        strides, _values, threshold[i_shp], dist_func
+                        strides, _values, threshold[i_shp]
                     )
                 
     return X_new

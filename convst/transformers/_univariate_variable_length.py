@@ -93,7 +93,7 @@ def U_VL_init_random_shapelet_params(
 @njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, nogil=__USE_NUMBA_NOGIL__)
 def U_VL_generate_shapelet(
     X, y, n_shapelets, shapelet_sizes, r_seed, p_norm, p_min, p_max, alpha,
-    dist_func, use_phase, min_len, X_len, prime_scheme
+    use_phase, min_len, X_len, prime_scheme
 ):
     """
     Given a time series dataset and parameters of the method, generate the
@@ -120,9 +120,6 @@ def U_VL_generate_shapelet(
         Upper bound for the percentile during the choice of threshold
     alpha : float
         Alpha similarity parameter
-    dist_func: function
-        A distance function implemented with Numba taking two 1D vectors as
-        input.
     use_phase: bool
         Wheter to use phase invariance
     min_len : int
@@ -238,7 +235,7 @@ def U_VL_generate_shapelet(
                 #Compute distance vector
                 x_dist = compute_shapelet_dist_vector(
                     X[id_test, 0, :X_len[id_test]], v, _length,
-                    _dilation, dist_func, norm, use_phase
+                    _dilation, norm, use_phase
                 )
                 
                 #Extract value between two percentile as threshold for SO
@@ -264,7 +261,7 @@ def U_VL_generate_shapelet(
 
 @njit(cache=__USE_NUMBA_CACHE__, parallel=__USE_NUMBA_PARALLEL__, fastmath=__USE_NUMBA_FASTMATH__, nogil=__USE_NUMBA_NOGIL__)
 def U_VL_apply_all_shapelets(
-    X, shapelets, dist_func, use_phase, X_len
+    X, shapelets, use_phase, X_len
 ):
     """
     Apply a set of generated shapelet using the parameter arrays previously 
@@ -288,9 +285,6 @@ def U_VL_apply_all_shapelets(
             Threshold parameter of the shapelets
         normalize : array, shape=(n_shapelets)
             Normalization indicatorr of the shapelets
-    dist_func: function
-        A distance function implemented with Numba taking two 1D vectors as
-        input.
     use_phase: bool
         Wheter to use phase invariance
     X_len : array, shape=(n_samples)
@@ -348,7 +342,7 @@ def U_VL_apply_all_shapelets(
                 
                 X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
                 apply_one_shapelet_one_sample_univariate(
-                    strides, _values, threshold[i_shp], dist_func
+                    strides, _values, threshold[i_shp]
                 )
             
             _idx_norm = _idx_shp[where(normalize[_idx_shp] == True)[0]]
@@ -363,7 +357,7 @@ def U_VL_apply_all_shapelets(
                     
                     X_new[i_sample, (n_features * i_shp):(n_features * i_shp + n_features)] = \
                     apply_one_shapelet_one_sample_univariate(
-                        strides, _values, threshold[i_shp], dist_func
+                        strides, _values, threshold[i_shp]
                     )
                 
     return X_new

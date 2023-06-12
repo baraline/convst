@@ -76,10 +76,6 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     phase_invariance : bool, optional
         Wheter to use phase invariance for shapelet sampling and distance 
         computation. The default is False.
-    distance : str, optional
-        The distance function to use whe computing distances between shapelets
-        and time series. Choose between 'euclidean','manhattan' and 'squared_euclidean'.
-        The default is 'manhattan'.
     alpha : float, optional
         The alpha similarity parameter, the higher the value, the lower the 
         allowed number of common indexes with previously sampled shapelets 
@@ -159,7 +155,6 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
         phase_invariance=False,
         input_transformers=None,
         transform_type='auto',
-        distance='manhattan',
         normalize_output=False,
         percentiles=[5,10],
         max_channels=None,
@@ -170,7 +165,6 @@ class R_DST_Ensemble(BaseEstimator, ClassifierMixin):
     ):
         self.transform_type = transform_type
         self.phase_invariance = check_is_boolean(phase_invariance)
-        self.distance = distance
         self.normalize_output = check_is_boolean(normalize_output)
         self.n_samples = check_is_numeric(n_samples) if n_samples is not None else n_samples
         self.shapelet_lengths_bounds = shapelet_lengths_bounds

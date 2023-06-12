@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from convst.utils.dataset_utils import (
-    load_sktime_dataset_split, load_sktime_dataset, z_norm_3D
+    load_UCR_UEA_dataset_split, load_UCR_UEA_dataset, z_norm_3D
 )
 import numpy as np
 import pytest
@@ -27,8 +27,8 @@ def test_z_norm_3D():
 @pytest.mark.parametrize("name", [
     ('GunPoint'), ('SmoothSubspace'),
 ])
-def test_load_sktime_dataset_split(name):
-    X_train, X_test, y_train, y_test, le = load_sktime_dataset_split(
+def test_load_UCR_UEA_dataset_split(name):
+    X_train, X_test, y_train, y_test, le = load_UCR_UEA_dataset_split(
         name=name, normalize=False
     )
     if name == 'GunPoint':
@@ -44,8 +44,8 @@ def test_load_sktime_dataset_split(name):
 @pytest.mark.parametrize("name", [
     ('GunPoint'), ('SmoothSubspace'),
 ])
-def test_load_sktime_dataset(name):
-    X, y, le = load_sktime_dataset(
+def test_load_UCR_UEA_dataset(name):
+    X, y = load_UCR_UEA_dataset(
         name=name, normalize=False
     )
     if name == 'GunPoint':

@@ -38,10 +38,6 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     phase_invariance : bool, optional
         Wheter to use phase invariance for shapelet sampling and distance 
         computation. The default is False.
-    distance : str, optional
-        The distance function to use whe computing distances between shapelets
-        and time series. Choose between 'euclidean','manhattan' and 'squared_euclidean'.
-        The default is 'manhattan'.
     alpha : float, optional
         The alpha similarity parameter, the higher the value, the lower the 
         allowed number of common indexes with previously sampled shapelets 
@@ -109,7 +105,6 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self, 
         transform_type='auto',
         phase_invariance=False,
-        distance='manhattan',
         alpha=0.5,
         normalize_output=False,
         n_samples=None,
@@ -133,7 +128,6 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.transform_type=transform_type
         self.phase_invariance=phase_invariance
         self.prime_dilations=prime_dilations
-        self.distance=distance
         self.alpha=alpha
         self.normalize_output=normalize_output
         self.n_samples=n_samples
@@ -170,7 +164,6 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.transformer = R_DST(
             transform_type=self.transform_type,
             phase_invariance=self.phase_invariance,
-            distance=self.distance,
             alpha=self.alpha,
             prime_dilations=self.prime_dilations,
             shapelet_lengths_bounds=self.shapelet_lengths_bounds,
