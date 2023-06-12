@@ -10,7 +10,7 @@ import numpy as np
 
 from convst.classifiers import R_DST_Ridge
 from convst.transformers import R_DST
-from convst.utils.dataset_utils import load_sktime_dataset_split
+from convst.utils.dataset_utils import load_UCR_UEA_dataset_split
 from convst.utils.experiments_utils import cross_validate_UCR_UEA
 from convst.transformers._commons import is_prime
 
@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
     ('AsphaltObstaclesCoordinates','multivariate_variable')
 ])
 def test_auto_type(name, expected):
-    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+    X_train, X_test, y_train, y_test, min_len = load_UCR_UEA_dataset_split(
         name=name
     )
     rdst = R_DST(n_shapelets=2, min_len=min_len).fit(X_train, y_train)
@@ -51,7 +51,7 @@ def test_auto_type(name, expected):
     ('AsphaltObstaclesCoordinates',[0.05,0.08,0.1])
 ])
 def test_mutliple_lengths(name, lengths):
-    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+    X_train, X_test, y_train, y_test, min_len = load_UCR_UEA_dataset_split(
         name=name
     )
     try:
@@ -68,7 +68,7 @@ def test_mutliple_lengths(name, lengths):
     ('FordB')
 ])
 def test_prime_dilations(name):
-    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+    X_train, X_test, y_train, y_test, min_len = load_UCR_UEA_dataset_split(
         name=name
     )
     try:
@@ -91,7 +91,7 @@ def test_prime_dilations(name):
     ('GunPoint', [0.1, 0.15], 0.5, [15, 17, 19, 21])
 ])
 def test_length_bounds(name, bounds, reduction, expected):
-    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+    X_train, X_test, y_train, y_test, min_len = load_UCR_UEA_dataset_split(
         name=name
     )
     try:
@@ -116,7 +116,7 @@ def test_length_bounds(name, bounds, reduction, expected):
     ('AsphaltObstaclesCoordinates',0.78)
 ])
 def test_performance(name, expected):
-    X_train, X_test, y_train, y_test, min_len = load_sktime_dataset_split(
+    X_train, X_test, y_train, y_test, min_len = load_UCR_UEA_dataset_split(
         name=name
     )
     rdst = R_DST_Ridge(n_shapelets=1,min_len=min_len).fit(X_train, y_train)
