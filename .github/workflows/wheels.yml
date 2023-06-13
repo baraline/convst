@@ -3,6 +3,7 @@ name: Build wheels and publish to PyPI
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   build_wheels:
