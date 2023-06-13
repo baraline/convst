@@ -1,6 +1,6 @@
 # This package is moving to the aeon-toolkit.
 Starting from v0.3.0, this package will not be updated, bugfixes will still be included if issues are raised.
-You can already find an updated version of RDST in the Aeon package at https://github.com/aeon-toolkit/ . Further improvements are planned for further speeding up RDST, these improvement will only be implemented in aeon.
+You can already find RDST in the Aeon package at https://github.com/aeon-toolkit/ . Further improvements are planned for further speeding up RDST, these improvement will only be implemented in aeon.
 All the functionnalities of this package will be ported into Aeon when I got some time, for now, only the transformer for univariate and multivariate series of even length have been implemented.
 
 # Readme
@@ -35,9 +35,6 @@ The recommended way to install the latest stable version is to use pip with `pip
 We recommend doing this in a new virtual environment using anaconda to avoid any conflict with an existing installation. If you wish to install dependencies individually, you can see dependencies in the `setup.py` file.
 
 An optional dependency that can help speed up numba, which is used in our implementation, is the Intel vector math library (SVML). When using conda it can be installed by running `conda install -c numba icc_rt`. I didn't test the behavior with AMD processors, but I suspect it won't work.
-
-If you are using RDST in some specific settings such as an HPC cluster and are getting errors, take a loot at [issue #24](https://github.com/baraline/convst/issues/24), you may need to change the numba compilation settings to not using function caching (see [this example](https://github.com/baraline/convst/blob/main/examples/Changing_numba_options.py)). THIS SHOULD BE FIXED WITH v0.3.0
-
 
 ## Tutorial
 We give here a minimal example to run the `RDST` algorithm on any dataset of the UCR archive using the aeon API to get datasets:
