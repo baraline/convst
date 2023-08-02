@@ -14,11 +14,12 @@ from sklearn.metrics import accuracy_score
 
 from numba import set_num_threads
 
+
 class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     """
-    A wrapper class which use R_DST as a transformer, followed by a Ridge 
+    A wrapper class which use R_DST as a transformer, followed by a Ridge
     Classifier.
-    
+
     Attributes
     ----------
     classifier : object
@@ -36,16 +37,16 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         The default is 'auto', which automatically select the transformer based
         on the data passed in the fit method.
     phase_invariance : bool, optional
-        Wheter to use phase invariance for shapelet sampling and distance 
+        Wheter to use phase invariance for shapelet sampling and distance
         computation. The default is False.
     alpha : float, optional
-        The alpha similarity parameter, the higher the value, the lower the 
-        allowed number of common indexes with previously sampled shapelets 
+        The alpha similarity parameter, the higher the value, the lower the
+        allowed number of common indexes with previously sampled shapelets
         when sampling a new one with similar parameters. It can cause the
         number of sampled shapelets to be lower than n_shapelets if the
         whole search space has been covered. The default is 0.5.
     normalize_output : boolean, optional
-        Wheter to normalize the argmin and shapelet occurrence feature by the 
+        Wheter to normalize the argmin and shapelet occurrence feature by the
         length of the series from which it was extracted. This is mostly useful
         for variable length time series. The default is False.
     n_samples : float, optional
@@ -55,24 +56,24 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         The maximum number of shapelet to be sampled. The default is 10_000.
     shapelet_lengths : array, optional
         The set of possible length for shapelets. The values can be integers
-        to specify an absolute length, or a float, to specify a length relative 
+        to specify an absolute length, or a float, to specify a length relative
         to the input time series length. The default is [11].
     shapelet_lengths_bounds : array, optional
-        An 1D array with two elements containing the min and max possible 
+        An 1D array with two elements containing the min and max possible
         length for shapelet candidate, can be int or float. The default is
         None, meaning that shapelet_lengths parameter is used.
     lengths_bounds_reduction : float, optional
-        A float in ]0,1], quantifying the proportion of lengths to explore 
+        A float in ]0,1], quantifying the proportion of lengths to explore
         between the min and max bounds of shapelet_lengths_bounds. The default
         is 0.5. For example, with bounds as [4,10], and a reduction of 0.5,
         only [4,6,8,10] will be considered as possible lengths.
     prime_dilations : bool, optional
-        If True, only dilation with prime values will be considered for 
+        If True, only dilation with prime values will be considered for
         shapelet candidates. This will greatly speed-up the algorithm
         for long time series and/or short shapelet length, possibly at the cost
         of some accuracy.
     proba_norm : float, optional
-        The proportion of shapelets that will use a normalized distance 
+        The proportion of shapelets that will use a normalized distance
         function, which induce scale invariance. The default is 0.8.
     percentiles : array, optional
         The two perceniles used to select the lambda threshold used to compute
@@ -83,7 +84,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
     random_state : object, optional
         The seed for the random state. The default is None.
     max_channels : int, optional
-        The maximum number of feature possibly considered by a multivariate 
+        The maximum number of feature possibly considered by a multivariate
         shapelet. The default is None, meaning max_chanels=n_features.
     min_len : int, optional
         The minimum length of an input time series for variable length input.
@@ -96,14 +97,14 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
          If True, the intercept term will be fitted during the ridge regression.
          The default is True.
      alphas : array, optional
-         Array of alpha values to try which influence regularization strength, 
+         Array of alpha values to try which influence regularization strength,
          must be a positive float.
          The default is np.logspace(-4,4,20).
     """
-    
+
     def __init__(
-        self, 
-        transform_type='auto',
+        self,
+        transform_type="auto",
         phase_invariance=False,
         alpha=0.5,
         normalize_output=False,
@@ -114,42 +115,42 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         lengths_bounds_reduction=0.5,
         prime_dilations=False,
         proba_norm=0.8,
-        percentiles=[5,10],
+        percentiles=[5, 10],
         n_jobs=1,
         random_state=None,
         min_len=None,
-        class_weight=None, 
+        class_weight=None,
         fit_intercept=True,
-        alphas_ridge=list(np.logspace(-4,4,20))
+        alphas_ridge=list(np.logspace(-4, 4, 20)),
     ):
-        self.alphas_ridge=alphas_ridge
-        self.class_weight=class_weight
-        self.fit_intercept=fit_intercept
-        self.transform_type=transform_type
-        self.phase_invariance=phase_invariance
-        self.prime_dilations=prime_dilations
-        self.alpha=alpha
-        self.normalize_output=normalize_output
-        self.n_samples=n_samples
-        self.shapelet_lengths_bounds=shapelet_lengths_bounds
-        self.lengths_bounds_reduction=lengths_bounds_reduction
-        self.n_shapelets=n_shapelets
-        self.shapelet_lengths=shapelet_lengths
-        self.proba_norm=proba_norm
-        self.percentiles=percentiles
+        self.alphas_ridge = alphas_ridge
+        self.class_weight = class_weight
+        self.fit_intercept = fit_intercept
+        self.transform_type = transform_type
+        self.phase_invariance = phase_invariance
+        self.prime_dilations = prime_dilations
+        self.alpha = alpha
+        self.normalize_output = normalize_output
+        self.n_samples = n_samples
+        self.shapelet_lengths_bounds = shapelet_lengths_bounds
+        self.lengths_bounds_reduction = lengths_bounds_reduction
+        self.n_shapelets = n_shapelets
+        self.shapelet_lengths = shapelet_lengths
+        self.proba_norm = proba_norm
+        self.percentiles = percentiles
         if isinstance(n_jobs, bool):
-            self.n_jobs=n_jobs
+            self.n_jobs = n_jobs
         else:
-            self.n_jobs=check_n_jobs(n_jobs)
+            self.n_jobs = check_n_jobs(n_jobs)
             set_num_threads(self.n_jobs)
-        self.random_state=random_state
-        self.min_len=min_len
-    
+        self.random_state = random_state
+        self.min_len = min_len
+
     def _more_tags(self):
         return {
             "capability:variable_length": True,
             "capability:univariate": True,
-            "capability:multivariate": True
+            "capability:multivariate": True,
         }
 
     def _init_components(self):
@@ -157,9 +158,9 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
             c_StandardScaler(with_mean=True),
             RidgeClassifierCV(
                 alphas=self.alphas_ridge,
-                class_weight=self.class_weight, 
-                fit_intercept=self.fit_intercept
-            )
+                class_weight=self.class_weight,
+                fit_intercept=self.fit_intercept,
+            ),
         )
         self.transformer = R_DST(
             transform_type=self.transform_type,
@@ -176,9 +177,9 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
             proba_norm=self.proba_norm,
             percentiles=self.percentiles,
             random_state=self.random_state,
-            min_len=self.min_len 
+            min_len=self.min_len,
         )
-    
+
     def fit(self, X, y):
         """
         Fit method. Random shapelets are generated using the parameters
@@ -189,7 +190,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         ----------
         X : array, shape=(n_samples, n_features, n_timestamps)
             Input time series.
-            
+
         y : array, shape=(n_samples)
             Class of the input time series.
         """
@@ -197,7 +198,7 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
         self.transformer = self.transformer.fit(X, y)
         self.classifier = self.classifier.fit(self.transformer.transform(X), y)
         return self
-        
+
     def predict(self, X):
         """
         Transform the input time series with R_DST and predict their classes
@@ -214,19 +215,19 @@ class R_DST_Ridge(BaseEstimator, ClassifierMixin):
             Predicted class for each input time series
 
         """
-        check_is_fitted(self, ['classifier'])
+        check_is_fitted(self, ["classifier"])
         return self.classifier.predict(self.transformer.transform(X))
-    
+
     def score(self, X, y):
         """
-        Perform the prediction on input time series and return the accuracy 
+        Perform the prediction on input time series and return the accuracy
         score based on the class information.
 
         Parameters
         ----------
         X : array, shape=(n_samples, n_features, n_timestamps)
             Input time series.
-            
+
         y : array, shape=(n_samples)
             Class of the input time series.
 

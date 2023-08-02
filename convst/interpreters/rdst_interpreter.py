@@ -16,13 +16,14 @@ from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
-from convst.transformers._commons import compute_shapelet_dist_vector, manhattan
+from convst.transformers._commons import compute_shapelet_dist_vector
 from convst.transformers import R_DST
 from convst.classifiers import R_DST_Ridge, R_DST_Ensemble
 
+
 class Shapelet:
     """
-    A Shapelet object to use for ploting operations
+    A Shapelet object to use for ploting operations.
 
     Parameters
     ----------
@@ -44,6 +45,7 @@ class Shapelet:
     None.
 
     """
+
     def __init__(self, values, length, dilation, norm, threshold, phase):
         self.values = np.asarray(values)
         self.length = length
@@ -51,10 +53,10 @@ class Shapelet:
         self.norm = norm
         self.phase = phase
         self.threshold = threshold
-        
-    def plot(self, figsize=(10,5), seaborn_context='talk', ax=None):
+
+    def plot(self, figsize=(10, 5), seaborn_context='talk', ax=None):
         """
-        Plot the shapelet values
+        Plot the shapelet values.
 
         Parameters
         ----------
@@ -63,13 +65,13 @@ class Shapelet:
         seaborn_context : str, optional
             Seaborn module context. The default is 'talk'.
         ax : matplotlib axe, optional
-            A matplotlib axe on which to plot the figure. The default is None 
+            A matplotlib axe on which to plot the figure. The default is None
             and will create a new figure of size figsize.
 
         Returns
         -------
         fig : matplotlib figure
-            The resulting figure 
+            The resulting figure
         """
         if ax is None:
             sns.set()
@@ -78,7 +80,7 @@ class Shapelet:
             plt.plot(self.values)
             plt.title(
                 'd={},normalize={},threshold={}'.format(
-                    self.dilation, self.norm, np.round(self.threshold,decimals=2)
+                    self.dilation, self.norm, np.round(self.threshold, decimals=2)
                 )
             )
             return fig
@@ -86,24 +88,23 @@ class Shapelet:
             ax.plot(self.values)
             ax.set_title(
                 'd={},normalize={},threshold={}'.format(
-                    self.dilation, self.norm, np.round(self.threshold,decimals=2)
+                    self.dilation, self.norm, np.round(self.threshold, decimals=2)
                 )
             )
             return ax
-        
+
     def plot_on_X(
-        self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk', alpha=0.9,
+        self, X, figsize=(10, 5), seaborn_context='talk', alpha=0.9,
         shp_dot_size=40, shp_c='purple', ax=None, label=None, x_linewidth=2
     ):
         """
-        Plot the shapelet on its best match on the time series X
+        Plot the shapelet on its best match on the time series X.
 
         Parameters
         ----------
         X : array, shape=(n_timestamps) or shape=(n_features, n_timestamps)
             Input time series
-        d_func : object, optional
-            A distance function between two arrays. The default is manhattan.
+
         figsize : tuple, optional
             Size of the figure. The default is (10,5).
         seaborn_context : str, optional
@@ -116,7 +117,7 @@ class Shapelet:
         shp_c : str, optional
             Color of the shapelet scatter plot. The default is 'purple'.
         ax : matplotlib axe, optional
-            A matplotlib axe on which to plot the figure. The default is None 
+            A matplotlib axe on which to plot the figure. The default is None
             and will create a new figure of size figsize.
         label : str, optional
             Custom label to plot as legend for X. The default is None.
@@ -131,29 +132,32 @@ class Shapelet:
 
         """
         c = compute_shapelet_dist_vector(
-            X, self.values, self.length, self.dilation,
-            manhattan, self.norm, self.phase
+            X, self.values, self.length, self.dilation, self.norm, self.phase
         )
         _values = self.values
         idx_match = np.asarray(
-            [(c.argmin() + i*self.dilation)%X.shape[0] for i in range(self.length)]
+            [(c.argmin() + i*self.dilation) % X.shape[0] for i in range(self.length)]
         ).astype(int)
         if self.norm:
             _values = (_values * X[idx_match].std()) + X[idx_match].mean()
-            
+
         if ax is None:
             sns.set()
             sns.set_context(seaborn_context)
             fig = plt.figure(figsize=(figsize))
-            plt.plot(X,label=label, linewidth=x_linewidth, alpha=alpha)
-            plt.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha)
+            plt.plot(X, label=label, linewidth=x_linewidth, alpha=alpha)
+            plt.scatter(
+                idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha
+            )
             return fig
         else:
-            ax.plot(X,label=label, linewidth=x_linewidth, alpha=alpha)
-            ax.scatter(idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha)
-    
-    def plot_distance_vector(   
-        self, X, d_func=manhattan, figsize=(10,5), seaborn_context='talk',
+            ax.plot(X, label=label, linewidth=x_linewidth, alpha=alpha)
+            ax.scatter(
+                idx_match, _values, s=shp_dot_size, c=shp_c, zorder=3, alpha=alpha
+            )
+
+    def plot_distance_vector(
+        self, X, figsize=(10, 5), seaborn_context='talk',
         c_threshold='purple', ax=None, label=None
     ):
         """
@@ -163,8 +167,6 @@ class Shapelet:
         ----------
         X : array, shape=(n_timestamps) or shape=(n_features, n_timestamps)
             Input time series
-        d_func : object, optional
-            A distance function between two arrays. The default is manhattan.
         figsize : tuple, optional
             Size of the figure. The default is (10,5).
         seaborn_context : str, optional
@@ -173,11 +175,11 @@ class Shapelet:
             Color used to represent a line on the y-axis to visualize the lambda
             threshold. The default is 'purple'.
         ax : matplotlib axe, optional
-            A matplotlib axe on which to plot the figure. The default is None 
+            A matplotlib axe on which to plot the figure. The default is None
             and will create a new figure of size figsize.
         label : str, optional
             Custom label to plot as legend. The default is None.
-        
+
         Returns
         -------
         fig : matplotlib figure
@@ -185,25 +187,24 @@ class Shapelet:
 
         """
         c = compute_shapelet_dist_vector(
-            X, self.values, self.length, self.dilation,
-            manhattan, self.norm, self.phase
+            X, self.values, self.length, self.dilation, self.norm, self.phase
         )
         if ax is None:
             sns.set()
             sns.set_context(seaborn_context)
             fig = plt.figure(figsize=(figsize))
-            plt.plot(c,label=label)
+            plt.plot(c, label=label)
             plt.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
             return fig
         else:
-            ax.plot(c,label=label)
+            ax.plot(c, label=label)
             ax.hlines(self.threshold, 0, c.shape[0], color=c_threshold)
             return ax
 
-    
+
 class RDST_interpreter():
     """
-    A class to interpret the result from a fitted RDST instance.    
+    A class to interpret the result from a fitted RDST instance.
 
     Parameters
     ----------
@@ -215,7 +216,7 @@ class RDST_interpreter():
     None.
 
     """
-    
+
     def __init__(self, RDST):
         check_is_fitted(RDST, ['shapelets_'])
         if isinstance(RDST, R_DST):
@@ -224,28 +225,29 @@ class RDST_interpreter():
             raise TypeError(
                 'Object passed to RDST interpreter should be an R_DST instance'
             )
-        
+
     def _get_params(self, id_shapelet):
         values, lengths, dilations, threshold, normalize = self.RDST.shapelets_
         phase = self.RDST.phase_invariance
-        if self.RDST.transform_type in ['multivariate','multivariate_variable']:
-            raise NotImplementedError('Interpreter is not yet implemented for multivariate data')
+        if self.RDST.transform_type in ['multivariate', 'multivariate_variable']:
+            raise NotImplementedError(
+                'Interpreter is not yet implemented for multivariate data'
+            )
         else:
             length_ = lengths[id_shapelet]
             values_ = values[id_shapelet, :length_]
             dilation = dilations[id_shapelet]
             norm = normalize[id_shapelet]
             threshold_ = threshold[id_shapelet]
-        return values_, length_, dilation, norm, threshold_, phase 
-        
-        
+        return values_, length_, dilation, norm, threshold_, phase
+
     def plot_on_X(
-        self, id_shapelet, X, d_func=manhattan, figsize=(10,5),
+        self, id_shapelet, X, figsize=(10, 5),
         seaborn_context='talk', shp_dot_size=40, shp_c='purple', ax=None,
         label=None
     ):
         """
-        Plot the shapelet on its best match on the time series X
+        Plot the shapelet on its best match on the time series X.
 
         Parameters
         ----------
@@ -253,8 +255,6 @@ class RDST_interpreter():
             ID of the shapelet to plot.
         X : array, shape=(n_timestamps) or shape=(n_features, n_timestamps)
             Input time series
-        d_func : object, optional
-            A distance function between two arrays. The default is manhattan.
         figsize : tuple, optional
             Size of the figure. The default is (10,5).
         seaborn_context : str, optional
@@ -267,7 +267,7 @@ class RDST_interpreter():
         shp_c : str, optional
             Color of the shapelet scatter plot. The default is 'purple'.
         ax : matplotlib axe, optional
-            A matplotlib axe on which to plot the figure. The default is None 
+            A matplotlib axe on which to plot the figure. The default is None
             and will create a new figure of size figsize.
         label : str, optional
             Custom label to plot as legend for X. The default is None.
@@ -282,13 +282,13 @@ class RDST_interpreter():
 
         """
         return Shapelet(*self._get_params(id_shapelet)).plot_on_X(
-            X, d_func=d_func, figsize=figsize,
+            X, figsize=figsize,
             seaborn_context=seaborn_context, shp_dot_size=shp_dot_size,
             shp_c=shp_c, ax=ax, label=label
         )
 
     def plot_distance_vector(
-        self, id_shapelet, X, d_func=manhattan, figsize=(10,5), 
+        self, id_shapelet, X, figsize=(10, 5),
         seaborn_context='talk', c_threshold='purple', ax=None, label=None
     ):
         """
@@ -300,8 +300,6 @@ class RDST_interpreter():
             ID of the shapelet to plot.
         X : array, shape=(n_timestamps) or shape=(n_features, n_timestamps)
             Input time series
-        d_func : object, optional
-            A distance function between two arrays. The default is manhattan.
         figsize : tuple, optional
             Size of the figure. The default is (10,5).
         seaborn_context : str, optional
@@ -310,26 +308,25 @@ class RDST_interpreter():
             Color used to represent a line on the y-axis to visualize the lambda
             threshold. The default is 'purple'.
         ax : matplotlib axe, optional
-            A matplotlib axe on which to plot the figure. The default is None 
+            A matplotlib axe on which to plot the figure. The default is None
             and will create a new figure of size figsize.
         label : str, optional
             Custom label to plot as legend. The default is None.
-        
+
         Returns
         -------
         fig : matplotlib figure
             The resulting figure with the distance vector obtained by d(S,X)
 
         """
-
         return Shapelet(*self._get_params(id_shapelet)).plot_distance_vector(
-            X, d_func=d_func, figsize=figsize, seaborn_context=seaborn_context,
+            X, figsize=figsize, seaborn_context=seaborn_context,
             c_threshold=c_threshold, ax=ax, label=label
         )
-    
+
     def plot(self, id_shapelet, figsize=(10,5), seaborn_context='talk', ax=None):
         """
-        Plot the shapelet values
+        Plot the shapelet values.
 
         Parameters
         ----------
