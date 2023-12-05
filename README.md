@@ -1,9 +1,9 @@
 # This package is moving to the aeon-toolkit.
 Starting from v0.3.0, this package will not be updated, bugfixes will still be included if issues are raised.
 You can already find RDST in the Aeon package at https://github.com/aeon-toolkit/ . Further improvements are planned for further speeding up RDST, these improvement will only be implemented in aeon.
-The functionnalities of this package will be ported into Aeon when I got some time, for now, the following are available in aeon latest release:
-- RDST transformer for univariate and multivariate series of even length.
-- RDST classifier for univariate and multivariate series of even length.
+
+## ALL FUNCTIONALITIES OF THIS PACKAGE OUTSIDE OF THE INTEPRETER ARE NOW PORTED INTO AEON FROM V0.6.0, PLEASE REFER TO THE AEON IMPLEMENTATION WHEN DOING EXPERIMENTS. 
+## AN EXAMPLE NOTEBOOK ON HOW TO CORRECTLY INTERPRET SHAPELETS FROM RDST IS PLANNED (see https://github.com/aeon-toolkit/aeon/issues/973)
 
 If these functionnalities are what you need, I highly recommend that you use aeon as I spent more time on the aeon implementation and tests compared to convst.
 
