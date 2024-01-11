@@ -31,8 +31,9 @@ Welcome to convst documentation !
    reproducibility
    citation
 
-
+**This package has now moved to the aeon toolkit, please refer to https://www.aeon-toolkit.org/**
 **convst** is a Python package dedicated to the Random Dilated Shapelet Transform (RDST).
+
 
 Minimal example
 ---------------
